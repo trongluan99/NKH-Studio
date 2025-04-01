@@ -28,7 +28,7 @@ public class App extends AdsMultiDexApplication {
         mNkhAdConfig.setFacebookClientToken(getString(R.string.facebook_client_token));
         mNkhAdConfig.setAdjustTokenTiktok(getString(R.string.tiktok_token));
 
-        mNkhAdConfig.setIdAdResume("");
+        mNkhAdConfig.setIdAdResume(BuildConfig.ad_appopen_resume);
 
         NkhAd.getInstance().init(this, mNkhAdConfig);
         Admob.getInstance().setDisableAdResumeWhenClickAds(true);

@@ -40,37 +40,37 @@ dependencies {
 
     // Admob
     implementation 'androidx.multidex:multidex:2.0.1'
-    implementation 'com.google.android.gms:play-services-ads:23.2.0'
-    implementation 'com.google.android.gms:play-services-ads-identifier:18.1.0'
+    implementation 'com.google.android.gms:play-services-ads:24.1.0'
+    implementation 'com.google.android.gms:play-services-ads-identifier:18.2.0'
 
-    implementation "com.android.billingclient:billing:7.0.0"
-    implementation "com.google.guava:guava:27.1-android"
+    implementation "com.android.billingclient:billing:7.1.1"
+    implementation "com.google.guava:guava:33.0.0-android"
 
-    implementation 'com.google.firebase:firebase-analytics:22.0.2'
+    implementation 'com.google.firebase:firebase-analytics:22.4.0'
 
     // Mediation
-    implementation 'com.google.ads.mediation:facebook:6.17.0.0'
-    implementation 'com.google.ads.mediation:applovin:12.5.0.0'
-    implementation 'com.google.ads.mediation:vungle:7.3.2.0'
-    implementation 'com.google.ads.mediation:pangle:6.0.0.3.0'
-    implementation 'com.google.ads.mediation:mintegral:16.7.71.0'
+    implementation 'com.google.ads.mediation:facebook:6.19.0.1'
+    implementation 'com.google.ads.mediation:applovin:13.1.0.1'
+    implementation 'com.google.ads.mediation:vungle:7.4.3.1'
+    implementation 'com.google.ads.mediation:pangle:6.5.0.6.0'
+    implementation 'com.google.ads.mediation:mintegral:16.9.51.0'
     implementation 'com.unity3d.ads:unity-ads:4.12.2'
-    implementation 'com.google.ads.mediation:unity:4.12.2.0'
-    implementation 'com.google.ads.mediation:ironsource:8.2.1.0'
+    implementation 'com.google.ads.mediation:unity:4.14.0.0'
+    implementation 'com.google.ads.mediation:ironsource:8.7.0.1'
 
     // Facebook SDK
-    implementation 'com.facebook.android:facebook-android-sdk:16.1.3'
+    implementation 'com.facebook.android:facebook-android-sdk:18.0.2'
 
     // Adjust
     implementation 'com.adjust.sdk:adjust-android:4.33.1'
     implementation 'com.android.installreferrer:installreferrer:2.2'
 
     // Lottie
-    implementation 'com.airbnb.android:lottie:6.3.0'
+    implementation 'com.airbnb.android:lottie:6.5.2'
 
     // Sdp & Ssp
     implementation 'com.intuit.sdp:sdp-android:1.1.1'
-    implementation 'com.intuit.ssp:ssp-android:1.1.0'
+    implementation 'com.intuit.ssp:ssp-android:1.1.1'
 }
 
 afterEvaluate {
