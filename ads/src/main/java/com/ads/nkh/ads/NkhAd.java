@@ -15,18 +15,8 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.adjust.sdk.Adjust;
-import com.adjust.sdk.AdjustAttribution;
 import com.adjust.sdk.AdjustConfig;
-import com.adjust.sdk.AdjustEventFailure;
-import com.adjust.sdk.AdjustEventSuccess;
-import com.adjust.sdk.AdjustSessionFailure;
-import com.adjust.sdk.AdjustSessionSuccess;
 import com.adjust.sdk.LogLevel;
-import com.adjust.sdk.OnAttributionChangedListener;
-import com.adjust.sdk.OnEventTrackingFailedListener;
-import com.adjust.sdk.OnEventTrackingSucceededListener;
-import com.adjust.sdk.OnSessionTrackingFailedListener;
-import com.adjust.sdk.OnSessionTrackingSucceededListener;
 import com.ads.nkh.admob.Admob;
 import com.ads.nkh.admob.AppOpenManager;
 import com.ads.nkh.ads.wrapper.ApInterstitialAd;
@@ -56,12 +46,17 @@ public class NkhAd {
     private NkhAdConfig adConfig;
     private NkhInitCallback initCallback;
     private Boolean initAdSuccess = false;
+    private Boolean isOrganic = false;
 
     public static synchronized NkhAd getInstance() {
         if (INSTANCE == null) {
             INSTANCE = new NkhAd();
         }
         return INSTANCE;
+    }
+
+    public Boolean getOrganic() {
+        return isOrganic;
     }
 
     public NkhAdConfig getAdConfig() {
@@ -107,53 +102,13 @@ public class NkhAd {
 
         // Change the log level.
         config.setLogLevel(LogLevel.VERBOSE);
-        config.setPreinstallTrackingEnabled(true);
-        config.setOnAttributionChangedListener(new OnAttributionChangedListener() {
-            @Override
-            public void onAttributionChanged(AdjustAttribution attribution) {
-                Log.d(TAG_ADJUST, "Attribution callback called!");
-                Log.d(TAG_ADJUST, "Attribution: " + attribution.toString());
-            }
+        config.enablePreinstallTracking();
+        config.enableSendingInBackground();
+        config.setOnAttributionChangedListener(adjustAttribution -> {
+            isOrganic = "Organic".equals(adjustAttribution.trackerName) ||
+                    (adjustAttribution.network != null && adjustAttribution.network.equalsIgnoreCase("organic"));
         });
-
-        // Set event success tracking delegate.
-        config.setOnEventTrackingSucceededListener(new OnEventTrackingSucceededListener() {
-            @Override
-            public void onFinishedEventTrackingSucceeded(AdjustEventSuccess eventSuccessResponseData) {
-                Log.d(TAG_ADJUST, "Event success callback called!");
-                Log.d(TAG_ADJUST, "Event success data: " + eventSuccessResponseData.toString());
-            }
-        });
-        // Set event failure tracking delegate.
-        config.setOnEventTrackingFailedListener(new OnEventTrackingFailedListener() {
-            @Override
-            public void onFinishedEventTrackingFailed(AdjustEventFailure eventFailureResponseData) {
-                Log.d(TAG_ADJUST, "Event failure callback called!");
-                Log.d(TAG_ADJUST, "Event failure data: " + eventFailureResponseData.toString());
-            }
-        });
-
-        // Set session success tracking delegate.
-        config.setOnSessionTrackingSucceededListener(new OnSessionTrackingSucceededListener() {
-            @Override
-            public void onFinishedSessionTrackingSucceeded(AdjustSessionSuccess sessionSuccessResponseData) {
-                Log.d(TAG_ADJUST, "Session success callback called!");
-                Log.d(TAG_ADJUST, "Session success data: " + sessionSuccessResponseData.toString());
-            }
-        });
-
-        // Set session failure tracking delegate.
-        config.setOnSessionTrackingFailedListener(new OnSessionTrackingFailedListener() {
-            @Override
-            public void onFinishedSessionTrackingFailed(AdjustSessionFailure sessionFailureResponseData) {
-                Log.d(TAG_ADJUST, "Session failure callback called!");
-                Log.d(TAG_ADJUST, "Session failure data: " + sessionFailureResponseData.toString());
-            }
-        });
-
-
-        config.setSendInBackground(true);
-        Adjust.onCreate(config);
+        Adjust.initSdk(config);
         adConfig.getApplication().registerActivityLifecycleCallbacks(new AdjustLifecycleCallbacks());
     }
 
