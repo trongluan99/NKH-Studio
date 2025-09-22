@@ -782,14 +782,14 @@ public class Admob {
                 super.onAdDismissedFullScreenContent();
                 AppOpenManager.getInstance().setInterstitialShowing(false);
                 SharePreferenceUtils.setLastImpressionInterstitialTime(context);
+                if (dialog != null) {
+                    dialog.dismiss();
+                }
                 if (callback != null) {
                     if (!openActivityAfterShowInterAds) {
                         callback.onNextAction();
                     }
                     callback.onAdClosed();
-                }
-                if (dialog != null) {
-                    dialog.dismiss();
                 }
             }
 
@@ -798,12 +798,11 @@ public class Admob {
                 super.onAdFailedToShowFullScreenContent(adError);
                 if (callback != null) {
                     callback.onAdFailedToShow(adError);
-                    if (!openActivityAfterShowInterAds) {
-                        callback.onNextAction();
-                    }
-
                     if (dialog != null) {
                         dialog.dismiss();
+                    }
+                    if (!openActivityAfterShowInterAds) {
+                        callback.onNextAction();
                     }
                 }
             }
