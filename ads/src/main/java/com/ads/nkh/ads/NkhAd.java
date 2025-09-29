@@ -60,27 +60,27 @@ public class NkhAd {
     }
 
     public Boolean getShouldDisplayInterOnboarding() {
-        return isOrganic;
+        return !isOrganic;
     }
 
     public Boolean getShouldDisplayNativeOnboardingFull1() {
-        return isOrganic;
+        return !isOrganic;
     }
 
     public Boolean getShouldDisplayNativeOnboardingFull2() {
-        return isOrganic;
+        return !isOrganic;
     }
 
     public Boolean getShouldDisplayNativeOnboarding2() {
-        return isOrganic;
+        return !isOrganic;
     }
 
     public Boolean getShouldDisplayWidgetUninstall() {
-        return isOrganic;
+        return !isOrganic;
     }
 
     public Boolean getShouldDisplayHighCTA() {
-        return isOrganic;
+        return !isOrganic;
     }
 
     public NkhAdConfig getAdConfig() {
