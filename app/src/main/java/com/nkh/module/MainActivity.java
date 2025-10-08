@@ -15,11 +15,13 @@ import com.ads.nkh.ads.wrapper.ApInterstitialAd;
 import com.ads.nkh.ads.wrapper.ApNativeAd;
 import com.ads.nkh.billing.AppPurchase;
 import com.ads.nkh.funtion.AdCallback;
+import com.ads.nkh.funtion.AdType;
 import com.ads.nkh.funtion.PurchaseListener;
 import com.ads.nkh.funtion.RewardCallback;
 import com.ads.nkh.util.AppConstant;
 import com.facebook.shimmer.ShimmerFrameLayout;
 import com.google.android.gms.ads.AdError;
+import com.google.android.gms.ads.AdValue;
 import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.rewarded.RewardItem;
 import com.google.android.gms.ads.rewarded.RewardedAd;
@@ -167,6 +169,21 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void onAdClicked() {
+
+                }
+
+                @Override
+                public void onAdClicked(String adUnitId, String mediationAdapterClassName, AdType adType) {
+
+                }
+
+                @Override
+                public void onAdImpression() {
+
+                }
+
+                @Override
+                public void onAdLogRev(AdValue adValue, String adUnitId, String mediationAdapterClassName, AdType adType) {
 
                 }
             });
