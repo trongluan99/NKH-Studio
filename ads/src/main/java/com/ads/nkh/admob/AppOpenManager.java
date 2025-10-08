@@ -371,7 +371,7 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
 
         Log.d(TAG, "showAdIfAvailable: " + ProcessLifecycleOwner.get().getLifecycle().getCurrentState());
         Log.d(TAG, "showAd isSplash: " + isSplash);
-        if (!ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED)) {
+        if (!ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
             Log.d(TAG, "showAdIfAvailable: return");
             if (fullScreenContentCallback != null && enableScreenContentCallback) {
                 fullScreenContentCallback.onAdDismissedFullScreenContent();
@@ -400,7 +400,7 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
     }
 
     private void showAdsWithLoading() {
-        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED)) {
+        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
             dialogSplash = null;
             try {
                 dialogSplash = new PrepareLoadingAdsDialog(currentActivity);
@@ -472,7 +472,7 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
         if (appResumeAd == null || currentActivity == null || AppPurchase.getInstance().isPurchased(currentActivity)) {
             return;
         }
-        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED)) {
+        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
 
             try {
                 dismissDialogLoading();

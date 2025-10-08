@@ -470,7 +470,7 @@ public class Admob {
             }
         });
 
-        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
             try {
                 if (dialog != null && dialog.isShowing())
                     dialog.dismiss();
@@ -488,7 +488,7 @@ public class Admob {
                 e.printStackTrace();
             }
             new Handler().postDelayed(() -> {
-                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
                     if (openActivityAfterShowInterAds && adListener != null) {
                         adListener.onNextAction();
                         new Handler().postDelayed(() -> {
@@ -614,7 +614,7 @@ public class Admob {
             }
         });
 
-        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
             try {
                 if (dialog != null && dialog.isShowing())
                     dialog.dismiss();
@@ -631,7 +631,7 @@ public class Admob {
                 e.printStackTrace();
             }
             new Handler().postDelayed(() -> {
-                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
                     if (openActivityAfterShowInterAds && adListener != null) {
                         adListener.onNextAction();
                         new Handler().postDelayed(() -> {
@@ -817,7 +817,7 @@ public class Admob {
     private void showInterstitialAd(Context context, InterstitialAd mInterstitialAd, AdCallback callback) {
         currentClicked++;
         if (currentClicked >= numShowAds && mInterstitialAd != null) {
-            if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+            if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
                 try {
                     if (dialog != null && dialog.isShowing())
                         dialog.dismiss();
@@ -836,7 +836,7 @@ public class Admob {
                     e.printStackTrace();
                 }
                 new Handler().postDelayed(() -> {
-                    if (((AppCompatActivity) context).getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+                    if (((AppCompatActivity) context).getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
                         if (openActivityAfterShowInterAds && callback != null) {
                             callback.onNextAction();
                             new Handler().postDelayed(() -> {
@@ -2826,7 +2826,7 @@ public class Admob {
             }
         });
 
-        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
             try {
                 try {
                     if (dialog != null && dialog.isShowing()) {
@@ -2849,7 +2849,7 @@ public class Admob {
             }
 
             new Handler().postDelayed(() -> {
-                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
                     if (openActivityAfterShowInterAds && adListener != null) {
                         adListener.onNextAction();
                         new Handler().postDelayed(() -> {
@@ -3069,7 +3069,7 @@ public class Admob {
             }
         });
 
-        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
             try {
                 try {
                     if (dialog != null && dialog.isShowing()) {
@@ -3091,7 +3091,7 @@ public class Admob {
                 e.printStackTrace();
             }
             new Handler().postDelayed(() -> {
-                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
                     if (openActivityAfterShowInterAds && adListener != null) {
                         adListener.onNextAction();
                         new Handler().postDelayed(() -> {
@@ -3308,7 +3308,7 @@ public class Admob {
             }
         });
 
-        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
             try {
                 try {
                     if (dialog != null && dialog.isShowing()) {
@@ -3330,7 +3330,7 @@ public class Admob {
                 e.printStackTrace();
             }
             new Handler().postDelayed(() -> {
-                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
                     if (openActivityAfterShowInterAds && adListener != null) {
                         adListener.onNextAction();
                         new Handler().postDelayed(() -> {
@@ -3553,7 +3553,7 @@ public class Admob {
             }
         });
 
-        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
             try {
                 if (dialog != null && dialog.isShowing())
                     dialog.dismiss();
@@ -3571,7 +3571,7 @@ public class Admob {
                 e.printStackTrace();
             }
             new Handler().postDelayed(() -> {
-                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
                     if (openActivityAfterShowInterAds && adListener != null) {
                         adListener.onNextAction();
                         new Handler().postDelayed(() -> {
