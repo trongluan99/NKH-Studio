@@ -25,10 +25,9 @@ import com.android.billingclient.api.BillingFlowParams;
 import com.android.billingclient.api.BillingResult;
 import com.android.billingclient.api.ConsumeParams;
 import com.android.billingclient.api.ConsumeResponseListener;
+import com.android.billingclient.api.PendingPurchasesParams;
 import com.android.billingclient.api.ProductDetails;
-import com.android.billingclient.api.ProductDetailsResponseListener;
 import com.android.billingclient.api.Purchase;
-import com.android.billingclient.api.PurchasesResponseListener;
 import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.QueryProductDetailsParams;
 import com.android.billingclient.api.QueryPurchasesParams;
@@ -202,41 +201,35 @@ public class AppPurchase {
                 isAvailable = true;
                 // check product detail INAP
                 if (listINAPId.size() > 0) {
-                    QueryProductDetailsParams paramsINAP = QueryProductDetailsParams.newBuilder()
-                            .setProductList(listINAPId)
-                            .build();
+                    QueryProductDetailsParams paramsINAP = QueryProductDetailsParams.newBuilder().setProductList(listINAPId).build();
 
-                    billingClient.queryProductDetailsAsync(
-                            paramsINAP,
-                            new ProductDetailsResponseListener() {
-                                public void onProductDetailsResponse(BillingResult billingResult, List<ProductDetails> productDetailsList) {
-                                    if (productDetailsList != null) {
-                                        Log.d(TAG, "onSkuINAPDetailsResponse: " + productDetailsList.size());
-                                        skuListINAPFromStore = productDetailsList;
-                                        isListGot = true;
-                                        addSkuINAPToMap(productDetailsList);
-                                    }
-                                }
-                            });
+                    billingClient.queryProductDetailsAsync(paramsINAP, (billingResult12, queryProductDetailsResult) -> {
+                        List<ProductDetails> productDetailsList = queryProductDetailsResult.getProductDetailsList();
+                        if (productDetailsList != null && !productDetailsList.isEmpty()) {
+                            Log.d(TAG, "INAPP details loaded: " + productDetailsList.size());
+                            skuListINAPFromStore = productDetailsList;
+                            isListGot = true;
+                            addSkuINAPToMap(productDetailsList);
+                        } else {
+                            Log.w(TAG, "No INAPP products found from store");
+                        }
+                    });
                 }
                 // check product detail SUBS
                 if (listSubscriptionId.size() > 0) {
-                    QueryProductDetailsParams paramsSUBS = QueryProductDetailsParams.newBuilder()
-                            .setProductList(listSubscriptionId)
-                            .build();
+                    QueryProductDetailsParams paramsSUBS = QueryProductDetailsParams.newBuilder().setProductList(listSubscriptionId).build();
 
-                    billingClient.queryProductDetailsAsync(
-                            paramsSUBS,
-                            new ProductDetailsResponseListener() {
-                                public void onProductDetailsResponse(BillingResult billingResult, List<ProductDetails> productDetailsList) {
-                                    if (productDetailsList != null) {
-                                        Log.d(TAG, "onSkuSubsDetailsResponse: " + productDetailsList.size());
-                                        skuListSubsFromStore = productDetailsList;
-                                        isListGot = true;
-                                        addSkuSubsToMap(productDetailsList);
-                                    }
-                                }
-                            });
+                    billingClient.queryProductDetailsAsync(paramsSUBS, (billingResult1, queryProductDetailsResult) -> {
+                        List<ProductDetails> productDetailsList = queryProductDetailsResult.getProductDetailsList();
+                        if (productDetailsList != null) {
+                            Log.d(TAG, "onSkuSubsDetailsResponse: " + productDetailsList.size());
+                            skuListSubsFromStore = productDetailsList;
+                            isListGot = true;
+                            addSkuSubsToMap(productDetailsList);
+                        } else {
+                            Log.w(TAG, "No SUBS products found from Play Store");
+                        }
+                    });
                 }
             } else if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE || billingResult.getResponseCode() == BillingClient.BillingResponseCode.ERROR) {
                 Log.e(TAG, "onBillingSetupFinished:ERROR ");
@@ -274,10 +267,9 @@ public class AppPurchase {
         this.listSubscriptionId = listIdToListProduct(listSubsId, BillingClient.ProductType.SUBS);
         this.listINAPId = listIdToListProduct(listINAPId, BillingClient.ProductType.INAPP);
 
-        billingClient = BillingClient.newBuilder(application)
-                .setListener(purchasesUpdatedListener)
-                .enablePendingPurchases()
-                .build();
+        billingClient = BillingClient.newBuilder(application).setListener(purchasesUpdatedListener).enablePendingPurchases(PendingPurchasesParams.newBuilder()
+                .enableOneTimeProducts()
+                .build()).build();
 
         billingClient.startConnection(purchaseClientStateListener);
     }
@@ -674,7 +666,8 @@ public class AppPurchase {
             return;
         }
 
-        billingClient.queryPurchasesAsync(BillingClient.ProductType.INAPP, (billingResult, list) -> {
+        QueryPurchasesParams params = QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build();
+        billingClient.queryPurchasesAsync(params, (billingResult, list) -> {
             Purchase pc = null;
             if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
                 for (Purchase purchase : list) {

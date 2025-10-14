@@ -5,6 +5,7 @@ import androidx.multidex.MultiDexApplication;
 import com.ads.nkh.config.NkhAdConfig;
 import com.ads.nkh.util.AppUtil;
 import com.ads.nkh.util.SharePreferenceUtils;
+import com.google.android.gms.ads.MobileAds;
 
 import java.util.ArrayList;
 import java.util.List;
