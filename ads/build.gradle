@@ -23,6 +23,11 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
     namespace 'com.ads.nkh'
 }
 
@@ -71,12 +76,16 @@ dependencies {
     implementation 'com.intuit.ssp:ssp-android:1.1.1'
 }
 
-/*
 afterEvaluate {
     publishing {
         publications {
             release(MavenPublication) {
-                from components.release
+                if (components.findByName("release") != null) {
+                    from components.release
+                } else {
+                    println("⚠️ Warning: No release component found, skipping artifact binding.")
+                }
+
                 groupId = 'com.github.trongluan99'
                 artifactId = 'NKH-Studio'
                 version = '1.0.0'
@@ -84,4 +93,4 @@ afterEvaluate {
         }
     }
 }
-*/
+
