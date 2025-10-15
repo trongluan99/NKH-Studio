@@ -1,16 +1,24 @@
-apply plugin: 'com.android.library'
-apply plugin: 'maven-publish'
+plugins {
+    id 'com.android.library'
+    id 'maven-publish'
+}
 
 android {
-    compileSdkVersion 35
+    compileSdkVersion 34
 
     defaultConfig {
         minSdkVersion 24
-        targetSdkVersion 35
+        targetSdkVersion 34
         versionCode 1
         versionName "1.0"
     }
 
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+            withJavadocJar()
+        }
+    }
 
     buildTypes {
         release {
@@ -75,15 +83,15 @@ dependencies {
     implementation 'com.intuit.ssp:ssp-android:1.1.1'
 }
 
-publishing {
-    publications {
-        register("release", MavenPublication) {
-            afterEvaluate {
-                from(components.findByName("release"))
+afterEvaluate {
+    publishing {
+        publications {
+            create("release", MavenPublication) {
+                from(components["release"])
+                groupId = "com.github.trongluan99"
+                artifactId = "NKH-Studio"
+                version = "1.0.0"
             }
-            groupId = 'com.github.trongluan99'
-            artifactId = 'NKH-Studio'
-            version = '1.0.0'
         }
     }
 }
