@@ -16,6 +16,7 @@ import android.util.Log;
 import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewParent;
 import android.webkit.WebView;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -902,6 +903,8 @@ public class Admob {
     public void loadCollapsibleBanner(final Activity mActivity, String id, String gravity, final AdCallback callback) {
         final FrameLayout adContainer = mActivity.findViewById(R.id.banner_container);
         final ShimmerFrameLayout containerShimmer = mActivity.findViewById(R.id.shimmer_container_banner);
+        destroyCurrentBanner();
+        adContainer.removeAllViews();
         loadCollapsibleBanner(mActivity, id, gravity, adContainer, containerShimmer, callback);
     }
 
@@ -1053,13 +1056,15 @@ public class Admob {
         }
     }
 
+    private AdView currentBanner;
     private void loadCollapsibleBanner(final Activity mActivity, String id, String gravity, final FrameLayout adContainer,
                                        final ShimmerFrameLayout containerShimmer, final AdCallback callback) {
         if (AppPurchase.getInstance().isPurchased(mActivity)) {
             containerShimmer.setVisibility(View.GONE);
+            adContainer.removeAllViews();
+            destroyCurrentBanner();
             return;
         }
-
         containerShimmer.setVisibility(View.VISIBLE);
         containerShimmer.startShimmer();
         try {
@@ -1070,6 +1075,9 @@ public class Admob {
             containerShimmer.getLayoutParams().height = (int) (adSize.getHeight() * Resources.getSystem().getDisplayMetrics().density + 0.5f);
             adView.setAdSize(adSize);
             adView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+
+            currentBanner = adView;
+
             adView.loadAd(getAdRequestForCollapsibleBanner(gravity));
             adView.setAdListener(new AdListener() {
 
@@ -1082,6 +1090,8 @@ public class Admob {
                     if (callback != null) {
                         callback.onAdFailedToLoad(loadAdError);
                     }
+
+                    destroyCurrentBanner();
                 }
 
                 @Override
@@ -1136,6 +1146,22 @@ public class Admob {
             });
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private void destroyCurrentBanner() {
+        try {
+            if (currentBanner != null) {
+                ViewParent parent = currentBanner.getParent();
+                if (parent instanceof FrameLayout) {
+                    ((FrameLayout) parent).removeView(currentBanner);
+                }
+                currentBanner.destroy();
+                currentBanner = null;
+                Log.d(TAG, "Destroyed old banner ✅");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error destroying banner: " + e.getMessage());
         }
     }
 

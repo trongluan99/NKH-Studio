@@ -467,12 +467,20 @@ public class NkhAd {
 
     public void populateNativeAdView(Activity activity, ApNativeAd apNativeAd, FrameLayout adPlaceHolder, ShimmerFrameLayout containerShimmerLoading) {
         if (apNativeAd.getAdmobNativeAd() == null && apNativeAd.getNativeView() == null) {
-            containerShimmerLoading.setVisibility(View.GONE);
+            if (containerShimmerLoading != null) {
+                containerShimmerLoading.setVisibility(View.GONE);
+            }
             return;
         }
         @SuppressLint("InflateParams") NativeAdView adView = (NativeAdView) LayoutInflater.from(activity).inflate(apNativeAd.getLayoutCustomNative(), null);
-        containerShimmerLoading.stopShimmer();
-        containerShimmerLoading.setVisibility(View.GONE);
+        if (containerShimmerLoading != null) {
+            try {
+                containerShimmerLoading.stopShimmer();
+                containerShimmerLoading.setVisibility(View.GONE);
+            } catch (Exception e) {
+                Log.w(TAG, "Shimmer stop error: " + e.getMessage());
+            }
+        }
         adPlaceHolder.setVisibility(View.VISIBLE);
         Admob.getInstance().populateUnifiedNativeAdView(apNativeAd.getAdmobNativeAd(), adView);
         adPlaceHolder.removeAllViews();

@@ -6,7 +6,6 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -18,18 +17,17 @@ import com.ads.nkh.funtion.AdCallback;
 import com.ads.nkh.funtion.AdType;
 import com.ads.nkh.funtion.PurchaseListener;
 import com.ads.nkh.funtion.RewardCallback;
-import com.ads.nkh.util.AppConstant;
+import com.ads.nkh.reload_ads.BannerManager;
+import com.ads.nkh.reload_ads.NativeManager;
 import com.facebook.shimmer.ShimmerFrameLayout;
-import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.AdValue;
-import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.rewarded.RewardItem;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 
 public class MainActivity extends AppCompatActivity {
     private ApInterstitialAd mInterstitialAd;
     private Button btnLoad, btnShow, btnIap, btnLoadReward, btnShowReward;
-    private FrameLayout frAds;
+    private FrameLayout frAds, frBanner;
     private ShimmerFrameLayout shimmerAds;
     private ApNativeAd mApNativeAd;
     private RewardedAd rewardedAds;
@@ -47,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
         btnLoadReward = findViewById(R.id.btnLoadReward);
         btnShowReward = findViewById(R.id.btnShowReward);
         frAds = findViewById(R.id.fr_ads);
+        frBanner = findViewById(R.id.frBanner);
         shimmerAds = findViewById(R.id.shimmer_native);
 
 
@@ -68,11 +67,11 @@ public class MainActivity extends AppCompatActivity {
         }, true));
 
         // Banner Ads
-        NkhAd.getInstance().loadBanner(this, BuildConfig.ad_banner);
+        /*NkhAd.getInstance().loadBanner(this, BuildConfig.ad_banner);*/
         /*NkhAd.getInstance().loadCollapsibleBanner(this, BuildConfig.ad_banner, AppConstant.CollapsibleGravity.BOTTOM, new AdCallback());*/
 
         // Native Ads: Load And Show
-        NkhAd.getInstance().loadNativeAd(this, BuildConfig.ad_native, R.layout.native_large, frAds, shimmerAds, new AdCallback() {
+        /*NkhAd.getInstance().loadNativeAd(this, BuildConfig.ad_native, R.layout.native_large, frAds, shimmerAds, new AdCallback() {
             @Override
             public void onAdFailedToLoad(@Nullable LoadAdError i) {
                 super.onAdFailedToLoad(i);
@@ -84,10 +83,13 @@ public class MainActivity extends AppCompatActivity {
                 super.onAdFailedToShow(adError);
                 frAds.removeAllViews();
             }
-        });
+        });*/
+
+        new BannerManager(this, this, true, true, BuildConfig.ad_banner, AdType.BANNER, frBanner, new AdCallback()).setMaxReloadCount(3);
+        new NativeManager(this, this, true, true, BuildConfig.ad_native, R.layout.native_large, R.layout.shimmer_native_large, frAds, new AdCallback()).setMaxReloadCount(3);
 
         // Native Ads: Load
-        NkhAd.getInstance().loadNativeAdResultCallback(this, BuildConfig.ad_native, R.layout.native_large, new AdCallback() {
+        /*NkhAd.getInstance().loadNativeAdResultCallback(this, BuildConfig.ad_native, R.layout.native_large, new AdCallback() {
             @Override
             public void onNativeAdLoaded(@NonNull ApNativeAd nativeAd) {
                 super.onNativeAdLoaded(nativeAd);
@@ -108,12 +110,12 @@ public class MainActivity extends AppCompatActivity {
 
                 mApNativeAd = null;
             }
-        });
+        });*/
 
         // Native Ads: Show
-        if (mApNativeAd != null) {
+        /*if (mApNativeAd != null) {
             NkhAd.getInstance().populateNativeAdView(this, mApNativeAd, frAds, shimmerAds);
-        }
+        }*/
 
         // In-App Purchase
         AppPurchase.getInstance().setPurchaseListener(new PurchaseListener() {
