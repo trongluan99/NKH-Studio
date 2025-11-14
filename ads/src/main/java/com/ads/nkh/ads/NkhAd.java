@@ -112,8 +112,16 @@ public class NkhAd {
         if (adConfig.isEnableAdResume()) {
             AppOpenManager.getInstance().init(adConfig.getApplication(), adConfig.getIdAdResume());
         }
+
+        initAdSuccess = true;
+        if (initCallback != null)
+            initCallback.initAdSuccess();
         FacebookSdk.setClientToken(adConfig.getFacebookClientToken());
         FacebookSdk.sdkInitialize(context);
+    }
+
+    public void enableAdResume(Application application, String id) {
+        AppOpenManager.getInstance().init(application, id);
     }
 
     public void setInitCallback(NkhInitCallback initCallback) {
