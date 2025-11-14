@@ -19,38 +19,56 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+###############################################
+# GIỮ TÊN CLASS & FUNCTION (KHÔNG OBFUSCATE TÊN)
+###############################################
+-dontobfuscate
+-dontusemixedcaseclassnames
+
+###############################################
+# TỐI ƯU CODE TỐI ĐA (LÀM KHÓ ĐỌC BYTECODE)
+###############################################
+-optimizationpasses 5
+-allowaccessmodification
+-repackageclasses ''
+
+# Bật tất cả optimization (trừ một số nguy hiểm)
+-optimizations !code/simplification/cast,!code/simplification/advanced,!field/*,!class/merging/*
+
+###############################################
+# XÓA DEBUG INFO (QUAN TRỌNG)
+###############################################
+-renamesourcefileattribute Hidden
+-keepattributes Exceptions
+# KHÔNG giữ SourceFile, LineNumberTable → Khó debug reverse
+
+###############################################
+# GIỮ CLASS SDK (KHÔNG GIỮ MEMBERS)
+###############################################
+-keep,allowobfuscation class com.ads.nkh.**
+-keep interface com.ads.nkh.** { *; }
+
+###############################################
+# THIRD-PARTY SDK
+###############################################
 -dontwarn com.google.android.gms.**
--keep class com.google.android.gms.** { *; }
--keep class com.google.firebase.** { *; }
-
-#================================= ADJUST
-
--keep class com.adjust.sdk.** { *; }
--keep class com.google.android.gms.common.ConnectionResult {
-    int SUCCESS;
-}
--keep class com.google.android.gms.ads.identifier.AdvertisingIdClient {
-    com.google.android.gms.ads.identifier.AdvertisingIdClient$Info getAdvertisingIdInfo(android.content.Context);
-}
--keep class com.google.android.gms.ads.identifier.AdvertisingIdClient$Info {
-    java.lang.String getId();
-    boolean isLimitAdTrackingEnabled();
-}
--keep public class com.android.installreferrer.** { *; }
-#pangle
--keep class com.bytedance.sdk.openadsdk.** { *; }
-#Appsflyer
--keep class com.appsflyer.** { *; }
-
-#tintergal
--keepattributes Signature
--keepattributes *Annotation*
--keep class com.mbridge.** {*; }
--keep interface com.mbridge.** {*; }
--keep interface androidx.** { *; }
--keep class androidx.** { *; }
--keep public class * extends androidx.** { *; }
+-dontwarn com.google.firebase.**
+-dontwarn com.adjust.**
+-dontwarn com.appsflyer.**
+-dontwarn com.bytedance.sdk.openadsdk.**
 -dontwarn com.mbridge.**
--keep class **.R$* { public static final int mbridge*; }
+
+-keep class com.google.android.gms.ads.identifier.** { *; }
+-keep class com.adjust.sdk.** { *; }
+-keep class com.appsflyer.** { *; }
+-keep class com.bytedance.sdk.openadsdk.** { *; }
+-keep class com.mbridge.** { *; }
+
+###############################################
+# IGNORE WARNINGS
+###############################################
+-dontnote
+-ignorewarnings
 
 
