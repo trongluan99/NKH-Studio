@@ -249,8 +249,7 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
                                 NkhLogEventManager.logPaidAdImpression(myApplication.getApplicationContext(),
                                         adValue,
                                         ad.getAdUnitId(),
-                                        ad.getResponseInfo()
-                                                .getMediationAdapterClassName(), AdType.APP_OPEN);
+                                        ad.getResponseInfo().getMediationAdapterClassName());
                             });
                             AppOpenManager.this.splashLoadTime = (new Date()).getTime();
                         }
@@ -655,8 +654,7 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
                             NkhLogEventManager.logPaidAdImpression(myApplication.getApplicationContext(),
                                     adValue,
                                     appOpenAd.getAdUnitId(),
-                                    appOpenAd.getResponseInfo()
-                                            .getMediationAdapterClassName(), AdType.APP_OPEN);
+                                    appOpenAd.getResponseInfo().getMediationAdapterClassName());
 
                             NkhLogEventManager.logPaidAdjustWithToken(adValue, appOpenAd.getAdUnitId(), NkhAdConfig.ADJUST_TOKEN_TIKTOK);
                             adListener.onAdLogRev(adValue, appOpenAd.getAdUnitId(), appOpenAd.getResponseInfo().getMediationAdapterClassName(), AdType.APP_OPEN);
@@ -768,8 +766,7 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
                             NkhLogEventManager.logPaidAdImpression(myApplication.getApplicationContext(),
                                     adValue,
                                     appOpenAd.getAdUnitId(),
-                                    appOpenAd.getResponseInfo()
-                                            .getMediationAdapterClassName(), AdType.APP_OPEN);
+                                    appOpenAd.getResponseInfo().getMediationAdapterClassName());
                             NkhLogEventManager.logPaidAdjustWithToken(adValue, appOpenAd.getAdUnitId(), NkhAdConfig.ADJUST_TOKEN_TIKTOK);
                             adListener.onAdLogRev(adValue, appOpenAd.getAdUnitId(), appOpenAd.getResponseInfo().getMediationAdapterClassName(), AdType.APP_OPEN);
                         });
@@ -868,8 +865,7 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
                             NkhLogEventManager.logPaidAdImpression(myApplication.getApplicationContext(),
                                     adValue,
                                     appOpenAd.getAdUnitId(),
-                                    appOpenAd.getResponseInfo()
-                                            .getMediationAdapterClassName(), AdType.APP_OPEN);
+                                    appOpenAd.getResponseInfo().getMediationAdapterClassName());
                             NkhLogEventManager.logPaidAdjustWithToken(adValue, appOpenAd.getAdUnitId(), NkhAdConfig.ADJUST_TOKEN_TIKTOK);
                             adListener.onAdLogRev(adValue, appOpenAd.getAdUnitId(), appOpenAd.getResponseInfo().getMediationAdapterClassName(), AdType.APP_OPEN);
                         });
@@ -937,8 +933,7 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
                             NkhLogEventManager.logPaidAdImpression(myApplication.getApplicationContext(),
                                     adValue,
                                     appOpenAd.getAdUnitId(),
-                                    appOpenAd.getResponseInfo()
-                                            .getMediationAdapterClassName(), AdType.APP_OPEN);
+                                    appOpenAd.getResponseInfo().getMediationAdapterClassName());
                             NkhLogEventManager.logPaidAdjustWithToken(adValue, appOpenAd.getAdUnitId(), NkhAdConfig.ADJUST_TOKEN_TIKTOK);
                             adListener.onAdLogRev(adValue, appOpenAd.getAdUnitId(), appOpenAd.getResponseInfo().getMediationAdapterClassName(), AdType.APP_OPEN);
                         });
@@ -1076,8 +1071,7 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
                             NkhLogEventManager.logPaidAdImpression(activity,
                                     adValue,
                                     interstitialAd.getAdUnitId(),
-                                    interstitialAd.getResponseInfo()
-                                            .getMediationAdapterClassName(), AdType.INTERSTITIAL);
+                                    interstitialAd.getResponseInfo().getMediationAdapterClassName());
                             NkhLogEventManager.logPaidAdjustWithToken(adValue, interstitialAd.getAdUnitId(), NkhAdConfig.ADJUST_TOKEN_TIKTOK);
                             adListener.onAdLogRev(adValue, interstitialAd.getAdUnitId(), interstitialAd.getResponseInfo().getMediationAdapterClassName(), AdType.INTERSTITIAL);
                         });
@@ -1137,8 +1131,7 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
                                 NkhLogEventManager.logPaidAdImpression(myApplication.getApplicationContext(),
                                         adValue,
                                         appOpenAd.getAdUnitId(),
-                                        appOpenAd.getResponseInfo()
-                                                .getMediationAdapterClassName(), AdType.APP_OPEN);
+                                        appOpenAd.getResponseInfo().getMediationAdapterClassName());
                             });
 
                             (new Handler()).postDelayed(() -> {
@@ -1244,8 +1237,7 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
                     NkhLogEventManager.logPaidAdImpression(myApplication.getApplicationContext(),
                             adValue,
                             appOpenAd.getAdUnitId(),
-                            appOpenAd.getResponseInfo()
-                                    .getMediationAdapterClassName(), AdType.APP_OPEN);
+                            appOpenAd.getResponseInfo().getMediationAdapterClassName());
                     NkhLogEventManager.logPaidAdjustWithToken(adValue, appOpenAd.getAdUnitId(), NkhAdConfig.ADJUST_TOKEN_TIKTOK);
                     adListener.onAdLogRev(adValue, appOpenAd.getAdUnitId(), appOpenAd.getResponseInfo().getMediationAdapterClassName(), AdType.APP_OPEN);
                 });
@@ -1334,8 +1326,7 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
                             NkhLogEventManager.logPaidAdImpression(myApplication.getApplicationContext(),
                                     adValue,
                                     appOpenAd.getAdUnitId(),
-                                    appOpenAd.getResponseInfo()
-                                            .getMediationAdapterClassName(), AdType.APP_OPEN);
+                                    appOpenAd.getResponseInfo().getMediationAdapterClassName());
                             NkhLogEventManager.logPaidAdjustWithToken(adValue, appOpenAd.getAdUnitId(), NkhAdConfig.ADJUST_TOKEN_TIKTOK);
                             adListener.onAdLogRev(adValue, appOpenAd.getAdUnitId(), appOpenAd.getResponseInfo().getMediationAdapterClassName(), AdType.APP_OPEN);
                         });
@@ -1575,8 +1566,7 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
                         NkhLogEventManager.logPaidAdImpression(myApplication.getApplicationContext(),
                                 adValue,
                                 appOpenAd.getAdUnitId(),
-                                appOpenAd.getResponseInfo()
-                                        .getMediationAdapterClassName(), AdType.APP_OPEN);
+                                appOpenAd.getResponseInfo().getMediationAdapterClassName());
                         NkhLogEventManager.logPaidAdjustWithToken(adValue, appOpenAd.getAdUnitId(), NkhAdConfig.ADJUST_TOKEN_TIKTOK);
                         adCallback.onAdLogRev(adValue, splashAd.getAdUnitId(), splashAd.getResponseInfo().getMediationAdapterClassName(), AdType.APP_OPEN);
                     });
@@ -1649,8 +1639,7 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
                         NkhLogEventManager.logPaidAdImpression(myApplication.getApplicationContext(),
                                 adValue,
                                 appOpenAd.getAdUnitId(),
-                                appOpenAd.getResponseInfo()
-                                        .getMediationAdapterClassName(), AdType.APP_OPEN);
+                                appOpenAd.getResponseInfo().getMediationAdapterClassName());
                         NkhLogEventManager.logPaidAdjustWithToken(adValue, appOpenAd.getAdUnitId(), NkhAdConfig.ADJUST_TOKEN_TIKTOK);
                         adCallback.onAdLogRev(adValue, splashAd.getAdUnitId(), splashAd.getResponseInfo().getMediationAdapterClassName(), AdType.APP_OPEN);
                     });
@@ -2035,8 +2024,7 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
                     NkhLogEventManager.logPaidAdImpression(myApplication.getApplicationContext(),
                             adValue,
                             appOpenAd.getAdUnitId(),
-                            appOpenAd.getResponseInfo()
-                                    .getMediationAdapterClassName(), AdType.APP_OPEN);
+                            appOpenAd.getResponseInfo().getMediationAdapterClassName());
                     NkhLogEventManager.logPaidAdjustWithToken(adValue, appOpenAd.getAdUnitId(), NkhAdConfig.ADJUST_TOKEN_TIKTOK);
                     adCallback.onAdLogRev(adValue, mOpenSplashHigh1.getAdUnitId(), mOpenSplashHigh1.getResponseInfo().getMediationAdapterClassName(), AdType.APP_OPEN);
                 });
@@ -2133,8 +2121,7 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
                     NkhLogEventManager.logPaidAdImpression(myApplication.getApplicationContext(),
                             adValue,
                             appOpenAd.getAdUnitId(),
-                            appOpenAd.getResponseInfo()
-                                    .getMediationAdapterClassName(), AdType.APP_OPEN);
+                            appOpenAd.getResponseInfo().getMediationAdapterClassName());
                     NkhLogEventManager.logPaidAdjustWithToken(adValue, appOpenAd.getAdUnitId(), NkhAdConfig.ADJUST_TOKEN_TIKTOK);
                     adCallback.onAdLogRev(adValue, mOpenSplashHigh2.getAdUnitId(), mOpenSplashHigh2.getResponseInfo().getMediationAdapterClassName(), AdType.APP_OPEN);
                 });
@@ -2231,8 +2218,7 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
                     NkhLogEventManager.logPaidAdImpression(myApplication.getApplicationContext(),
                             adValue,
                             appOpenAd.getAdUnitId(),
-                            appOpenAd.getResponseInfo()
-                                    .getMediationAdapterClassName(), AdType.APP_OPEN);
+                            appOpenAd.getResponseInfo().getMediationAdapterClassName());
                     NkhLogEventManager.logPaidAdjustWithToken(adValue, appOpenAd.getAdUnitId(), NkhAdConfig.ADJUST_TOKEN_TIKTOK);
                     adCallback.onAdLogRev(adValue, mOpenSplashHigh3.getAdUnitId(), mOpenSplashHigh3.getResponseInfo().getMediationAdapterClassName(), AdType.APP_OPEN);
                 });
@@ -2329,8 +2315,7 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
                     NkhLogEventManager.logPaidAdImpression(myApplication.getApplicationContext(),
                             adValue,
                             appOpenAd.getAdUnitId(),
-                            appOpenAd.getResponseInfo()
-                                    .getMediationAdapterClassName(), AdType.APP_OPEN);
+                            appOpenAd.getResponseInfo().getMediationAdapterClassName());
                     NkhLogEventManager.logPaidAdjustWithToken(adValue, appOpenAd.getAdUnitId(), NkhAdConfig.ADJUST_TOKEN_TIKTOK);
                     adCallback.onAdLogRev(adValue, mOpenSplashNormal.getAdUnitId(), mOpenSplashNormal.getResponseInfo().getMediationAdapterClassName(), AdType.APP_OPEN);
                 });
