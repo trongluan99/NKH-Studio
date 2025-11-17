@@ -41,8 +41,6 @@ import java.util.List;
 import java.util.Map;
 
 public class AppPurchase {
-    private static final String LICENSE_KEY = null;
-    private static final String MERCHANT_ID = null;
     private static final String TAG = "PurchaseEG";
 
     public static final String PRODUCT_ID_TEST = "android.test.purchased";

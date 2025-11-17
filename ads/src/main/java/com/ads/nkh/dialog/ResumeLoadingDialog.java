@@ -7,7 +7,6 @@ import android.os.Bundle;
 import com.ads.nkh.R;
 
 public class ResumeLoadingDialog extends Dialog {
-
     public ResumeLoadingDialog(Context context) {
         super(context, R.style.AppTheme);
     }

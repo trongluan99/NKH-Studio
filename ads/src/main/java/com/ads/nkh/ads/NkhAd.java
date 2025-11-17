@@ -19,6 +19,7 @@ import com.adjust.sdk.AdjustConfig;
 import com.adjust.sdk.LogLevel;
 import com.ads.nkh.admob.Admob;
 import com.ads.nkh.admob.AppOpenManager;
+import com.ads.nkh.ads.native_ads.NativeAdConfig;
 import com.ads.nkh.ads.wrapper.ApInterstitialAd;
 import com.ads.nkh.ads.wrapper.ApInterstitialPriorityAd;
 import com.ads.nkh.ads.wrapper.ApNativeAd;
@@ -32,7 +33,6 @@ import com.ads.nkh.util.SharePreferenceUtils;
 import com.facebook.FacebookSdk;
 import com.facebook.shimmer.ShimmerFrameLayout;
 import com.google.android.gms.ads.AdError;
-import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.AdValue;
 import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.interstitial.InterstitialAd;
@@ -40,6 +40,10 @@ import com.google.android.gms.ads.nativead.NativeAd;
 import com.google.android.gms.ads.nativead.NativeAdView;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 public class NkhAd {
     public static final String TAG_ADJUST = "NkhAdjust";
@@ -120,6 +124,24 @@ public class NkhAd {
         FacebookSdk.sdkInitialize(context);
     }
 
+
+    private NativeAdConfig loadNativeConfigFromAssets(Context context, String remoteFile) {
+        try {
+            InputStream is = context.getAssets().open(remoteFile);
+            BufferedReader br = new BufferedReader(new InputStreamReader(is));
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = br.readLine()) != null) {
+                sb.append(line);
+            }
+            br.close();
+            is.close();
+            return NativeAdConfig.fromJson(context, sb.toString());
+        } catch (Exception e) {
+            return new NativeAdConfig();
+        }
+    }
+
     public void enableAdResume(Application application, String id) {
         AppOpenManager.getInstance().init(application, id);
     }
@@ -178,10 +200,6 @@ public class NkhAd {
         }
     }
 
-    public void loadBanner(Activity mActivity, String id) {
-        Admob.getInstance().loadBanner(mActivity, id);
-    }
-
     public void loadBanner(Activity mActivity, String id, AdCallback adCallback) {
         Admob.getInstance().loadBanner(mActivity, id, adCallback);
     }
@@ -194,32 +212,8 @@ public class NkhAd {
         Admob.getInstance().loadCollapsibleBannerFragment(activity, id, rootView, gravity, adCallback);
     }
 
-    public void loadCollapsibleBannerSizeMedium(Activity activity, String id, String gravity, AdSize sizeBanner, AdCallback adCallback) {
-        Admob.getInstance().loadCollapsibleBannerSizeMedium(activity, id, gravity, sizeBanner, adCallback);
-    }
-
-    public void loadBannerFragment(Activity mActivity, String id, View rootView) {
-        Admob.getInstance().loadBannerFragment(mActivity, id, rootView);
-    }
-
     public void loadBannerFragment(Activity mActivity, String id, View rootView, AdCallback adCallback) {
         Admob.getInstance().loadBannerFragment(mActivity, id, rootView, adCallback);
-    }
-
-    public void loadInlineBanner(Activity mActivity, String idBanner, String inlineStyle) {
-        Admob.getInstance().loadInlineBanner(mActivity, idBanner, inlineStyle);
-    }
-
-    public void loadInlineBanner(Activity mActivity, String idBanner, String inlineStyle, AdCallback adCallback) {
-        Admob.getInstance().loadInlineBanner(mActivity, idBanner, inlineStyle, adCallback);
-    }
-
-    public void loadBannerInlineFragment(Activity mActivity, String idBanner, View rootView, String inlineStyle) {
-        Admob.getInstance().loadInlineBannerFragment(mActivity, idBanner, rootView, inlineStyle);
-    }
-
-    public void loadBannerInlineFragment(Activity mActivity, String idBanner, View rootView, String inlineStyle, AdCallback adCallback) {
-        Admob.getInstance().loadInlineBannerFragment(mActivity, idBanner, rootView, inlineStyle, adCallback);
     }
 
     public void loadSplashInterstitialAds(Context context, String id, long timeOut, long timeDelay, AdCallback adListener) {
@@ -473,6 +467,56 @@ public class NkhAd {
         });
     }
 
+    public void loadNativeAd(final Activity activity, String id,
+                             int layoutCustomNative, FrameLayout adPlaceHolder, ShimmerFrameLayout
+                                     containerShimmerLoading, NativeAdConfig nativeAdConfig, AdCallback callback) {
+        Admob.getInstance().loadNativeAd(((Context) activity), id, new AdCallback() {
+            @Override
+            public void onUnifiedNativeAdLoaded(@NonNull NativeAd unifiedNativeAd) {
+                super.onUnifiedNativeAdLoaded(unifiedNativeAd);
+                callback.onNativeAdLoaded(new ApNativeAd(layoutCustomNative, unifiedNativeAd));
+                populateNativeAdView(activity, new ApNativeAd(layoutCustomNative, unifiedNativeAd), adPlaceHolder, containerShimmerLoading, nativeAdConfig);
+            }
+
+            @Override
+            public void onAdImpression() {
+                super.onAdImpression();
+                callback.onAdImpression();
+            }
+
+            @Override
+            public void onAdFailedToLoad(@Nullable LoadAdError i) {
+                super.onAdFailedToLoad(i);
+                callback.onAdFailedToLoad(i);
+            }
+
+            @Override
+            public void onAdFailedToShow(@Nullable AdError adError) {
+                super.onAdFailedToShow(adError);
+                callback.onAdFailedToShow(adError);
+            }
+
+            @Override
+            public void onAdClicked() {
+                super.onAdClicked();
+                callback.onAdClicked();
+            }
+
+            @Override
+            public void onAdLogRev(AdValue adValue, String adUnitId, String mediationAdapterClassName, AdType adType) {
+                super.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType);
+                callback.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType);
+            }
+
+            @Override
+            public void onAdClicked(String adUnitId, String mediationAdapterClassName, AdType adType) {
+                super.onAdClicked(adUnitId, mediationAdapterClassName, adType);
+                callback.onAdClicked(adUnitId, mediationAdapterClassName, adType);
+            }
+        });
+    }
+
+
     public void populateNativeAdView(Activity activity, ApNativeAd apNativeAd, FrameLayout adPlaceHolder, ShimmerFrameLayout containerShimmerLoading) {
         if (apNativeAd.getAdmobNativeAd() == null && apNativeAd.getNativeView() == null) {
             if (containerShimmerLoading != null) {
@@ -491,6 +535,28 @@ public class NkhAd {
         }
         adPlaceHolder.setVisibility(View.VISIBLE);
         Admob.getInstance().populateUnifiedNativeAdView(apNativeAd.getAdmobNativeAd(), adView);
+        adPlaceHolder.removeAllViews();
+        adPlaceHolder.addView(adView);
+    }
+
+    public void populateNativeAdView(Activity activity, ApNativeAd apNativeAd, FrameLayout adPlaceHolder, ShimmerFrameLayout containerShimmerLoading, NativeAdConfig nativeAdConfig) {
+        if (apNativeAd.getAdmobNativeAd() == null && apNativeAd.getNativeView() == null) {
+            if (containerShimmerLoading != null) {
+                containerShimmerLoading.setVisibility(View.GONE);
+            }
+            return;
+        }
+        @SuppressLint("InflateParams") NativeAdView adView = (NativeAdView) LayoutInflater.from(activity).inflate(apNativeAd.getLayoutCustomNative(), null);
+        if (containerShimmerLoading != null) {
+            try {
+                containerShimmerLoading.stopShimmer();
+                containerShimmerLoading.setVisibility(View.GONE);
+            } catch (Exception e) {
+                Log.w(TAG, "Shimmer stop error: " + e.getMessage());
+            }
+        }
+        adPlaceHolder.setVisibility(View.VISIBLE);
+        Admob.getInstance().populateUnifiedNativeAdView(apNativeAd.getAdmobNativeAd(), adView, nativeAdConfig);
         adPlaceHolder.removeAllViews();
         adPlaceHolder.addView(adView);
     }

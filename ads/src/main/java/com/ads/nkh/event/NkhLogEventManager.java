@@ -6,14 +6,11 @@ import android.util.Log;
 
 import com.adjust.sdk.Adjust;
 import com.adjust.sdk.AdjustEvent;
-import com.ads.nkh.config.NkhAdConfig;
-import com.ads.nkh.funtion.AdType;
 import com.ads.nkh.util.AppUtil;
 import com.ads.nkh.util.SharePreferenceUtils;
-import com.applovin.mediation.MaxAd;
 import com.facebook.appevents.AppEventsLogger;
 import com.google.android.gms.ads.AdValue;
-import com.google.firebase.analytics.FirebaseAnalytics;
+
 import java.math.BigDecimal;
 import java.util.Currency;
 
@@ -21,11 +18,10 @@ public class NkhLogEventManager {
 
     private static final String TAG = "NkhLogEventManager";
 
-    public static void logPaidAdImpression(Context context, AdValue adValue, String adUnitId, String mediationAdapterClassName, AdType adType) {
-        logEventWithAds(context, (float) adValue.getValueMicros(), adValue.getPrecisionType(), adUnitId, mediationAdapterClassName, NkhAdConfig.PROVIDER_ADMOB);
+    public static void logPaidAdImpression(Context context, AdValue adValue, String adUnitId, String mediationAdapterClassName) {
+        logEventWithAds(context, (float) adValue.getValueMicros(), adValue.getPrecisionType(), adUnitId, mediationAdapterClassName);
         NkhAdjust.pushTrackEventAdmob(adValue);
-        // Log revenue Facebook 30/08
-        float value = adValue.getValueMicros() * 1.0f / 1000000 * 25000;
+        float value = adValue.getValueMicros() * 1.0f / 1000000 * 26000;
         AppEventsLogger.newLogger(context).logPurchase(BigDecimal.valueOf(value), Currency.getInstance("VND"));
     }
 
@@ -37,37 +33,7 @@ public class NkhLogEventManager {
         Adjust.trackEvent(adjustEvent);
     }
 
-    public static void logPaidAdjustWithTokenMax(MaxAd adValue, String adUnitId, String token) {
-        AdjustEvent adjustEvent = new AdjustEvent(token);
-        double value = adValue.getRevenue();
-        adjustEvent.setRevenue(value, "USD");
-        adjustEvent.setOrderId(adUnitId);
-        Adjust.trackEvent(adjustEvent);
-    }
-
-    public static void logPaidAdImpression(Context context, MaxAd adValue, AdType adType) {
-        logEventWithMaxAds(context, adValue);
-        NkhAdjust.pushTrackEventApplovin(adValue, context);
-
-        // Log revenue Facebook 30/05/2024
-        double value = adValue.getRevenue() * 25000;
-        AppEventsLogger.newLogger(context).logPurchase(BigDecimal.valueOf(value), Currency.getInstance("VND"));
-    }
-
-    private static void logEventWithMaxAds(Context context, MaxAd impressionData) {
-        FirebaseAnalytics mFirebaseAnalytics = FirebaseAnalytics.getInstance(context);
-        double revenue = impressionData.getRevenue(); // In USD
-        Bundle params = new Bundle();
-        params.putString(FirebaseAnalytics.Param.AD_PLATFORM, "AppLovin");
-        params.putString(FirebaseAnalytics.Param.AD_SOURCE, impressionData.getNetworkName());
-        params.putString(FirebaseAnalytics.Param.AD_FORMAT, impressionData.getFormat().getLabel());
-        params.putString(FirebaseAnalytics.Param.AD_UNIT_NAME, impressionData.getAdUnitId());
-        params.putDouble(FirebaseAnalytics.Param.VALUE, revenue);
-        params.putString(FirebaseAnalytics.Param.CURRENCY, "USD"); // All Applovin revenue is sent in USD
-        mFirebaseAnalytics.logEvent(FirebaseAnalytics.Event.AD_IMPRESSION, params);
-    }
-
-    private static void logEventWithAds(Context context, float revenue, int precision, String adUnitId, String network, int mediationProvider) {
+    private static void logEventWithAds(Context context, float revenue, int precision, String adUnitId, String network) {
         Bundle params = new Bundle(); // Log ad value in micros.
         params.putDouble("valuemicros", revenue);
         params.putString("currency", "USD");
@@ -75,7 +41,7 @@ public class NkhLogEventManager {
         params.putString("adunitid", adUnitId);
         params.putString("network", network);
 
-        logPaidAdImpressionValue(context, revenue / 1000000.0, precision, adUnitId, network, mediationProvider);
+        logPaidAdImpressionValue(context, revenue / 1000000.0, precision, adUnitId, network);
         FirebaseAnalyticsUtil.logEventWithAds(context, params);
         FacebookEventUtils.logEventWithAds(context, params);
         SharePreferenceUtils.updateCurrentTotalRevenueAd(context, (float) revenue);
@@ -89,7 +55,7 @@ public class NkhLogEventManager {
         logTotalRevenueAdIn7DaysIfNeed(context);
     }
 
-    private static void logPaidAdImpressionValue(Context context, double value, int precision, String adunitid, String network, int mediationProvider) {
+    private static void logPaidAdImpressionValue(Context context, double value, int precision, String adunitid, String network) {
         Bundle params = new Bundle();
         params.putDouble("value", value);
         params.putString("currency", "USD");
@@ -98,10 +64,10 @@ public class NkhLogEventManager {
         params.putString("network", network);
 
 
-        NkhAdjust.logPaidAdImpressionValue(value, "USD");
-        FirebaseAnalyticsUtil.logPaidAdImpressionValue(context, params, mediationProvider);
+        NkhAdjust.logPaidAdImpressionValue(value);
+        FirebaseAnalyticsUtil.logPaidAdImpressionValue(context, params);
 
-        FacebookEventUtils.logPaidAdImpressionValue(context, params, mediationProvider);
+        FacebookEventUtils.logPaidAdImpressionValue(context, params);
     }
 
     public static void logClickAdsEvent(Context context, String adUnitId) {
@@ -123,7 +89,6 @@ public class NkhLogEventManager {
         FirebaseAnalyticsUtil.logCurrentTotalRevenueAd(context, eventName, bundle);
         FacebookEventUtils.logCurrentTotalRevenueAd(context, eventName, bundle);
     }
-
 
     public static void logTotalRevenue001Ad(Context context) {
         float revenue = AppUtil.currentTotalRevenue001Ad;
@@ -184,9 +149,5 @@ public class NkhLogEventManager {
 
     public static void pushTrackEventAdmob(AdValue adValue) {
         NkhAdjust.pushTrackEventAdmob(adValue);
-    }
-
-    public static void pushTrackEventApplovin(MaxAd ad, Context context) {
-        NkhAdjust.pushTrackEventApplovin(ad, context);
     }
 }

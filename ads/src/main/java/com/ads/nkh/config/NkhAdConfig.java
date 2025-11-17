@@ -6,41 +6,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class NkhAdConfig {
-
-    //switch mediation use for app
-    public static final int PROVIDER_ADMOB = 0;
-    public static final int PROVIDER_MAX = 1;
-
     public static final String ENVIRONMENT_DEVELOP = "develop";
     public static final String ENVIRONMENT_PRODUCTION = "production";
-
     public static final String DEFAULT_TOKEN_FACEBOOK_SDK = "client_token";
     public static String ADJUST_TOKEN_TIKTOK = "client_token_adjust_tiktok";
-
     private boolean isVariantDev = false;
-
-    /**
-     * adjustConfig enable adjust and setup adjust token
-     */
     private AdjustConfig adjustConfig;
-
-    /**
-     * eventNamePurchase push event to adjust when user purchased
-     */
     private String eventNamePurchase = "";
     private String idAdResume;
     private List<String> listDeviceTest = new ArrayList();
-
     private Application application;
     private boolean enableAdResume = false;
     private String facebookClientToken = DEFAULT_TOKEN_FACEBOOK_SDK;
 
     private String adjustTokenTiktok;
 
-    /**
-     * intervalInterstitialAd: time between two interstitial ad impressions
-     * unit: seconds
-     */
     private int intervalInterstitialAd = 0;
 
     public NkhAdConfig(Application application) {
@@ -52,9 +32,6 @@ public class NkhAdConfig {
         this.application = application;
     }
 
-    /**
-     * @param isVariantDev
-     */
     @Deprecated
     public void setVariant(Boolean isVariantDev) {
         this.isVariantDev = isVariantDev;

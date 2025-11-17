@@ -234,8 +234,7 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
                                 NkhLogEventManager.logPaidAdImpression(myApplication.getApplicationContext(),
                                         adValue,
                                         ad.getAdUnitId(),
-                                        ad.getResponseInfo()
-                                                .getMediationAdapterClassName(), AdType.APP_OPEN);
+                                        ad.getResponseInfo().getMediationAdapterClassName());
                                 NkhLogEventManager.logPaidAdjustWithToken(adValue, ad.getAdUnitId(), NkhAdConfig.ADJUST_TOKEN_TIKTOK);
                             });
                             AppOpenManager.this.appResumeLoadTime = (new Date()).getTime();

@@ -1,13 +1,9 @@
 package com.ads.nkh.event;
 
-import android.content.Context;
-
 import com.adjust.sdk.Adjust;
 import com.adjust.sdk.AdjustAdRevenue;
-import com.adjust.sdk.AdjustConfig;
 import com.adjust.sdk.AdjustEvent;
 import com.ads.nkh.ads.NkhAd;
-import com.applovin.mediation.MaxAd;
 import com.google.android.gms.ads.AdValue;
 
 public class NkhAdjust {
@@ -36,7 +32,6 @@ public class NkhAdjust {
 
     public static void onTrackRevenue(String eventName, float revenue, String currency) {
         AdjustEvent event = new AdjustEvent(eventName);
-        // Add revenue 1 cent of an euro.
         event.setRevenue(revenue / 1000000.0, currency);
         Adjust.trackEvent(event);
     }
@@ -57,23 +52,10 @@ public class NkhAdjust {
         }
     }
 
-    public static void pushTrackEventApplovin(MaxAd ad, Context context) {
-        if (NkhAdjust.enableAdjust) {
-            AdjustAdRevenue adjustAdRevenue = new AdjustAdRevenue("applovin_max_sdk");
-            adjustAdRevenue.setRevenue(ad.getRevenue(), "USD");
-            adjustAdRevenue.setAdRevenueNetwork(ad.getNetworkName());
-            adjustAdRevenue.setAdRevenueUnit(ad.getAdUnitId());
-            adjustAdRevenue.setAdRevenuePlacement(ad.getPlacement());
-
-            Adjust.trackAdRevenue(adjustAdRevenue);
-
-        }
-    }
-
-    static void logPaidAdImpressionValue(double revenue, String currency) {
+    static void logPaidAdImpressionValue(double revenue) {
         if (NkhAd.getInstance().getAdConfig().getAdjustConfig() != null && NkhAd.getInstance().getAdConfig().getAdjustConfig().isEnableAdjust()) {
             AdjustEvent event = new AdjustEvent(NkhAd.getInstance().getAdConfig().getAdjustConfig().getEventAdImpression());
-            event.setRevenue(revenue, currency);
+            event.setRevenue(revenue, "USD");
             Adjust.trackEvent(event);
         }
     }

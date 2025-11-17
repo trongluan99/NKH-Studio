@@ -13,6 +13,7 @@ import android.os.Looper;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -30,6 +31,7 @@ import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.ProcessLifecycleOwner;
 
 import com.ads.nkh.R;
+import com.ads.nkh.ads.native_ads.NativeAdConfig;
 import com.ads.nkh.billing.AppPurchase;
 import com.ads.nkh.dialog.PrepareLoadingAdsDialog;
 import com.ads.nkh.event.NkhLogEventManager;
@@ -52,7 +54,6 @@ import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.MediaAspectRatio;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.OnPaidEventListener;
-import com.google.android.gms.ads.OnUserEarnedRewardListener;
 import com.google.android.gms.ads.RequestConfiguration;
 import com.google.android.gms.ads.VideoOptions;
 import com.google.android.gms.ads.initialization.AdapterStatus;
@@ -61,7 +62,6 @@ import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 import com.google.android.gms.ads.nativead.NativeAd;
 import com.google.android.gms.ads.nativead.NativeAdOptions;
 import com.google.android.gms.ads.nativead.NativeAdView;
-import com.google.android.gms.ads.rewarded.RewardItem;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd;
@@ -392,8 +392,7 @@ public class Admob {
             NkhLogEventManager.logPaidAdImpression(context,
                     adValue,
                     mInterstitialSplash.getAdUnitId(),
-                    mInterstitialSplash.getResponseInfo()
-                            .getMediationAdapterClassName(), AdType.INTERSTITIAL);
+                    mInterstitialSplash.getResponseInfo().getMediationAdapterClassName());
             if (tokenAdjust != null) {
                 NkhLogEventManager.logPaidAdjustWithToken(adValue, mInterstitialSplash.getAdUnitId(), tokenAdjust);
             }
@@ -535,7 +534,7 @@ public class Admob {
                     adValue,
                     mInterstitialSplash.getAdUnitId(),
                     mInterstitialSplash.getResponseInfo()
-                            .getMediationAdapterClassName(), AdType.INTERSTITIAL);
+                            .getMediationAdapterClassName());
 
             if (tokenAdjust != null) {
                 NkhLogEventManager.logPaidAdjustWithToken(adValue, mInterstitialSplash.getAdUnitId(), tokenAdjust);
@@ -693,7 +692,7 @@ public class Admob {
                                     adValue,
                                     interstitialAd.getAdUnitId(),
                                     interstitialAd.getResponseInfo()
-                                            .getMediationAdapterClassName(), AdType.INTERSTITIAL);
+                                            .getMediationAdapterClassName());
                             if (tokenAdjust != null) {
                                 NkhLogEventManager.logPaidAdjustWithToken(adValue, interstitialAd.getAdUnitId(), tokenAdjust);
                             }
@@ -1008,8 +1007,7 @@ public class Admob {
                             NkhLogEventManager.logPaidAdImpression(context,
                                     adValue,
                                     adView.getAdUnitId(),
-                                    adView.getResponseInfo()
-                                            .getMediationAdapterClassName(), AdType.BANNER);
+                                    adView.getResponseInfo().getMediationAdapterClassName());
                             if (tokenAdjust != null) {
                                 NkhLogEventManager.logPaidAdjustWithToken(adValue, adView.getAdUnitId(), tokenAdjust);
                             }
@@ -1057,6 +1055,7 @@ public class Admob {
     }
 
     private AdView currentBanner;
+
     private void loadCollapsibleBanner(final Activity mActivity, String id, String gravity, final FrameLayout adContainer,
                                        final ShimmerFrameLayout containerShimmer, final AdCallback callback) {
         if (AppPurchase.getInstance().isPurchased(mActivity)) {
@@ -1106,8 +1105,7 @@ public class Admob {
                         NkhLogEventManager.logPaidAdImpression(context,
                                 adValue,
                                 adView.getAdUnitId(),
-                                adView.getResponseInfo()
-                                        .getMediationAdapterClassName(), AdType.BANNER);
+                                adView.getResponseInfo().getMediationAdapterClassName());
                         if (tokenAdjust != null) {
                             NkhLogEventManager.logPaidAdjustWithToken(adValue, adView.getAdUnitId(), tokenAdjust);
                         }
@@ -1208,8 +1206,7 @@ public class Admob {
                         NkhLogEventManager.logPaidAdImpression(context,
                                 adValue,
                                 adView.getAdUnitId(),
-                                adView.getResponseInfo()
-                                        .getMediationAdapterClassName(), AdType.BANNER);
+                                adView.getResponseInfo().getMediationAdapterClassName());
                         if (tokenAdjust != null) {
                             NkhLogEventManager.logPaidAdjustWithToken(adValue, adView.getAdUnitId(), tokenAdjust);
                         }
@@ -1330,6 +1327,19 @@ public class Admob {
         loadNative(mActivity, containerShimmer, frameLayout, adUnitId, R.layout.custom_native_admob_medium, adCallback);
     }
 
+    /**
+     * Native Config
+     *
+     * @param mActivity
+     * @param id
+     * @param callback
+     */
+    public void loadNativeWithConfig(final Activity mActivity, String id, int layout, NativeAdConfig config, AdCallback callback) {
+        final FrameLayout frameLayout = mActivity.findViewById(R.id.fl_adplaceholder);
+        final ShimmerFrameLayout containerShimmer = mActivity.findViewById(R.id.shimmer_container_native);
+        loadNative(mActivity, containerShimmer, frameLayout, id, layout, config, callback);
+    }
+
     public void loadNativeAd(Context context, String id, final AdCallback callback) {
         AtomicReference<NativeAd> nativeAd1 = new AtomicReference<>();
         if (AppPurchase.getInstance().isPurchased(context)) {
@@ -1348,8 +1358,7 @@ public class Admob {
                     nativeAd.setOnPaidEventListener(adValue -> {
                         NkhLogEventManager.logPaidAdImpression(context,
                                 adValue,
-                                id,
-                                nativeAd.getResponseInfo().getMediationAdapterClassName(), AdType.NATIVE);
+                                id, nativeAd.getResponseInfo().getMediationAdapterClassName());
                         if (tokenAdjust != null) {
                             NkhLogEventManager.logPaidAdjustWithToken(adValue, id, tokenAdjust);
                         }
@@ -1414,7 +1423,7 @@ public class Admob {
                         NkhLogEventManager.logPaidAdImpression(context,
                                 adValue,
                                 id,
-                                nativeAd.getResponseInfo().getMediationAdapterClassName(), AdType.NATIVE);
+                                nativeAd.getResponseInfo().getMediationAdapterClassName());
                         if (tokenAdjust != null) {
                             NkhLogEventManager.logPaidAdjustWithToken(adValue, id, tokenAdjust);
                         }
@@ -1491,7 +1500,7 @@ public class Admob {
                         NkhLogEventManager.logPaidAdImpression(context,
                                 adValue,
                                 id,
-                                nativeAd.getResponseInfo().getMediationAdapterClassName(), AdType.NATIVE);
+                                nativeAd.getResponseInfo().getMediationAdapterClassName());
                         if (tokenAdjust != null) {
                             NkhLogEventManager.logPaidAdjustWithToken(adValue, id, tokenAdjust);
                         }
@@ -1544,6 +1553,91 @@ public class Admob {
         adLoader.loadAd(getAdRequest());
     }
 
+    private void loadNative(final Context context, final ShimmerFrameLayout containerShimmer, final FrameLayout frameLayout, final String id, final int layout, NativeAdConfig config, final AdCallback callback) {
+        AtomicReference<NativeAd> nativeAd1 = new AtomicReference<>();
+        if (AppPurchase.getInstance().isPurchased(context)) {
+            containerShimmer.setVisibility(View.GONE);
+            return;
+        }
+        frameLayout.removeAllViews();
+        frameLayout.setVisibility(View.GONE);
+        containerShimmer.setVisibility(View.VISIBLE);
+        containerShimmer.startShimmer();
+
+        VideoOptions videoOptions = new VideoOptions.Builder()
+                .setStartMuted(true)
+                .build();
+
+        NativeAdOptions adOptions = new NativeAdOptions.Builder()
+                .setVideoOptions(videoOptions)
+                .build();
+
+
+        AdLoader adLoader = new AdLoader.Builder(context, id)
+                .forNativeAd(nativeAd -> {
+                    containerShimmer.stopShimmer();
+                    containerShimmer.setVisibility(View.GONE);
+                    frameLayout.setVisibility(View.VISIBLE);
+                    @SuppressLint("InflateParams") NativeAdView adView = (NativeAdView) LayoutInflater.from(context)
+                            .inflate(layout, null);
+                    nativeAd.setOnPaidEventListener(adValue -> {
+                        NkhLogEventManager.logPaidAdImpression(context,
+                                adValue,
+                                id,
+                                nativeAd.getResponseInfo().getMediationAdapterClassName());
+                        if (tokenAdjust != null) {
+                            NkhLogEventManager.logPaidAdjustWithToken(adValue, id, tokenAdjust);
+                        }
+
+                        if (callback != null) {
+                            callback.onAdLogRev(adValue, id, nativeAd.getResponseInfo().getMediationAdapterClassName(), AdType.NATIVE);
+                        }
+
+                        nativeAd1.set(nativeAd);
+                    });
+                    populateUnifiedNativeAdView(nativeAd, adView, config);
+                    frameLayout.removeAllViews();
+                    frameLayout.addView(adView);
+                })
+                .withAdListener(new AdListener() {
+                    @Override
+                    public void onAdFailedToLoad(LoadAdError error) {
+                        containerShimmer.stopShimmer();
+                        containerShimmer.setVisibility(View.GONE);
+                        frameLayout.setVisibility(View.GONE);
+                    }
+
+                    @Override
+                    public void onAdClicked() {
+                        super.onAdClicked();
+                        if (disableAdResumeWhenClickAds)
+                            AppOpenManager.getInstance().disableAdResumeByClickAction();
+                        if (callback != null) {
+                            callback.onAdClicked();
+                        }
+                        NkhLogEventManager.logClickAdsEvent(context, id);
+
+                        if (callback != null) {
+                            callback.onAdClicked(id, nativeAd1.get().getResponseInfo().getMediationAdapterClassName(), AdType.NATIVE);
+                        }
+                    }
+
+                    @Override
+                    public void onAdImpression() {
+                        super.onAdImpression();
+                        if (callback != null) {
+                            callback.onAdImpression();
+                        }
+                    }
+                })
+                .withNativeAdOptions(adOptions)
+                .build();
+
+
+        adLoader.loadAd(getAdRequest());
+    }
+
+
     public void loadNativeAdsFullScreen(Context context, String id, final AdCallback callback) {
         AtomicReference<NativeAd> nativeAd1 = new AtomicReference<>();
         if (AppPurchase.getInstance().isPurchased(context)) {
@@ -1564,7 +1658,7 @@ public class Admob {
                         NkhLogEventManager.logPaidAdImpression(context,
                                 adValue,
                                 id,
-                                nativeAd.getResponseInfo().getMediationAdapterClassName(), AdType.NATIVE);
+                                nativeAd.getResponseInfo().getMediationAdapterClassName());
 
                         if (tokenAdjust != null) {
                             NkhLogEventManager.logPaidAdjustWithToken(adValue, id, tokenAdjust);
@@ -1645,7 +1739,7 @@ public class Admob {
                         NkhLogEventManager.logPaidAdImpression(context,
                                 adValue,
                                 id,
-                                nativeAd.getResponseInfo().getMediationAdapterClassName(), AdType.NATIVE);
+                                nativeAd.getResponseInfo().getMediationAdapterClassName());
                         if (tokenAdjust != null) {
                             NkhLogEventManager.logPaidAdjustWithToken(adValue, id, tokenAdjust);
                         }
@@ -1786,6 +1880,241 @@ public class Admob {
 
     }
 
+    public void populateUnifiedNativeAdView(NativeAd nativeAd, NativeAdView adView, NativeAdConfig config) {
+        if (config == null) {
+            config = new NativeAdConfig();
+        }
+
+        final NativeAdConfig finalConfig = config;
+
+        adView.setMediaView(adView.findViewById(R.id.ad_media));
+
+        if (adView.getMediaView() != null) {
+            try {
+                float mediaViewSize = finalConfig.getMediaViewSize();
+                if (mediaViewSize <= 0) {
+                    adView.getMediaView().setVisibility(View.GONE);
+                } else {
+                    adView.getMediaView().setVisibility(View.VISIBLE);
+                    android.view.ViewGroup.LayoutParams layoutParams = adView.getMediaView().getLayoutParams();
+                    if (layoutParams != null) {
+                        int mediaSizePx = (int) TypedValue.applyDimension(
+                                TypedValue.COMPLEX_UNIT_DIP,
+                                mediaViewSize,
+                                context.getResources().getDisplayMetrics()
+                        );
+                        layoutParams.height = mediaSizePx;
+                        adView.getMediaView().setLayoutParams(layoutParams);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        adView.setHeadlineView(adView.findViewById(R.id.ad_headline));
+        adView.setBodyView(adView.findViewById(R.id.ad_body));
+        adView.setCallToActionView(adView.findViewById(R.id.ad_call_to_action));
+        adView.setIconView(adView.findViewById(R.id.ad_app_icon));
+        adView.setPriceView(adView.findViewById(R.id.ad_price));
+        adView.setStarRatingView(adView.findViewById(R.id.ad_stars));
+        adView.setAdvertiserView(adView.findViewById(R.id.ad_advertiser));
+
+        try {
+            View adUnitContent = adView.findViewById(R.id.ad_unit_content);
+            int bgColor = finalConfig.getAdViewBackgroundColor();
+            if (adUnitContent != null) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                    adUnitContent.setBackgroundTintList(android.content.res.ColorStateList.valueOf(bgColor));
+                } else {
+                    adUnitContent.setBackgroundColor(bgColor);
+                }
+            } else {
+                adView.setBackgroundColor(bgColor);
+            }
+        } catch (Exception ignored) {
+        }
+
+        try {
+            int padPx = (int) TypedValue.applyDimension(
+                    TypedValue.COMPLEX_UNIT_DIP,
+                    finalConfig.getContentPadding(),
+                    context.getResources().getDisplayMetrics()
+            );
+            adView.setPadding(padPx, padPx, padPx, padPx);
+        } catch (Exception ignored) {
+        }
+
+        try {
+            TextView headlineView = (TextView) adView.getHeadlineView();
+            headlineView.setText(nativeAd.getHeadline());
+            headlineView.setTextSize(TypedValue.COMPLEX_UNIT_SP, finalConfig.getHeadlineTextSize());
+            headlineView.setTextColor(finalConfig.getHeadlineTextColor());
+            if (finalConfig.getHeadlineTypeface() != null) {
+                headlineView.setTypeface(finalConfig.getHeadlineTypeface());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            if (nativeAd.getBody() == null) {
+                adView.getBodyView().setVisibility(View.INVISIBLE);
+            } else {
+                adView.getBodyView().setVisibility(View.VISIBLE);
+                TextView bodyView = (TextView) adView.getBodyView();
+                bodyView.setText(nativeAd.getBody());
+                bodyView.setTextSize(TypedValue.COMPLEX_UNIT_SP, finalConfig.getBodyTextSize());
+                bodyView.setTextColor(finalConfig.getBodyTextColor());
+                if (finalConfig.getBodyTypeface() != null) {
+                    bodyView.setTypeface(finalConfig.getBodyTypeface());
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            if (nativeAd.getCallToAction() == null) {
+                Objects.requireNonNull(adView.getCallToActionView()).setVisibility(View.INVISIBLE);
+            } else {
+                Objects.requireNonNull(adView.getCallToActionView()).setVisibility(View.VISIBLE);
+                TextView callToActionView = (TextView) adView.getCallToActionView();
+                callToActionView.setText(nativeAd.getCallToAction());
+                callToActionView.setTextSize(TypedValue.COMPLEX_UNIT_SP, finalConfig.getCallToActionTextSize());
+                callToActionView.setTextColor(finalConfig.getCallToActionTextColor());
+                callToActionView.setBackgroundColor(finalConfig.getCallToActionBackgroundColor());
+                if (finalConfig.getCallToActionTypeface() != null) {
+                    callToActionView.setTypeface(finalConfig.getCallToActionTypeface());
+                }
+
+                android.graphics.drawable.GradientDrawable drawable = new android.graphics.drawable.GradientDrawable();
+                drawable.setColor(finalConfig.getCallToActionBackgroundColor());
+                drawable.setCornerRadius(TypedValue.applyDimension(
+                        TypedValue.COMPLEX_UNIT_DIP,
+                        finalConfig.getCallToActionCornerRadius(),
+                        context.getResources().getDisplayMetrics()
+                ));
+                callToActionView.setBackground(drawable);
+
+                int ctaHeightDp = finalConfig.getCallToActionHeight();
+                if (ctaHeightDp > 0) {
+                    int ctaHeightPx = (int) TypedValue.applyDimension(
+                            TypedValue.COMPLEX_UNIT_DIP,
+                            ctaHeightDp,
+                            context.getResources().getDisplayMetrics()
+                    );
+                    android.view.ViewGroup.LayoutParams lp = callToActionView.getLayoutParams();
+                    if (lp != null) {
+                        lp.height = ctaHeightPx;
+                        callToActionView.setLayoutParams(lp);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            if (nativeAd.getIcon() == null) {
+                Objects.requireNonNull(adView.getIconView()).setVisibility(View.GONE);
+            } else {
+                ImageView iconView = (ImageView) adView.getIconView();
+                iconView.setImageDrawable(nativeAd.getIcon().getDrawable());
+                iconView.setVisibility(View.VISIBLE);
+
+                android.view.ViewGroup.LayoutParams layoutParams = iconView.getLayoutParams();
+                int iconSizePx = (int) TypedValue.applyDimension(
+                        TypedValue.COMPLEX_UNIT_DIP,
+                        finalConfig.getIconSize(),
+                        context.getResources().getDisplayMetrics()
+                );
+                layoutParams.width = iconSizePx;
+                layoutParams.height = iconSizePx;
+                iconView.setLayoutParams(layoutParams);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            if (nativeAd.getPrice() == null) {
+                Objects.requireNonNull(adView.getPriceView()).setVisibility(View.INVISIBLE);
+            } else {
+                Objects.requireNonNull(adView.getPriceView()).setVisibility(View.VISIBLE);
+                TextView priceView = (TextView) adView.getPriceView();
+                priceView.setText(nativeAd.getPrice());
+                priceView.setTextSize(TypedValue.COMPLEX_UNIT_SP, finalConfig.getPriceTextSize());
+                priceView.setTextColor(finalConfig.getPriceTextColor());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            if (nativeAd.getStarRating() == null) {
+                Objects.requireNonNull(adView.getStarRatingView()).setVisibility(View.INVISIBLE);
+            } else {
+                RatingBar starRatingView = (RatingBar) Objects.requireNonNull(adView.getStarRatingView());
+                starRatingView.setRating(nativeAd.getStarRating().floatValue());
+                starRatingView.setVisibility(View.VISIBLE);
+
+                android.view.ViewGroup.LayoutParams layoutParams = starRatingView.getLayoutParams();
+                int starSizePx = (int) TypedValue.applyDimension(
+                        TypedValue.COMPLEX_UNIT_DIP,
+                        finalConfig.getStarRatingSize(),
+                        context.getResources().getDisplayMetrics()
+                );
+                layoutParams.height = starSizePx;
+                starRatingView.setLayoutParams(layoutParams);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            if (nativeAd.getAdvertiser() == null) {
+                adView.getAdvertiserView().setVisibility(View.INVISIBLE);
+            } else {
+                TextView advertiserView = (TextView) adView.getAdvertiserView();
+                advertiserView.setText(nativeAd.getAdvertiser());
+                advertiserView.setVisibility(View.VISIBLE);
+                advertiserView.setTextSize(TypedValue.COMPLEX_UNIT_SP, finalConfig.getAdvertiserTextSize());
+                advertiserView.setTextColor(finalConfig.getAdvertiserTextColor());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        adView.setNativeAd(nativeAd);
+
+        try {
+            View cta = adView.getCallToActionView();
+            if (cta != null) {
+                int bgColor = finalConfig.getCallToActionBackgroundColor();
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
+                    android.graphics.drawable.GradientDrawable drawable = new android.graphics.drawable.GradientDrawable();
+                    drawable.setColor(bgColor);
+                    drawable.setCornerRadius(TypedValue.applyDimension(
+                            TypedValue.COMPLEX_UNIT_DIP,
+                            finalConfig.getCallToActionCornerRadius(),
+                            context.getResources().getDisplayMetrics()
+                    ));
+                    cta.setBackground(drawable);
+                } else {
+                    cta.setBackgroundColor(bgColor);
+                }
+                if (cta instanceof android.widget.Button) {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                        cta.setBackgroundTintList(android.content.res.ColorStateList.valueOf(bgColor));
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+    }
+
 
     private RewardedAd rewardedAd;
 
@@ -1810,8 +2139,7 @@ public class Admob {
                 Admob.this.rewardedAd.setOnPaidEventListener(adValue -> {
                     NkhLogEventManager.logPaidAdImpression(context,
                             adValue,
-                            rewardedAd.getAdUnitId(), Admob.this.rewardedAd.getResponseInfo().getMediationAdapterClassName()
-                            , AdType.REWARDED);
+                            rewardedAd.getAdUnitId(), Admob.this.rewardedAd.getResponseInfo().getMediationAdapterClassName());
                     if (tokenAdjust != null) {
                         NkhLogEventManager.logPaidAdjustWithToken(adValue, rewardedAd.getAdUnitId(), tokenAdjust);
                     }
@@ -1846,8 +2174,7 @@ public class Admob {
                     NkhLogEventManager.logPaidAdImpression(context,
                             adValue,
                             rewardedAd.getAdUnitId(),
-                            Admob.this.rewardedAd.getResponseInfo().getMediationAdapterClassName()
-                            , AdType.REWARDED);
+                            Admob.this.rewardedAd.getResponseInfo().getMediationAdapterClassName());
                     if (tokenAdjust != null) {
                         NkhLogEventManager.logPaidAdjustWithToken(adValue, rewardedAd.getAdUnitId(), tokenAdjust);
                     }
@@ -1883,8 +2210,7 @@ public class Admob {
                     NkhLogEventManager.logPaidAdImpression(context,
                             adValue,
                             rewardedAd.getAdUnitId(),
-                            rewardedAd.getResponseInfo().getMediationAdapterClassName()
-                            , AdType.REWARDED);
+                            rewardedAd.getResponseInfo().getMediationAdapterClassName());
                     if (tokenAdjust != null) {
                         NkhLogEventManager.logPaidAdjustWithToken(adValue, rewardedAd.getAdUnitId(), tokenAdjust);
                     }
@@ -2726,8 +3052,7 @@ public class Admob {
                         NkhLogEventManager.logPaidAdImpression(context,
                                 adValue,
                                 mInterSplashHigh1.getAdUnitId(),
-                                mInterSplashHigh1.getResponseInfo()
-                                        .getMediationAdapterClassName(), AdType.INTERSTITIAL);
+                                mInterSplashHigh1.getResponseInfo().getMediationAdapterClassName());
 
                         if (tokenAdjust != null) {
                             NkhLogEventManager.logPaidAdjustWithToken(adValue, mInterSplashHigh1.getAdUnitId(), tokenAdjust);
@@ -2968,8 +3293,7 @@ public class Admob {
                             NkhLogEventManager.logPaidAdImpression(context,
                                     adValue,
                                     mInterSplashHigh2.getAdUnitId(),
-                                    mInterSplashHigh2.getResponseInfo()
-                                            .getMediationAdapterClassName(), AdType.INTERSTITIAL);
+                                    mInterSplashHigh2.getResponseInfo().getMediationAdapterClassName());
 
                             if (tokenAdjust != null) {
                                 NkhLogEventManager.logPaidAdjustWithToken(adValue, mInterSplashHigh2.getAdUnitId(), tokenAdjust);
@@ -3208,8 +3532,7 @@ public class Admob {
                         NkhLogEventManager.logPaidAdImpression(context,
                                 adValue,
                                 mInterSplashHigh3.getAdUnitId(),
-                                mInterSplashHigh3.getResponseInfo()
-                                        .getMediationAdapterClassName(), AdType.INTERSTITIAL);
+                                mInterSplashHigh3.getResponseInfo().getMediationAdapterClassName());
 
                         if (tokenAdjust != null) {
                             NkhLogEventManager.logPaidAdjustWithToken(adValue, mInterSplashHigh3.getAdUnitId(), tokenAdjust);
@@ -3447,8 +3770,7 @@ public class Admob {
                         NkhLogEventManager.logPaidAdImpression(context,
                                 adValue,
                                 mInterSplashNormal.getAdUnitId(),
-                                mInterSplashNormal.getResponseInfo()
-                                        .getMediationAdapterClassName(), AdType.INTERSTITIAL);
+                                mInterSplashNormal.getResponseInfo().getMediationAdapterClassName());
 
                         if (tokenAdjust != null) {
                             NkhLogEventManager.logPaidAdjustWithToken(adValue, mInterSplashNormal.getAdUnitId(), tokenAdjust);
@@ -3498,8 +3820,7 @@ public class Admob {
             NkhLogEventManager.logPaidAdImpression(context,
                     adValue,
                     mInterSplashNormal.getAdUnitId(),
-                    mInterSplashNormal.getResponseInfo()
-                            .getMediationAdapterClassName(), AdType.INTERSTITIAL);
+                    mInterSplashNormal.getResponseInfo().getMediationAdapterClassName());
             if (tokenAdjust != null) {
                 NkhLogEventManager.logPaidAdjustWithToken(adValue, mInterSplashNormal.getAdUnitId(), tokenAdjust);
             }
