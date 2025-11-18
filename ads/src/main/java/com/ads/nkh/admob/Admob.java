@@ -324,6 +324,7 @@ public class Admob {
                     return;
                 }
                 if (adListener != null) {
+                    Log.d("XXXXXX", "loadSplashInterstitialAds: 1");
                     adListener.onNextAction();
                     isShowLoadingSplash = false;
                 }
@@ -355,6 +356,7 @@ public class Admob {
                 if (adListener != null) {
                     adListener.onAdFailedToShow(adError);
                     adListener.onNextAction();
+                    Log.d("XXXXXX", "onAdFailedToShow: 1");
                 }
             }
 
@@ -364,6 +366,7 @@ public class Admob {
                 if (isTimeout)
                     return;
                 if (adListener != null) {
+                    Log.d("XXXXXX", "onAdFailedToLoad: 2");
                     adListener.onNextAction();
                     if (handlerTimeout != null && rdTimeout != null) {
                         handlerTimeout.removeCallbacks(rdTimeout);
@@ -385,6 +388,7 @@ public class Admob {
         isShowLoadingSplash = true;
 
         if (mInterstitialSplash == null) {
+            Log.d("XXXXXX", "onShowSplash: 1");
             adListener.onNextAction();
             return;
         }
@@ -423,14 +427,15 @@ public class Admob {
                 AppOpenManager.getInstance().setInterstitialShowing(false);
                 mInterstitialSplash = null;
                 if (adListener != null) {
-                    if (!openActivityAfterShowInterAds) {
-                        adListener.onNextAction();
-                    }
-                    adListener.onAdClosed();
-
                     if (dialog != null) {
                         dialog.dismiss();
                     }
+
+                    if (!openActivityAfterShowInterAds) {
+                        Log.d("XXXXXX", "onShowSplash: 2");
+                        adListener.onNextAction();
+                    }
+                    adListener.onAdClosed();
                 }
                 isShowLoadingSplash = false;
             }
@@ -440,13 +445,14 @@ public class Admob {
                 mInterstitialSplash = null;
                 isShowLoadingSplash = false;
                 if (adListener != null) {
-                    adListener.onAdFailedToShow(adError);
-                    if (!openActivityAfterShowInterAds) {
-                        adListener.onNextAction();
-                    }
-
                     if (dialog != null) {
                         dialog.dismiss();
+                    }
+
+                    adListener.onAdFailedToShow(adError);
+                    if (!openActivityAfterShowInterAds) {
+                        Log.d("XXXXXX", "onShowSplash: 3");
+                        adListener.onNextAction();
                     }
                 }
             }
@@ -471,7 +477,7 @@ public class Admob {
             }
         });
 
-        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
+        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
             try {
                 if (dialog != null && dialog.isShowing())
                     dialog.dismiss();
@@ -482,6 +488,7 @@ public class Admob {
                 } catch (Exception e) {
                     assert adListener != null;
                     adListener.onNextAction();
+                    Log.d("XXXXXX", "onShowSplash: 4");
                     return;
                 }
             } catch (Exception e) {
@@ -489,13 +496,14 @@ public class Admob {
                 e.printStackTrace();
             }
             new Handler().postDelayed(() -> {
-                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
+                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
                     if (openActivityAfterShowInterAds && adListener != null) {
-                        adListener.onNextAction();
                         new Handler().postDelayed(() -> {
                             if (dialog != null && dialog.isShowing() && !activity.isDestroyed())
                                 dialog.dismiss();
                         }, 1500);
+                        adListener.onNextAction();
+                        Log.d("XXXXXX", "onShowSplash: 5");
                     }
                     if (mInterstitialSplash != null) {
                         mInterstitialSplash.show(activity);
@@ -506,6 +514,7 @@ public class Admob {
                         }
                         adListener.onNextAction();
                         isShowLoadingSplash = false;
+                        Log.d("XXXXXX", "onShowSplash: 6");
                     }
                 } else {
                     if (dialog != null && dialog.isShowing() && !activity.isDestroyed())
@@ -566,14 +575,13 @@ public class Admob {
                 AppOpenManager.getInstance().setInterstitialShowing(false);
                 mInterstitialSplash = null;
                 if (adListener != null) {
+                    if (dialog != null) {
+                        dialog.dismiss();
+                    }
                     if (!openActivityAfterShowInterAds) {
                         adListener.onNextAction();
                     }
                     adListener.onAdClosed();
-
-                    if (dialog != null) {
-                        dialog.dismiss();
-                    }
                 }
                 isShowLoadingSplash = false;
             }
@@ -583,13 +591,12 @@ public class Admob {
                 mInterstitialSplash = null;
                 isShowLoadingSplash = false;
                 if (adListener != null) {
+                    if (dialog != null) {
+                        dialog.dismiss();
+                    }
                     adListener.onAdFailedToShow(adError);
                     if (!openActivityAfterShowInterAds) {
                         adListener.onNextAction();
-                    }
-
-                    if (dialog != null) {
-                        dialog.dismiss();
                     }
                 }
             }
@@ -615,7 +622,7 @@ public class Admob {
             }
         });
 
-        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
+        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
             try {
                 if (dialog != null && dialog.isShowing())
                     dialog.dismiss();
@@ -632,13 +639,13 @@ public class Admob {
                 e.printStackTrace();
             }
             new Handler().postDelayed(() -> {
-                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
+                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
                     if (openActivityAfterShowInterAds && adListener != null) {
-                        adListener.onNextAction();
                         new Handler().postDelayed(() -> {
                             if (dialog != null && dialog.isShowing() && !activity.isDestroyed())
                                 dialog.dismiss();
                         }, 1500);
+                        adListener.onNextAction();
                     }
                     if (mInterstitialSplash != null) {
                         mInterstitialSplash.show(activity);
@@ -762,13 +769,12 @@ public class Admob {
             public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
                 super.onAdFailedToShowFullScreenContent(adError);
                 if (callback != null) {
+                    if (dialog != null) {
+                        dialog.dismiss();
+                    }
                     callback.onAdFailedToShow(adError);
                     if (!openActivityAfterShowInterAds) {
                         callback.onNextAction();
-                    }
-
-                    if (dialog != null) {
-                        dialog.dismiss();
                     }
                 }
             }
@@ -818,7 +824,7 @@ public class Admob {
     private void showInterstitialAd(Context context, InterstitialAd mInterstitialAd, AdCallback callback) {
         currentClicked++;
         if (currentClicked >= numShowAds && mInterstitialAd != null) {
-            if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
+            if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
                 try {
                     if (dialog != null && dialog.isShowing())
                         dialog.dismiss();
@@ -837,7 +843,7 @@ public class Admob {
                     e.printStackTrace();
                 }
                 new Handler().postDelayed(() -> {
-                    if (((AppCompatActivity) context).getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
+                    if (((AppCompatActivity) context).getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
                         if (openActivityAfterShowInterAds && callback != null) {
                             callback.onNextAction();
                             new Handler().postDelayed(() -> {
@@ -3143,14 +3149,13 @@ public class Admob {
                 AppOpenManager.getInstance().enableAppResume();
                 mInterSplashHigh1 = null;
                 if (adListener != null) {
+                    if (dialog != null) {
+                        dialog.dismiss();
+                    }
                     if (!openActivityAfterShowInterAds) {
                         adListener.onNextAction();
                     }
                     adListener.onAdClosed();
-
-                    if (dialog != null) {
-                        dialog.dismiss();
-                    }
                 }
                 isShowLoadingSplash = false;
             }
@@ -3161,13 +3166,12 @@ public class Admob {
                 mInterSplashHigh1 = null;
                 isShowLoadingSplash = false;
                 if (adListener != null) {
+                    if (dialog != null) {
+                        dialog.dismiss();
+                    }
                     adListener.onAdFailedToShow(adError);
                     if (!openActivityAfterShowInterAds) {
                         adListener.onNextAction();
-                    }
-
-                    if (dialog != null) {
-                        dialog.dismiss();
                     }
                 }
             }
@@ -3193,7 +3197,7 @@ public class Admob {
             }
         });
 
-        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
+        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
             try {
                 try {
                     if (dialog != null && dialog.isShowing()) {
@@ -3216,7 +3220,7 @@ public class Admob {
             }
 
             new Handler().postDelayed(() -> {
-                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
+                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
                     if (openActivityAfterShowInterAds && adListener != null) {
                         adListener.onNextAction();
                         new Handler().postDelayed(() -> {
@@ -3384,14 +3388,13 @@ public class Admob {
                 AppOpenManager.getInstance().enableAppResume();
                 mInterSplashHigh2 = null;
                 if (adListener != null) {
+                    if (dialog != null) {
+                        dialog.dismiss();
+                    }
                     if (!openActivityAfterShowInterAds) {
                         adListener.onNextAction();
                     }
                     adListener.onAdClosed();
-
-                    if (dialog != null) {
-                        dialog.dismiss();
-                    }
                 }
                 isShowLoadingSplash = false;
             }
@@ -3403,13 +3406,12 @@ public class Admob {
                 mInterSplashHigh2 = null;
                 isShowLoadingSplash = false;
                 if (adListener != null) {
+                    if (dialog != null) {
+                        dialog.dismiss();
+                    }
                     adListener.onAdFailedToShow(adError);
                     if (!openActivityAfterShowInterAds) {
                         adListener.onNextAction();
-                    }
-
-                    if (dialog != null) {
-                        dialog.dismiss();
                     }
                 }
             }
@@ -3435,7 +3437,7 @@ public class Admob {
             }
         });
 
-        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
+        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
             try {
                 try {
                     if (dialog != null && dialog.isShowing()) {
@@ -3457,7 +3459,7 @@ public class Admob {
                 e.printStackTrace();
             }
             new Handler().postDelayed(() -> {
-                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
+                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
                     if (openActivityAfterShowInterAds && adListener != null) {
                         adListener.onNextAction();
                         new Handler().postDelayed(() -> {
@@ -3622,14 +3624,13 @@ public class Admob {
                 AppOpenManager.getInstance().enableAppResume();
                 mInterSplashHigh3 = null;
                 if (adListener != null) {
+                    if (dialog != null) {
+                        dialog.dismiss();
+                    }
                     if (!openActivityAfterShowInterAds) {
                         adListener.onNextAction();
                     }
                     adListener.onAdClosed();
-
-                    if (dialog != null) {
-                        dialog.dismiss();
-                    }
                 }
                 isShowLoadingSplash = false;
             }
@@ -3641,13 +3642,12 @@ public class Admob {
                 mInterSplashHigh3 = null;
                 isShowLoadingSplash = false;
                 if (adListener != null) {
+                    if (dialog != null) {
+                        dialog.dismiss();
+                    }
                     adListener.onAdFailedToShow(adError);
                     if (!openActivityAfterShowInterAds) {
                         adListener.onNextAction();
-                    }
-
-                    if (dialog != null) {
-                        dialog.dismiss();
                     }
                 }
             }
@@ -3673,7 +3673,7 @@ public class Admob {
             }
         });
 
-        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
+        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
             try {
                 try {
                     if (dialog != null && dialog.isShowing()) {
@@ -3695,7 +3695,7 @@ public class Admob {
                 e.printStackTrace();
             }
             new Handler().postDelayed(() -> {
-                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
+                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
                     if (openActivityAfterShowInterAds && adListener != null) {
                         adListener.onNextAction();
                         new Handler().postDelayed(() -> {
@@ -3867,14 +3867,13 @@ public class Admob {
                 AppOpenManager.getInstance().setInterstitialShowing(false);
                 mInterSplashNormal = null;
                 if (adListener != null) {
+                    if (dialog != null) {
+                        dialog.dismiss();
+                    }
                     if (!openActivityAfterShowInterAds) {
                         adListener.onNextAction();
                     }
                     adListener.onAdClosed();
-
-                    if (dialog != null) {
-                        dialog.dismiss();
-                    }
                 }
                 isShowLoadingSplash = false;
             }
@@ -3884,13 +3883,12 @@ public class Admob {
                 mInterSplashNormal = null;
                 isShowLoadingSplash = false;
                 if (adListener != null) {
+                    if (dialog != null) {
+                        dialog.dismiss();
+                    }
                     adListener.onAdFailedToShow(adError);
                     if (!openActivityAfterShowInterAds) {
                         adListener.onNextAction();
-                    }
-
-                    if (dialog != null) {
-                        dialog.dismiss();
                     }
                 }
             }
@@ -3916,7 +3914,7 @@ public class Admob {
             }
         });
 
-        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
+        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
             try {
                 if (dialog != null && dialog.isShowing())
                     dialog.dismiss();
@@ -3934,7 +3932,7 @@ public class Admob {
                 e.printStackTrace();
             }
             new Handler().postDelayed(() -> {
-                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) || ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.INITIALIZED)) {
+                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
                     if (openActivityAfterShowInterAds && adListener != null) {
                         adListener.onNextAction();
                         new Handler().postDelayed(() -> {

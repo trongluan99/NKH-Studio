@@ -3,6 +3,7 @@ package com.nkh.module;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -17,7 +18,26 @@ public class SplashActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
 
-        startActivity(new Intent(SplashActivity.this, MainActivity.class));
-        finish();
+        NkhAd.getInstance().loadSplashInterstitialAds(this, BuildConfig.ad_interstitial_splash, 25000, 5000, new AdCallback() {
+            @Override
+            public void onNextAction() {
+                super.onNextAction();
+                Log.d("XXXXXX", "onNextAction: 1");
+                startActivity(new Intent(SplashActivity.this, MainActivity.class));
+                finish();
+            }
+        });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        NkhAd.getInstance().onCheckShowSplashWhenFail(this, new AdCallback(){
+            @Override
+            public void onNextAction() {
+                super.onNextAction();
+                Log.d("XXXXXX", "onNextAction: 2");
+            }
+        }, 1000);
     }
 }

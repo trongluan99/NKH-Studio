@@ -41,6 +41,8 @@ import com.google.android.gms.ads.nativead.NativeAdView;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd;
 
+import org.json.JSONException;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -138,6 +140,14 @@ public class NkhAd {
             is.close();
             return NativeAdConfig.fromJson(context, sb.toString());
         } catch (Exception e) {
+            return new NativeAdConfig();
+        }
+    }
+
+    public NativeAdConfig loadNativeConfigFromString(Context context, String remoteFile) {
+        try {
+            return NativeAdConfig.fromJson(context, remoteFile);
+        } catch (JSONException e) {
             return new NativeAdConfig();
         }
     }
