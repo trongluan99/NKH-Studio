@@ -31,6 +31,7 @@ import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.ProcessLifecycleOwner;
 
 import com.ads.nkh.R;
+import com.ads.nkh.ads.NkhAd;
 import com.ads.nkh.ads.native_ads.NativeAdConfig;
 import com.ads.nkh.billing.AppPurchase;
 import com.ads.nkh.dialog.PrepareLoadingAdsDialog;
@@ -1997,7 +1998,8 @@ public class Admob {
                 ));
                 callToActionView.setBackground(drawable);
 
-                int ctaHeightDp = finalConfig.getCallToActionHeight();
+
+                int ctaHeightDp = getCtaButtonHeight(finalConfig);
                 if (ctaHeightDp > 0) {
                     int ctaHeightPx = (int) TypedValue.applyDimension(
                             TypedValue.COMPLEX_UNIT_DIP,
@@ -2115,6 +2117,20 @@ public class Admob {
 
     }
 
+    public int getCtaButtonHeight(NativeAdConfig nativeAdConfig) {
+        try {
+            int value = nativeAdConfig.getCallToActionHeight();
+            if (NkhAd.getInstance().getOrganic()) {
+                value = Math.min(Math.max(value, 36), 46);
+            } else {
+                value = Math.min(Math.max(value, 36), 52);
+            }
+            return value;
+
+        } catch (Exception ex) {
+            return 40;
+        }
+    }
 
     private RewardedAd rewardedAd;
 
