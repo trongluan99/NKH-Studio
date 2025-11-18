@@ -8,7 +8,10 @@
         android:id="@+id/fr_ads"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent">
+
+        <include layout="@layout/shimmer_native_large" />
+    </FrameLayout>
 
     <Button
         android:id="@+id/btnLoad"

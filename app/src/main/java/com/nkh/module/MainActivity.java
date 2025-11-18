@@ -18,7 +18,6 @@ import com.ads.nkh.funtion.AdType;
 import com.ads.nkh.funtion.PurchaseListener;
 import com.ads.nkh.funtion.RewardCallback;
 import com.ads.nkh.reload_ads.BannerManager;
-import com.ads.nkh.reload_ads.NativeManager;
 import com.facebook.shimmer.ShimmerFrameLayout;
 import com.google.android.gms.ads.AdValue;
 import com.google.android.gms.ads.rewarded.RewardItem;
@@ -86,7 +85,10 @@ public class MainActivity extends AppCompatActivity {
         });*/
 
         new BannerManager(this, this, true, true, BuildConfig.ad_banner, AdType.BANNER, frBanner, new AdCallback()).setMaxReloadCount(3);
-        new NativeManager(this, this, true, true, BuildConfig.ad_native, R.layout.native_large, R.layout.shimmer_native_large, frAds, new AdCallback()).setMaxReloadCount(3);
+//        new NativeManager(this, this, true, true, BuildConfig.ad_native, R.layout.native_large, R.layout.shimmer_native_large, frAds, new AdCallback()).setMaxReloadCount(3);
+
+
+        NkhAd.getInstance().loadNativeAd(this, BuildConfig.ad_native, R.layout.native_large, frAds, shimmerAds, NkhAd.getInstance().loadNativeConfigFromAssets(this, "native_ad_config.json"), new AdCallback() {});
 
         // Native Ads: Load
         /*NkhAd.getInstance().loadNativeAdResultCallback(this, BuildConfig.ad_native, R.layout.native_large, new AdCallback() {

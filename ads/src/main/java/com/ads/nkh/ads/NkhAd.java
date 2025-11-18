@@ -125,7 +125,7 @@ public class NkhAd {
     }
 
 
-    private NativeAdConfig loadNativeConfigFromAssets(Context context, String remoteFile) {
+    public NativeAdConfig loadNativeConfigFromAssets(Context context, String remoteFile) {
         try {
             InputStream is = context.getAssets().open(remoteFile);
             BufferedReader br = new BufferedReader(new InputStreamReader(is));
