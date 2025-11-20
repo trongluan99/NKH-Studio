@@ -23,6 +23,25 @@ public class NkhAdConfig {
 
     private int intervalInterstitialAd = 0;
 
+    private int prepareLoadingAdsDialogLayout = -1;
+    private int resumeLoadingDialogLayout = -1;
+
+    public void setPrepareLoadingAdsDialogLayout(int prepareLoadingAdsDialogLayout) {
+        this.prepareLoadingAdsDialogLayout = prepareLoadingAdsDialogLayout;
+    }
+
+    public int getPrepareLoadingAdsDialogLayout() {
+        return prepareLoadingAdsDialogLayout;
+    }
+
+    public void setResumeLoadingDialogLayout(int resumeLoadingDialogLayout) {
+        this.resumeLoadingDialogLayout = resumeLoadingDialogLayout;
+    }
+
+    public int getResumeLoadingDialogLayout() {
+        return resumeLoadingDialogLayout;
+    }
+
     public NkhAdConfig(Application application) {
         this.application = application;
     }

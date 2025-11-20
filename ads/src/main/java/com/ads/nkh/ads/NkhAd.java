@@ -103,6 +103,32 @@ public class NkhAd {
         Admob.getInstance().setNumToShowAds(countClickToShowAds, currentClicked);
     }
 
+    public int getResumeLoadingDialogLayout() {
+        if (adConfig != null) {
+            return adConfig.getResumeLoadingDialogLayout();
+        }
+        return -1;
+    }
+
+    public void setResumeLoadingDialogLayout(int resumeLoadingDialogLayout) {
+        if (adConfig != null) {
+            adConfig.setResumeLoadingDialogLayout(resumeLoadingDialogLayout);
+        }
+    }
+
+    public int getPrepareLoadingAdsDialogLayout() {
+        if (adConfig != null) {
+            return adConfig.getPrepareLoadingAdsDialogLayout();
+        }
+        return -1;
+    }
+
+    public void setPrepareLoadingAdsDialogLayout(int prepareLoadingAdsDialogLayout) {
+        if (adConfig != null) {
+            adConfig.setPrepareLoadingAdsDialogLayout(prepareLoadingAdsDialogLayout);
+        }
+    }
+
     public void init(Application context, NkhAdConfig adConfig) {
         if (adConfig == null) {
             throw new RuntimeException("Cant not set GamAdConfig null");
