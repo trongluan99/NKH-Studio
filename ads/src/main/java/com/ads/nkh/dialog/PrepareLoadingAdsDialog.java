@@ -13,7 +13,7 @@ public class PrepareLoadingAdsDialog extends Dialog {
     private int customLayoutId = R.layout.dialog_prepair_loading_ads; // Default layout
 
     public PrepareLoadingAdsDialog(Context context) {
-        super(context, R.style.AppTheme);
+        super(context, R.style.AppThemeDialog);
         int globalLayout = NkhAd.getInstance().getPrepareLoadingAdsDialogLayout();
         if (globalLayout != -1) {
             this.customLayoutId = globalLayout;
@@ -21,7 +21,7 @@ public class PrepareLoadingAdsDialog extends Dialog {
     }
 
     public PrepareLoadingAdsDialog(Context context, int customLayoutId) {
-        super(context, R.style.AppTheme);
+        super(context, R.style.AppThemeDialog);
         this.customLayoutId = customLayoutId;
     }
 

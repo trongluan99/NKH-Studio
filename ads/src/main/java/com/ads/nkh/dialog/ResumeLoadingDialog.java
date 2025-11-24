@@ -11,7 +11,7 @@ public class ResumeLoadingDialog extends Dialog {
     private int customLayoutId = R.layout.dialog_resume_loading;
 
     public ResumeLoadingDialog(Context context) {
-        super(context, R.style.AppTheme);
+        super(context, R.style.AppThemeDialog);
 
         int globalLayout = NkhAd.getInstance().getResumeLoadingDialogLayout();
         if (globalLayout != -1) {
@@ -20,7 +20,7 @@ public class ResumeLoadingDialog extends Dialog {
     }
 
     public ResumeLoadingDialog(Context context, int customLayoutId) {
-        super(context, R.style.AppTheme);
+        super(context, R.style.AppThemeDialog);
         this.customLayoutId = customLayoutId;
     }
 
