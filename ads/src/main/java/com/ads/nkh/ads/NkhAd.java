@@ -575,6 +575,28 @@ public class NkhAd {
         adPlaceHolder.addView(adView);
     }
 
+    public void populateNativeAdView(Activity activity, ApNativeAd apNativeAd, FrameLayout adPlaceHolder, ShimmerFrameLayout containerShimmerLoading, String colorCTA, int heightCTA) {
+        if (apNativeAd.getAdmobNativeAd() == null && apNativeAd.getNativeView() == null) {
+            if (containerShimmerLoading != null) {
+                containerShimmerLoading.setVisibility(View.GONE);
+            }
+            return;
+        }
+        @SuppressLint("InflateParams") NativeAdView adView = (NativeAdView) LayoutInflater.from(activity).inflate(apNativeAd.getLayoutCustomNative(), null);
+        if (containerShimmerLoading != null) {
+            try {
+                containerShimmerLoading.stopShimmer();
+                containerShimmerLoading.setVisibility(View.GONE);
+            } catch (Exception e) {
+                Log.w(TAG, "Shimmer stop error: " + e.getMessage());
+            }
+        }
+        adPlaceHolder.setVisibility(View.VISIBLE);
+        Admob.getInstance().populateUnifiedNativeAdView(apNativeAd.getAdmobNativeAd(), adView, colorCTA, heightCTA);
+        adPlaceHolder.removeAllViews();
+        adPlaceHolder.addView(adView);
+    }
+
     public void populateNativeAdView(Activity activity, ApNativeAd apNativeAd, FrameLayout adPlaceHolder, ShimmerFrameLayout containerShimmerLoading, NativeAdConfig nativeAdConfig) {
         if (apNativeAd.getAdmobNativeAd() == null && apNativeAd.getNativeView() == null) {
             if (containerShimmerLoading != null) {

@@ -6,6 +6,7 @@ import android.app.ActivityManager;
 import android.app.Application;
 import android.content.Context;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -33,6 +34,7 @@ import androidx.lifecycle.ProcessLifecycleOwner;
 import com.ads.nkh.R;
 import com.ads.nkh.ads.NkhAd;
 import com.ads.nkh.ads.native_ads.NativeAdConfig;
+import com.ads.nkh.ads.native_ads.NativeAdConfigV2;
 import com.ads.nkh.billing.AppPurchase;
 import com.ads.nkh.dialog.PrepareLoadingAdsDialog;
 import com.ads.nkh.event.NkhLogEventManager;
@@ -477,7 +479,7 @@ public class Admob {
             }
         });
 
-        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
+        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
             try {
                 if (dialog != null && dialog.isShowing())
                     dialog.dismiss();
@@ -622,7 +624,7 @@ public class Admob {
             }
         });
 
-        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
+        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
             try {
                 if (dialog != null && dialog.isShowing())
                     dialog.dismiss();
@@ -639,7 +641,7 @@ public class Admob {
                 e.printStackTrace();
             }
             new Handler().postDelayed(() -> {
-                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
+                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
                     if (openActivityAfterShowInterAds && adListener != null) {
                         new Handler().postDelayed(() -> {
                             if (dialog != null && dialog.isShowing() && !activity.isDestroyed())
@@ -824,7 +826,7 @@ public class Admob {
     private void showInterstitialAd(Context context, InterstitialAd mInterstitialAd, AdCallback callback) {
         currentClicked++;
         if (currentClicked >= numShowAds && mInterstitialAd != null) {
-            if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
+            if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
                 try {
                     if (dialog != null && dialog.isShowing())
                         dialog.dismiss();
@@ -843,7 +845,7 @@ public class Admob {
                     e.printStackTrace();
                 }
                 new Handler().postDelayed(() -> {
-                    if (((AppCompatActivity) context).getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
+                    if (((AppCompatActivity) context).getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
                         if (openActivityAfterShowInterAds && callback != null) {
                             callback.onNextAction();
                             new Handler().postDelayed(() -> {
@@ -1644,76 +1646,7 @@ public class Admob {
         adLoader.loadAd(getAdRequest());
     }
 
-
-    public void loadNativeAdsFullScreen(Context context, String id, final AdCallback callback) {
-        AtomicReference<NativeAd> nativeAd1 = new AtomicReference<>();
-        if (AppPurchase.getInstance().isPurchased(context)) {
-            return;
-        }
-
-        VideoOptions videoOptions =
-                new VideoOptions.Builder().setStartMuted(false).build();
-        NativeAdOptions adOptions =
-                new NativeAdOptions.Builder()
-                        .setMediaAspectRatio(MediaAspectRatio.PORTRAIT)
-                        .setVideoOptions(videoOptions)
-                        .build();
-        AdLoader adLoader = new AdLoader.Builder(context, id)
-                .forNativeAd(nativeAd -> {
-                    callback.onUnifiedNativeAdLoaded(nativeAd);
-                    nativeAd.setOnPaidEventListener(adValue -> {
-                        NkhLogEventManager.logPaidAdImpression(context,
-                                adValue,
-                                id,
-                                nativeAd.getResponseInfo().getMediationAdapterClassName());
-
-                        if (tokenAdjust != null) {
-                            NkhLogEventManager.logPaidAdjustWithToken(adValue, id, tokenAdjust);
-                        }
-
-                        if (callback != null) {
-                            callback.onAdLogRev(adValue, id, nativeAd.getResponseInfo().getMediationAdapterClassName(), AdType.NATIVE);
-                        }
-
-                        nativeAd1.set(nativeAd);
-                    });
-                })
-                .withAdListener(new AdListener() {
-                    @Override
-                    public void onAdFailedToLoad(LoadAdError error) {
-                        callback.onAdFailedToLoad(error);
-                    }
-
-                    @Override
-                    public void onAdClicked() {
-                        super.onAdClicked();
-                        if (disableAdResumeWhenClickAds)
-                            AppOpenManager.getInstance().disableAdResumeByClickAction();
-                        if (callback != null) {
-                            callback.onAdClicked();
-                        }
-                        NkhLogEventManager.logClickAdsEvent(context, id);
-
-                        if (callback != null) {
-                            callback.onAdClicked(id, nativeAd1.get().getResponseInfo().getMediationAdapterClassName(), AdType.NATIVE);
-                        }
-                    }
-
-                    @Override
-                    public void onAdImpression() {
-                        super.onAdImpression();
-                        if (callback != null) {
-                            callback.onAdImpression();
-                        }
-                    }
-                })
-                .withNativeAdOptions(adOptions)
-                .build();
-        adLoader.loadAds(getAdRequest(), 5);
-
-    }
-
-    public void loadNativeAdsFullScreen(final Context context, final ShimmerFrameLayout containerShimmer, final FrameLayout frameLayout, final String id, final int layout, final AdCallback callback) {
+    private void loadNative(final Context context, final ShimmerFrameLayout containerShimmer, final FrameLayout frameLayout, final String id, final int layout, String colorCTA, int heightCTA, final AdCallback callback) {
         AtomicReference<NativeAd> nativeAd1 = new AtomicReference<>();
         if (AppPurchase.getInstance().isPurchased(context)) {
             containerShimmer.setVisibility(View.GONE);
@@ -1729,7 +1662,6 @@ public class Admob {
                 .build();
 
         NativeAdOptions adOptions = new NativeAdOptions.Builder()
-                .setMediaAspectRatio(MediaAspectRatio.PORTRAIT)
                 .setVideoOptions(videoOptions)
                 .build();
 
@@ -1742,7 +1674,6 @@ public class Admob {
                     @SuppressLint("InflateParams") NativeAdView adView = (NativeAdView) LayoutInflater.from(context)
                             .inflate(layout, null);
                     nativeAd.setOnPaidEventListener(adValue -> {
-
                         NkhLogEventManager.logPaidAdImpression(context,
                                 adValue,
                                 id,
@@ -1757,7 +1688,7 @@ public class Admob {
 
                         nativeAd1.set(nativeAd);
                     });
-                    populateUnifiedNativeAdView(nativeAd, adView);
+                    populateUnifiedNativeAdView(nativeAd, adView, colorCTA, heightCTA);
                     frameLayout.removeAllViews();
                     frameLayout.addView(adView);
                 })
@@ -1768,7 +1699,6 @@ public class Admob {
                         containerShimmer.setVisibility(View.GONE);
                         frameLayout.setVisibility(View.GONE);
                     }
-
 
                     @Override
                     public void onAdClicked() {
@@ -1797,8 +1727,13 @@ public class Admob {
                 .build();
 
 
-        adLoader.loadAds(getAdRequest(), 5);
+        adLoader.loadAd(getAdRequest());
+    }
 
+    private int parseColor(String value) {
+        if (value == null || value.isEmpty() || value.equals("default"))
+            return Color.parseColor("FF5722");
+        return Color.parseColor(value);
     }
 
     public void populateUnifiedNativeAdView(NativeAd nativeAd, NativeAdView adView) {
@@ -1834,6 +1769,106 @@ public class Admob {
             } else {
                 Objects.requireNonNull(adView.getCallToActionView()).setVisibility(View.VISIBLE);
                 ((TextView) adView.getCallToActionView()).setText(nativeAd.getCallToAction());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            if (nativeAd.getIcon() == null) {
+                Objects.requireNonNull(adView.getIconView()).setVisibility(View.GONE);
+            } else {
+                ((ImageView) adView.getIconView()).setImageDrawable(
+                        nativeAd.getIcon().getDrawable());
+                adView.getIconView().setVisibility(View.VISIBLE);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            if (nativeAd.getPrice() == null) {
+                Objects.requireNonNull(adView.getPriceView()).setVisibility(View.INVISIBLE);
+            } else {
+                Objects.requireNonNull(adView.getPriceView()).setVisibility(View.VISIBLE);
+                ((TextView) adView.getPriceView()).setText(nativeAd.getPrice());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            if (nativeAd.getStarRating() == null) {
+                Objects.requireNonNull(adView.getStarRatingView()).setVisibility(View.INVISIBLE);
+            } else {
+                ((RatingBar) Objects.requireNonNull(adView.getStarRatingView())).setRating(nativeAd.getStarRating().floatValue());
+                adView.getStarRatingView().setVisibility(View.VISIBLE);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            if (nativeAd.getAdvertiser() == null) {
+                adView.getAdvertiserView().setVisibility(View.INVISIBLE);
+            } else {
+                ((TextView) adView.getAdvertiserView()).setText(nativeAd.getAdvertiser());
+                adView.getAdvertiserView().setVisibility(View.VISIBLE);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        adView.setNativeAd(nativeAd);
+
+    }
+
+    public void populateUnifiedNativeAdView(NativeAd nativeAd, NativeAdView adView, String colorCTA, int heightCTA) {
+        adView.setMediaView(adView.findViewById(R.id.ad_media));
+        adView.setHeadlineView(adView.findViewById(R.id.ad_headline));
+        adView.setBodyView(adView.findViewById(R.id.ad_body));
+        adView.setCallToActionView(adView.findViewById(R.id.ad_call_to_action));
+        adView.setIconView(adView.findViewById(R.id.ad_app_icon));
+        adView.setPriceView(adView.findViewById(R.id.ad_price));
+        adView.setStarRatingView(adView.findViewById(R.id.ad_stars));
+        adView.setAdvertiserView(adView.findViewById(R.id.ad_advertiser));
+
+        try {
+            ((TextView) adView.getHeadlineView()).setText(nativeAd.getHeadline());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            if (nativeAd.getBody() == null) {
+                adView.getBodyView().setVisibility(View.INVISIBLE);
+            } else {
+                adView.getBodyView().setVisibility(View.VISIBLE);
+                ((TextView) adView.getBodyView()).setText(nativeAd.getBody());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            if (nativeAd.getCallToAction() == null) {
+                Objects.requireNonNull(adView.getCallToActionView()).setVisibility(View.INVISIBLE);
+            } else {
+                Objects.requireNonNull(adView.getCallToActionView()).setVisibility(View.VISIBLE);
+                ((TextView) adView.getCallToActionView()).setText(nativeAd.getCallToAction());
+                adView.setBackgroundColor(parseColor(colorCTA));
+
+                if (heightCTA > 0) {
+                    int ctaHeightPx = (int) TypedValue.applyDimension(
+                            TypedValue.COMPLEX_UNIT_DIP,
+                            heightCTA,
+                            context.getResources().getDisplayMetrics()
+                    );
+                    android.view.ViewGroup.LayoutParams lp = adView.getLayoutParams();
+                    if (lp != null) {
+                        lp.height = ctaHeightPx;
+                        adView.setLayoutParams(lp);
+                    }
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -1990,6 +2025,7 @@ public class Admob {
                 callToActionView.setText(nativeAd.getCallToAction());
                 callToActionView.setTextSize(TypedValue.COMPLEX_UNIT_SP, finalConfig.getCallToActionTextSize());
                 callToActionView.setTextColor(finalConfig.getCallToActionTextColor());
+                callToActionView.setBackgroundColor(finalConfig.getCallToActionBackgroundColor());
                 callToActionView.setBackgroundColor(finalConfig.getCallToActionBackgroundColor());
                 if (finalConfig.getCallToActionTypeface() != null) {
                     callToActionView.setTypeface(finalConfig.getCallToActionTypeface());
@@ -3197,7 +3233,7 @@ public class Admob {
             }
         });
 
-        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
+        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
             try {
                 try {
                     if (dialog != null && dialog.isShowing()) {
@@ -3220,7 +3256,7 @@ public class Admob {
             }
 
             new Handler().postDelayed(() -> {
-                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
+                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
                     if (openActivityAfterShowInterAds && adListener != null) {
                         adListener.onNextAction();
                         new Handler().postDelayed(() -> {
@@ -3437,7 +3473,7 @@ public class Admob {
             }
         });
 
-        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
+        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
             try {
                 try {
                     if (dialog != null && dialog.isShowing()) {
@@ -3459,7 +3495,7 @@ public class Admob {
                 e.printStackTrace();
             }
             new Handler().postDelayed(() -> {
-                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
+                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
                     if (openActivityAfterShowInterAds && adListener != null) {
                         adListener.onNextAction();
                         new Handler().postDelayed(() -> {
@@ -3673,7 +3709,7 @@ public class Admob {
             }
         });
 
-        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
+        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
             try {
                 try {
                     if (dialog != null && dialog.isShowing()) {
@@ -3695,7 +3731,7 @@ public class Admob {
                 e.printStackTrace();
             }
             new Handler().postDelayed(() -> {
-                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
+                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
                     if (openActivityAfterShowInterAds && adListener != null) {
                         adListener.onNextAction();
                         new Handler().postDelayed(() -> {
@@ -3914,7 +3950,7 @@ public class Admob {
             }
         });
 
-        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
+        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
             try {
                 if (dialog != null && dialog.isShowing())
                     dialog.dismiss();
@@ -3932,7 +3968,7 @@ public class Admob {
                 e.printStackTrace();
             }
             new Handler().postDelayed(() -> {
-                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED) ) {
+                if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
                     if (openActivityAfterShowInterAds && adListener != null) {
                         adListener.onNextAction();
                         new Handler().postDelayed(() -> {
