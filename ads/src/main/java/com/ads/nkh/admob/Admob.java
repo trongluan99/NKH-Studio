@@ -1349,6 +1349,12 @@ public class Admob {
         loadNative(mActivity, containerShimmer, frameLayout, id, layout, config, callback);
     }
 
+    public void loadNativeWithConfig(final Activity mActivity, String id, int layout, String colorCTA, int heightCTA, AdCallback callback) {
+        final FrameLayout frameLayout = mActivity.findViewById(R.id.fl_adplaceholder);
+        final ShimmerFrameLayout containerShimmer = mActivity.findViewById(R.id.shimmer_container_native);
+        loadNative(mActivity, containerShimmer, frameLayout, id, layout, colorCTA, heightCTA, callback);
+    }
+
     public void loadNativeAd(Context context, String id, final AdCallback callback) {
         AtomicReference<NativeAd> nativeAd1 = new AtomicReference<>();
         if (AppPurchase.getInstance().isPurchased(context)) {
