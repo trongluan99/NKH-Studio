@@ -88,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
 //        new NativeManager(this, this, true, true, BuildConfig.ad_native, R.layout.native_large, R.layout.shimmer_native_large, frAds, new AdCallback()).setMaxReloadCount(3);
 
 
-        NkhAd.getInstance().loadNativeAd(this, BuildConfig.ad_native, R.layout.native_large, frAds, shimmerAds, NkhAd.getInstance().loadNativeConfigFromAssets(this, "native_ad_config.json"), new AdCallback() {});
+        NkhAd.getInstance().loadNativeAd(this, BuildConfig.ad_native, R.layout.native_large, frAds, shimmerAds, "#FF0000", 40, 20, new AdCallback() {});
 
         // Native Ads: Load
         /*NkhAd.getInstance().loadNativeAdResultCallback(this, BuildConfig.ad_native, R.layout.native_large, new AdCallback() {

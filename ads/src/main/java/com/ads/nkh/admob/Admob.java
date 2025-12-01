@@ -34,7 +34,6 @@ import androidx.lifecycle.ProcessLifecycleOwner;
 import com.ads.nkh.R;
 import com.ads.nkh.ads.NkhAd;
 import com.ads.nkh.ads.native_ads.NativeAdConfig;
-import com.ads.nkh.ads.native_ads.NativeAdConfigV2;
 import com.ads.nkh.billing.AppPurchase;
 import com.ads.nkh.dialog.PrepareLoadingAdsDialog;
 import com.ads.nkh.event.NkhLogEventManager;
@@ -54,7 +53,6 @@ import com.google.android.gms.ads.AdValue;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.FullScreenContentCallback;
 import com.google.android.gms.ads.LoadAdError;
-import com.google.android.gms.ads.MediaAspectRatio;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.OnPaidEventListener;
 import com.google.android.gms.ads.RequestConfiguration;
@@ -1349,10 +1347,10 @@ public class Admob {
         loadNative(mActivity, containerShimmer, frameLayout, id, layout, config, callback);
     }
 
-    public void loadNativeWithConfig(final Activity mActivity, String id, int layout, String colorCTA, int heightCTA, AdCallback callback) {
+    public void loadNativeWithConfig(final Activity mActivity, String id, int layout, String colorCTA, int heightCTA, int radiusCTA, AdCallback callback) {
         final FrameLayout frameLayout = mActivity.findViewById(R.id.fl_adplaceholder);
         final ShimmerFrameLayout containerShimmer = mActivity.findViewById(R.id.shimmer_container_native);
-        loadNative(mActivity, containerShimmer, frameLayout, id, layout, colorCTA, heightCTA, callback);
+        loadNative(mActivity, containerShimmer, frameLayout, id, layout, colorCTA, heightCTA, radiusCTA, callback);
     }
 
     public void loadNativeAd(Context context, String id, final AdCallback callback) {
@@ -1652,7 +1650,7 @@ public class Admob {
         adLoader.loadAd(getAdRequest());
     }
 
-    private void loadNative(final Context context, final ShimmerFrameLayout containerShimmer, final FrameLayout frameLayout, final String id, final int layout, String colorCTA, int heightCTA, final AdCallback callback) {
+    private void loadNative(final Context context, final ShimmerFrameLayout containerShimmer, final FrameLayout frameLayout, final String id, final int layout, String colorCTA, int heightCTA, int radiusCTA, final AdCallback callback) {
         AtomicReference<NativeAd> nativeAd1 = new AtomicReference<>();
         if (AppPurchase.getInstance().isPurchased(context)) {
             containerShimmer.setVisibility(View.GONE);
@@ -1694,7 +1692,7 @@ public class Admob {
 
                         nativeAd1.set(nativeAd);
                     });
-                    populateUnifiedNativeAdView(nativeAd, adView, colorCTA, heightCTA);
+                    populateUnifiedNativeAdView(nativeAd, adView, colorCTA, heightCTA, radiusCTA);
                     frameLayout.removeAllViews();
                     frameLayout.addView(adView);
                 })
@@ -1828,7 +1826,7 @@ public class Admob {
 
     }
 
-    public void populateUnifiedNativeAdView(NativeAd nativeAd, NativeAdView adView, String colorCTA, int heightCTA) {
+    public void populateUnifiedNativeAdView(NativeAd nativeAd, NativeAdView adView, String colorCTA, int heightCTA, int radiusCTA) {
         adView.setMediaView(adView.findViewById(R.id.ad_media));
         adView.setHeadlineView(adView.findViewById(R.id.ad_headline));
         adView.setBodyView(adView.findViewById(R.id.ad_body));
@@ -1860,8 +1858,8 @@ public class Admob {
                 Objects.requireNonNull(adView.getCallToActionView()).setVisibility(View.INVISIBLE);
             } else {
                 Objects.requireNonNull(adView.getCallToActionView()).setVisibility(View.VISIBLE);
-                ((TextView) adView.getCallToActionView()).setText(nativeAd.getCallToAction());
-                adView.setBackgroundColor(parseColor(colorCTA));
+                TextView callToActionView = (TextView) adView.getCallToActionView();
+                callToActionView.setText(nativeAd.getCallToAction());
 
                 if (heightCTA > 0) {
                     int ctaHeightPx = (int) TypedValue.applyDimension(
@@ -1869,10 +1867,10 @@ public class Admob {
                             heightCTA,
                             context.getResources().getDisplayMetrics()
                     );
-                    android.view.ViewGroup.LayoutParams lp = adView.getLayoutParams();
+                    android.view.ViewGroup.LayoutParams lp = callToActionView.getLayoutParams();
                     if (lp != null) {
                         lp.height = ctaHeightPx;
-                        adView.setLayoutParams(lp);
+                        callToActionView.setLayoutParams(lp);
                     }
                 }
             }
@@ -1925,6 +1923,25 @@ public class Admob {
             e.printStackTrace();
         }
         adView.setNativeAd(nativeAd);
+
+
+        try {
+            View cta = adView.getCallToActionView();
+            if (cta != null) {
+                android.graphics.drawable.GradientDrawable drawable = new android.graphics.drawable.GradientDrawable();
+                drawable.setColor(parseColor(colorCTA));
+                drawable.setCornerRadius(TypedValue.applyDimension(
+                        TypedValue.COMPLEX_UNIT_DIP,
+                        radiusCTA,
+                        context.getResources().getDisplayMetrics()
+                ));
+                cta.setBackground(drawable);
+                if (cta instanceof android.widget.Button) {
+                    cta.setBackgroundTintList(android.content.res.ColorStateList.valueOf(parseColor(colorCTA)));
+                }
+            }
+        } catch (Exception ignored) {
+        }
 
     }
 

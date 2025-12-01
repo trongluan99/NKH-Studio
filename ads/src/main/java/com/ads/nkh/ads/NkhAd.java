@@ -554,13 +554,13 @@ public class NkhAd {
 
     public void loadNativeAd(final Activity activity, String id,
                              int layoutCustomNative, FrameLayout adPlaceHolder, ShimmerFrameLayout
-                                     containerShimmerLoading, String colorCTA, int heightCTA, AdCallback callback) {
+                                     containerShimmerLoading, String colorCTA, int heightCTA, int radiusCTA, AdCallback callback) {
         Admob.getInstance().loadNativeAd(((Context) activity), id, new AdCallback() {
             @Override
             public void onUnifiedNativeAdLoaded(@NonNull NativeAd unifiedNativeAd) {
                 super.onUnifiedNativeAdLoaded(unifiedNativeAd);
                 callback.onNativeAdLoaded(new ApNativeAd(layoutCustomNative, unifiedNativeAd));
-                populateNativeAdView(activity, new ApNativeAd(layoutCustomNative, unifiedNativeAd), adPlaceHolder, containerShimmerLoading, colorCTA, heightCTA);
+                populateNativeAdView(activity, new ApNativeAd(layoutCustomNative, unifiedNativeAd), adPlaceHolder, containerShimmerLoading, colorCTA, heightCTA, radiusCTA);
             }
 
             @Override
@@ -623,7 +623,7 @@ public class NkhAd {
         adPlaceHolder.addView(adView);
     }
 
-    public void populateNativeAdView(Activity activity, ApNativeAd apNativeAd, FrameLayout adPlaceHolder, ShimmerFrameLayout containerShimmerLoading, String colorCTA, int heightCTA) {
+    public void populateNativeAdView(Activity activity, ApNativeAd apNativeAd, FrameLayout adPlaceHolder, ShimmerFrameLayout containerShimmerLoading, String colorCTA, int heightCTA, int radiusCTA) {
         if (apNativeAd.getAdmobNativeAd() == null && apNativeAd.getNativeView() == null) {
             if (containerShimmerLoading != null) {
                 containerShimmerLoading.setVisibility(View.GONE);
@@ -640,7 +640,7 @@ public class NkhAd {
             }
         }
         adPlaceHolder.setVisibility(View.VISIBLE);
-        Admob.getInstance().populateUnifiedNativeAdView(apNativeAd.getAdmobNativeAd(), adView, colorCTA, heightCTA);
+        Admob.getInstance().populateUnifiedNativeAdView(apNativeAd.getAdmobNativeAd(), adView, colorCTA, heightCTA, radiusCTA);
         adPlaceHolder.removeAllViews();
         adPlaceHolder.addView(adView);
     }
