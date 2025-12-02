@@ -40,6 +40,7 @@ public class NativeManager implements LifecycleEventObserver {
     private int reloadCount = 0;
     private long timeReloadMs = 5000;
     private int maxReloadCount = 3;
+    private boolean isShowClose = false;
 
     public NativeManager(@NonNull Activity activity, @NonNull LifecycleOwner lifecycleOwner, boolean isCondition, boolean isReloadAds, @NonNull String id, int layoutCustomNative, int layoutShimmerAds, @NonNull FrameLayout frAds, @NonNull AdCallback callback) {
         this.activityRef = new WeakReference<>(activity);
@@ -52,6 +53,10 @@ public class NativeManager implements LifecycleEventObserver {
         this.layoutShimmerAds = layoutShimmerAds;
         this.callback = callback;
         this.lifecycleOwner.getLifecycle().addObserver(this);
+    }
+
+    public void setShowClose(boolean showClose) {
+        isShowClose = showClose;
     }
 
     public void setTimeReloadMs(long timeReloadMs) {
@@ -101,13 +106,14 @@ public class NativeManager implements LifecycleEventObserver {
             ShimmerFrameLayout shimmerAds = (ShimmerFrameLayout) LayoutInflater.from(activity).inflate(layoutShimmerAds, frAds, false);
             frAds.removeAllViews();
             frAds.addView(shimmerAds);
-            NkhAd.getInstance().loadNativeAd(activity, id, layoutCustomNative, frAds, shimmerAds, new AdCallback() {
+
+            NkhAd.getInstance().loadNativeAd(activity, id, layoutCustomNative, frAds, shimmerAds, isShowClose, new AdCallback() {
                 @Override
                 public void onAdFailedToLoad(@Nullable LoadAdError i) {
                     super.onAdFailedToLoad(i);
                     if (callback != null) callback.onAdFailedToLoad(i);
                     frAds.removeAllViews();
-                    reloadCount ++;
+                    reloadCount++;
                     reloadWithDelay();
                 }
 
@@ -115,7 +121,7 @@ public class NativeManager implements LifecycleEventObserver {
                 public void onNativeAdLoaded(@NonNull ApNativeAd ad) {
                     super.onNativeAdLoaded(nativeAd);
                     nativeAd = ad;
-                    reloadCount ++;
+                    reloadCount++;
                     reloadWithDelay();
                 }
             });

@@ -6,9 +6,11 @@ import android.app.Application;
 import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -17,6 +19,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.adjust.sdk.Adjust;
 import com.adjust.sdk.AdjustConfig;
 import com.adjust.sdk.LogLevel;
+import com.ads.nkh.R;
 import com.ads.nkh.admob.Admob;
 import com.ads.nkh.admob.AppOpenManager;
 import com.ads.nkh.ads.native_ads.NativeAdConfig;
@@ -505,6 +508,55 @@ public class NkhAd {
 
     public void loadNativeAd(final Activity activity, String id,
                              int layoutCustomNative, FrameLayout adPlaceHolder, ShimmerFrameLayout
+                                     containerShimmerLoading, boolean isShowClose, AdCallback callback) {
+        Admob.getInstance().loadNativeAd(((Context) activity), id, new AdCallback() {
+            @Override
+            public void onUnifiedNativeAdLoaded(@NonNull NativeAd unifiedNativeAd) {
+                super.onUnifiedNativeAdLoaded(unifiedNativeAd);
+                callback.onNativeAdLoaded(new ApNativeAd(layoutCustomNative, unifiedNativeAd));
+                populateNativeAdView(activity, new ApNativeAd(layoutCustomNative, unifiedNativeAd), adPlaceHolder, containerShimmerLoading, isShowClose);
+            }
+
+            @Override
+            public void onAdImpression() {
+                super.onAdImpression();
+                callback.onAdImpression();
+            }
+
+            @Override
+            public void onAdFailedToLoad(@Nullable LoadAdError i) {
+                super.onAdFailedToLoad(i);
+                callback.onAdFailedToLoad(i);
+            }
+
+            @Override
+            public void onAdFailedToShow(@Nullable AdError adError) {
+                super.onAdFailedToShow(adError);
+                callback.onAdFailedToShow(adError);
+            }
+
+            @Override
+            public void onAdClicked() {
+                super.onAdClicked();
+                callback.onAdClicked();
+            }
+
+            @Override
+            public void onAdLogRev(AdValue adValue, String adUnitId, String mediationAdapterClassName, AdType adType) {
+                super.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType);
+                callback.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType);
+            }
+
+            @Override
+            public void onAdClicked(String adUnitId, String mediationAdapterClassName, AdType adType) {
+                super.onAdClicked(adUnitId, mediationAdapterClassName, adType);
+                callback.onAdClicked(adUnitId, mediationAdapterClassName, adType);
+            }
+        });
+    }
+
+    public void loadNativeAd(final Activity activity, String id,
+                             int layoutCustomNative, FrameLayout adPlaceHolder, ShimmerFrameLayout
                                      containerShimmerLoading, NativeAdConfig nativeAdConfig, AdCallback callback) {
         Admob.getInstance().loadNativeAd(((Context) activity), id, new AdCallback() {
             @Override
@@ -622,6 +674,49 @@ public class NkhAd {
         adPlaceHolder.removeAllViews();
         adPlaceHolder.addView(adView);
     }
+
+    public void populateNativeAdView(Activity activity, ApNativeAd apNativeAd, FrameLayout adPlaceHolder, ShimmerFrameLayout containerShimmerLoading, boolean isShowClose) {
+        if (apNativeAd.getAdmobNativeAd() == null && apNativeAd.getNativeView() == null) {
+            if (containerShimmerLoading != null) {
+                containerShimmerLoading.setVisibility(View.GONE);
+            }
+            return;
+        }
+        @SuppressLint("InflateParams") NativeAdView adView = (NativeAdView) LayoutInflater.from(activity).inflate(apNativeAd.getLayoutCustomNative(), null);
+        if (containerShimmerLoading != null) {
+            try {
+                containerShimmerLoading.stopShimmer();
+                containerShimmerLoading.setVisibility(View.GONE);
+            } catch (Exception e) {
+                Log.w(TAG, "Shimmer stop error: " + e.getMessage());
+            }
+        }
+        adPlaceHolder.setVisibility(View.VISIBLE);
+        Admob.getInstance().populateUnifiedNativeAdView(apNativeAd.getAdmobNativeAd(), adView);
+        adPlaceHolder.removeAllViews();
+        adPlaceHolder.addView(adView);
+
+        if (isShowClose) {
+            int marginInDp = 10;
+            int marginInPx = (int) (marginInDp * activity.getResources().getDisplayMetrics().density);
+            ImageView img = new ImageView(activity);
+            img.setImageResource(R.drawable.ic_close_ads);
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+            );
+            params.gravity = Gravity.TOP | Gravity.END;
+            params.topMargin = marginInPx;
+            params.rightMargin = marginInPx;
+
+            img.setOnClickListener(view -> {
+                adPlaceHolder.removeAllViews();
+            });
+
+            adPlaceHolder.addView(img, params);
+        }
+    }
+
 
     public void populateNativeAdView(Activity activity, ApNativeAd apNativeAd, FrameLayout adPlaceHolder, ShimmerFrameLayout containerShimmerLoading, String colorCTA, int heightCTA, int radiusCTA) {
         if (apNativeAd.getAdmobNativeAd() == null && apNativeAd.getNativeView() == null) {
