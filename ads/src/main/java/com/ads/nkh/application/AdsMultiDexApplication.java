@@ -2,6 +2,7 @@ package com.ads.nkh.application;
 
 import androidx.multidex.MultiDexApplication;
 
+import com.ads.nkh.R;
 import com.ads.nkh.config.NkhAdConfig;
 import com.ads.nkh.util.AppUtil;
 import com.ads.nkh.util.SharePreferenceUtils;
