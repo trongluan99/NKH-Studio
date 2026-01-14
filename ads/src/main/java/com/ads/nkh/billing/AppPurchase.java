@@ -631,6 +631,96 @@ public class AppPurchase {
         return "";
     }
 
+    /**
+     * Subscribe with specific offer token
+     *
+     * @param activity current activity
+     * @param SubsId subscription product ID
+     * @param offerToken specific offer token to use
+     * @return status message
+     */
+    public String subscribe(Activity activity, String SubsId, String offerToken) {
+        if (AppUtil.VARIANT_DEV) {
+            purchase(activity, PRODUCT_ID_TEST);
+            return "Billing test";
+        } else {
+            if (skuListSubsFromStore == null) {
+                if (purchaseListener != null)
+                    purchaseListener.displayErrorMessage("Billing error init");
+                return "";
+            }
+        }
+
+        ProductDetails productDetails = skuDetailsSubsMap.get(SubsId);
+        if (productDetails == null) {
+            return "Product ID invalid";
+        }
+
+        if (offerToken == null || offerToken.isEmpty()) {
+            return "Offer token is required";
+        }
+
+        ImmutableList<BillingFlowParams.ProductDetailsParams> productDetailsParamsList =
+                ImmutableList.of(
+                        BillingFlowParams.ProductDetailsParams.newBuilder()
+                                .setProductDetails(productDetails)
+                                .setOfferToken(offerToken)
+                                .build()
+                );
+
+        BillingFlowParams billingFlowParams = BillingFlowParams.newBuilder()
+                .setProductDetailsParamsList(productDetailsParamsList)
+                .build();
+
+        BillingResult billingResult = billingClient.launchBillingFlow(activity, billingFlowParams);
+
+        switch (billingResult.getResponseCode()) {
+
+            case BillingClient.BillingResponseCode.BILLING_UNAVAILABLE:
+                if (purchaseListener != null)
+                    purchaseListener.displayErrorMessage("Billing not supported for type of request");
+                return "Billing not supported for type of request";
+
+            case BillingClient.BillingResponseCode.ITEM_NOT_OWNED:
+            case BillingClient.BillingResponseCode.DEVELOPER_ERROR:
+                return "";
+
+            case BillingClient.BillingResponseCode.ERROR:
+                if (purchaseListener != null)
+                    purchaseListener.displayErrorMessage("Error completing request");
+                return "Error completing request";
+
+            case BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED:
+                return "Error processing request.";
+
+            case BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED:
+                return "Selected item is already owned";
+
+            case BillingClient.BillingResponseCode.ITEM_UNAVAILABLE:
+                return "Item not available";
+
+            case BillingClient.BillingResponseCode.SERVICE_DISCONNECTED:
+                return "Play Store service is not connected now";
+
+            case BillingClient.BillingResponseCode.SERVICE_TIMEOUT:
+                return "Timeout";
+
+            case BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE:
+                if (purchaseListener != null)
+                    purchaseListener.displayErrorMessage("Network error.");
+                return "Network Connection down";
+
+            case BillingClient.BillingResponseCode.USER_CANCELED:
+                if (purchaseListener != null)
+                    purchaseListener.displayErrorMessage("Request Canceled");
+                return "Request Canceled";
+
+            case BillingClient.BillingResponseCode.OK:
+                return "Subscribed Successfully";
+        }
+        return "";
+    }
+
     private String getOfferToken(List<ProductDetails.SubscriptionOfferDetails> subsDetail) {
         String offerToken = null;
         for (ProductDetails.SubscriptionOfferDetails offer : subsDetail) {
@@ -880,6 +970,131 @@ public class AppPurchase {
         format.setMaximumFractionDigits(0);
         format.setCurrency(Currency.getInstance(currency));
         return format.format(price);
+    }
+
+    /**
+     * Check if a subscription has free trial offer
+     *
+     * @param productId subscription product ID
+     * @return true if subscription has free trial, false otherwise
+     */
+    public boolean hasFreeTrial(String productId) {
+        ProductDetails skuDetails = skuDetailsSubsMap.get(productId);
+        if (skuDetails == null || skuDetails.getSubscriptionOfferDetails() == null) {
+            return false;
+        }
+
+        List<ProductDetails.SubscriptionOfferDetails> offerDetailsList = skuDetails.getSubscriptionOfferDetails();
+        for (ProductDetails.SubscriptionOfferDetails offerDetails : offerDetailsList) {
+            List<ProductDetails.PricingPhase> pricingPhases = offerDetails.getPricingPhases().getPricingPhaseList();
+            // Check if first pricing phase is a free trial (price = 0)
+            if (pricingPhases.size() > 1 && pricingPhases.get(0).getPriceAmountMicros() == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Get free trial period for a subscription
+     *
+     * @param productId subscription product ID
+     * @return free trial period string (e.g., "P7D" for 7 days, "P1M" for 1 month), or empty string if no trial
+     */
+    public String getFreeTrialPeriod(String productId) {
+        ProductDetails skuDetails = skuDetailsSubsMap.get(productId);
+        if (skuDetails == null || skuDetails.getSubscriptionOfferDetails() == null) {
+            return "";
+        }
+
+        List<ProductDetails.SubscriptionOfferDetails> offerDetailsList = skuDetails.getSubscriptionOfferDetails();
+        for (ProductDetails.SubscriptionOfferDetails offerDetails : offerDetailsList) {
+            List<ProductDetails.PricingPhase> pricingPhases = offerDetails.getPricingPhases().getPricingPhaseList();
+            // Check if first pricing phase is a free trial
+            if (pricingPhases.size() > 1 && pricingPhases.get(0).getPriceAmountMicros() == 0) {
+                return pricingPhases.get(0).getBillingPeriod();
+            }
+        }
+        return "";
+    }
+
+    /**
+     * Get formatted free trial period string
+     *
+     * @param productId subscription product ID
+     * @return formatted string (e.g., "7 days free", "1 month free"), or empty string if no trial
+     */
+    public String getFormattedFreeTrialPeriod(String productId) {
+        String period = getFreeTrialPeriod(productId);
+        if (period.isEmpty()) {
+            return "";
+        }
+
+        // Parse ISO 8601 duration format (e.g., P7D, P1M, P1Y)
+        if (period.startsWith("P")) {
+            period = period.substring(1);
+            if (period.endsWith("D")) {
+                int days = Integer.parseInt(period.replace("D", ""));
+                return days + (days == 1 ? " day free" : " days free");
+            } else if (period.endsWith("W")) {
+                int weeks = Integer.parseInt(period.replace("W", ""));
+                return weeks + (weeks == 1 ? " week free" : " weeks free");
+            } else if (period.endsWith("M")) {
+                int months = Integer.parseInt(period.replace("M", ""));
+                return months + (months == 1 ? " month free" : " months free");
+            } else if (period.endsWith("Y")) {
+                int years = Integer.parseInt(period.replace("Y", ""));
+                return years + (years == 1 ? " year free" : " years free");
+            }
+        }
+        return period;
+    }
+
+    /**
+     * Get the offer token for free trial subscription
+     *
+     * @param productId subscription product ID
+     * @return offer token string, or null if no free trial available
+     */
+    public String getFreeTrialOfferToken(String productId) {
+        ProductDetails skuDetails = skuDetailsSubsMap.get(productId);
+        if (skuDetails == null || skuDetails.getSubscriptionOfferDetails() == null) {
+            return null;
+        }
+
+        List<ProductDetails.SubscriptionOfferDetails> offerDetailsList = skuDetails.getSubscriptionOfferDetails();
+        for (ProductDetails.SubscriptionOfferDetails offerDetails : offerDetailsList) {
+            List<ProductDetails.PricingPhase> pricingPhases = offerDetails.getPricingPhases().getPricingPhaseList();
+            // Check if first pricing phase is a free trial
+            if (pricingPhases.size() > 1 && pricingPhases.get(0).getPriceAmountMicros() == 0) {
+                return offerDetails.getOfferToken();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Purchase subscription with free trial if available
+     * If free trial is not available, it will use the default subscription offer
+     *
+     * @param activity    current activity
+     * @param productId   subscription product ID
+     */
+    public void subscribeWithFreeTrial(Activity activity, String productId) {
+        if (skuDetailsSubsMap.containsKey(productId)) {
+            ProductDetails productDetails = skuDetailsSubsMap.get(productId);
+            String offerToken = getFreeTrialOfferToken(productId);
+
+            if (offerToken != null) {
+                // Has free trial - use the free trial offer token
+                subscribe(activity, productId, offerToken);
+            } else {
+                // No free trial - use default subscription
+                subscribe(activity, productId);
+            }
+        } else {
+            Log.e(TAG, "subscribeWithFreeTrial: Product not found - " + productId);
+        }
     }
 
     private double discount = 1;
