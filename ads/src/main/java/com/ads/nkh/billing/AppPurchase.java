@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
@@ -184,13 +185,18 @@ public class AppPurchase {
         @Override
         public void onBillingServiceDisconnected() {
             isAvailable = false;
+
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                billingClient.startConnection(purchaseClientStateListener);
+            }, 2000);
         }
 
         @Override
         public void onBillingSetupFinished(@NonNull BillingResult billingResult) {
             Log.d(TAG, "onBillingSetupFinished:  " + billingResult.getResponseCode());
 
-            if (!isInitBillingFinish) {
+            if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
+                isAvailable = true;
                 verifyPurchased(true);
             }
 
