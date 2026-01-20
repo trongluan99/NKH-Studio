@@ -181,66 +181,79 @@ public class AppPurchase {
         }
     };
 
-    BillingClientStateListener purchaseClientStateListener = new BillingClientStateListener() {
-        @Override
-        public void onBillingServiceDisconnected() {
-            isAvailable = false;
+    BillingClientStateListener purchaseClientStateListener =
+            new BillingClientStateListener() {
 
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                billingClient.startConnection(purchaseClientStateListener);
-            }, 2000);
-        }
+                @Override
+                public void onBillingServiceDisconnected() {
+                    isAvailable = false;
 
-        @Override
-        public void onBillingSetupFinished(@NonNull BillingResult billingResult) {
-            Log.d(TAG, "onBillingSetupFinished:  " + billingResult.getResponseCode());
-
-            if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
-                isAvailable = true;
-                verifyPurchased(true);
-            }
-
-            isInitBillingFinish = true;
-            if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
-                isAvailable = true;
-                // check product detail INAP
-                if (listINAPId.size() > 0) {
-                    QueryProductDetailsParams paramsINAP = QueryProductDetailsParams.newBuilder().setProductList(listINAPId).build();
-
-                    billingClient.queryProductDetailsAsync(paramsINAP, (billingResult12, queryProductDetailsResult) -> {
-                        List<ProductDetails> productDetailsList = queryProductDetailsResult.getProductDetailsList();
-                        if (productDetailsList != null && !productDetailsList.isEmpty()) {
-                            Log.d(TAG, "INAPP details loaded: " + productDetailsList.size());
-                            skuListINAPFromStore = productDetailsList;
-                            isListGot = true;
-                            addSkuINAPToMap(productDetailsList);
-                        } else {
-                            Log.w(TAG, "No INAPP products found from store");
-                        }
-                    });
+                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                        billingClient.startConnection(purchaseClientStateListener);
+                    }, 2000);
                 }
-                // check product detail SUBS
-                if (listSubscriptionId.size() > 0) {
-                    QueryProductDetailsParams paramsSUBS = QueryProductDetailsParams.newBuilder().setProductList(listSubscriptionId).build();
 
-                    billingClient.queryProductDetailsAsync(paramsSUBS, (billingResult1, queryProductDetailsResult) -> {
-                        List<ProductDetails> productDetailsList = queryProductDetailsResult.getProductDetailsList();
-                        if (productDetailsList != null) {
-                            Log.d(TAG, "onSkuSubsDetailsResponse: " + productDetailsList.size());
-                            skuListSubsFromStore = productDetailsList;
-                            isListGot = true;
-                            addSkuSubsToMap(productDetailsList);
-                        } else {
-                            Log.w(TAG, "No SUBS products found from Play Store");
-                        }
-                    });
+                @Override
+                public void onBillingSetupFinished(@NonNull BillingResult billingResult) {
+                    int code = billingResult.getResponseCode();
+                    Log.d(TAG, "onBillingSetupFinished: " + code);
+
+                    isInitBillingFinish = true;
+
+                    if (code != BillingClient.BillingResponseCode.OK) {
+                        // retry init
+                        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                            billingClient.startConnection(purchaseClientStateListener);
+                        }, 2000);
+                        return;
+                    }
+
+                    // ====== BILLING READY ======
+                    isAvailable = true;
+
+                    // 1️⃣ VERIFY PURCHASE (AN TOÀN)
+                    verifyPurchased(true);
+
+                    // 2️⃣ LOAD INAPP
+                    if (!listINAPId.isEmpty()) {
+                        QueryProductDetailsParams paramsINAP =
+                                QueryProductDetailsParams.newBuilder()
+                                        .setProductList(listINAPId)
+                                        .build();
+
+                        billingClient.queryProductDetailsAsync(
+                                paramsINAP,
+                                (br, result) -> {
+                                    List<ProductDetails> list = result.getProductDetailsList();
+                                    if (list != null && !list.isEmpty()) {
+                                        skuListINAPFromStore = list;
+                                        addSkuINAPToMap(list);
+                                    }
+                                }
+                        );
+                    }
+
+                    // 3️⃣ LOAD SUBS
+                    if (!listSubscriptionId.isEmpty()) {
+                        QueryProductDetailsParams paramsSUBS =
+                                QueryProductDetailsParams.newBuilder()
+                                        .setProductList(listSubscriptionId)
+                                        .build();
+
+                        billingClient.queryProductDetailsAsync(
+                                paramsSUBS,
+                                (br, result) -> {
+                                    List<ProductDetails> list = result.getProductDetailsList();
+                                    if (list != null && !list.isEmpty()) {
+                                        skuListSubsFromStore = list;
+                                        addSkuSubsToMap(list);
+                                    }
+                                }
+                        );
+                    }
                 }
-            } else if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE || billingResult.getResponseCode() == BillingClient.BillingResponseCode.ERROR) {
-                Log.e(TAG, "onBillingSetupFinished:ERROR ");
+            };
 
-            }
-        }
-    };
 
     public static AppPurchase getInstance() {
         if (instance == null) {
@@ -640,8 +653,8 @@ public class AppPurchase {
     /**
      * Subscribe with specific offer token
      *
-     * @param activity current activity
-     * @param SubsId subscription product ID
+     * @param activity   current activity
+     * @param SubsId     subscription product ID
      * @param offerToken specific offer token to use
      * @return status message
      */
@@ -1083,8 +1096,8 @@ public class AppPurchase {
      * Purchase subscription with free trial if available
      * If free trial is not available, it will use the default subscription offer
      *
-     * @param activity    current activity
-     * @param productId   subscription product ID
+     * @param activity  current activity
+     * @param productId subscription product ID
      */
     public void subscribeWithFreeTrial(Activity activity, String productId) {
         if (skuDetailsSubsMap.containsKey(productId)) {
