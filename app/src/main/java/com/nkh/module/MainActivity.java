@@ -195,5 +195,11 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
+        /*MobileAds.openAdInspector(this, new OnAdInspectorClosedListener() {
+            @Override
+            public void onAdInspectorClosed(@Nullable AdInspectorError adInspectorError) {
+                Log.d("TAG", "onAdInspectorClosed: " + adInspectorError);
+            }
+        });*/
     }
 }

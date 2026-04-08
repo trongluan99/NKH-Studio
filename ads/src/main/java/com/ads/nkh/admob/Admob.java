@@ -2187,23 +2187,45 @@ public class Admob {
 
     private void showNativeDebugDialog(NativeAd nativeAd, NativeAdView adView) {
         adView.post(() -> {
-            String extra = "";
+            StringBuilder extra = new StringBuilder();
+            float density = adView.getContext().getResources().getDisplayMetrics().density;
+            boolean isMediaValid = true;
+            boolean isCtaValid = true;
+
             if (adView.getMediaView() != null) {
-                extra = "MediaView Size: " + adView.getMediaView().getWidth() + "x" + adView.getMediaView().getHeight();
+                float pxWidth = adView.getMediaView().getWidth();
+                float pxHeight = adView.getMediaView().getHeight();
+                float dpWidth = pxWidth / density;
+                float dpHeight = pxHeight / density;
+                
+                // AdMob requirements: MediaView must be at least 120x120 dp for video ads
+                if (dpWidth < 120 || dpHeight < 120) {
+                    isMediaValid = false;
+                    extra.append(String.format("MediaView Size: %.1f x %.1f dp (%.0f x %.0f px)", dpWidth, dpHeight, pxWidth, pxHeight));
+                    extra.append("\nWarning: MediaView < 120x120 dp (Video ads disabled)\n");
+                }
             }
             if (adView.getCallToActionView() != null) {
-                if (!extra.isEmpty()) extra += "\n";
-                float density = adView.getContext().getResources().getDisplayMetrics().density;
                 float pxHeight = adView.getCallToActionView().getHeight();
                 float dpHeight = pxHeight / density;
                 
-                // Convert DP to SDP (sdp is proportional based on 300dp screen width base)
-                float screenWidthDp = adView.getContext().getResources().getDisplayMetrics().widthPixels / density;
-                float sdpHeight = (dpHeight * 300) / screenWidthDp;
-                
-                extra += String.format("CTA Height: %.1f sdp (%.0f px)", sdpHeight, pxHeight);
+                // Android accessibility: Suggest at least 36-48 dp
+                if (dpHeight < 36) {
+                    isCtaValid = false;
+                    if (extra.length() > 0 && extra.charAt(extra.length() - 1) != '\n') {
+                        extra.append("\n");
+                    }
+                    extra.append(String.format("CTA Height: %.1f dp (%.0f px)\nWarning: CTA target is too small (< 36 dp)", dpHeight, pxHeight));
+                }
             }
-            AdDebugDialog.show(adView.getContext(), adView, "NATIVE", "Native Ad", extra);
+            
+            // Final status is Success only if both are valid
+            boolean overallSuccess = isMediaValid && isCtaValid;
+            
+            // Update implementation issue count description if needed
+            int issues = (isMediaValid ? 0 : 1) + (isCtaValid ? 0 : 1);
+            
+            AdDebugDialog.show(adView.getContext(), adView, "NATIVE", "Native Ad", extra.toString().trim(), overallSuccess, issues);
         });
     }
 
