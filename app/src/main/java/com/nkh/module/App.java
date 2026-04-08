@@ -7,6 +7,8 @@ import com.ads.nkh.application.AdsMultiDexApplication;
 import com.ads.nkh.billing.AppPurchase;
 import com.ads.nkh.config.AdjustConfig;
 import com.ads.nkh.config.NkhAdConfig;
+import com.sensorsdata.analytics.android.sdk.SAConfigOptions;
+import com.sensorsdata.analytics.android.sdk.SensorsDataAPI;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +31,7 @@ public class App extends AdsMultiDexApplication {
         mNkhAdConfig.setAdjustTokenTiktok(getString(R.string.tiktok_token));
 
         mNkhAdConfig.setIdAdResume("");
+        mNkhAdConfig.setShowAdDebugDialog(BuildConfig.DEBUG);
 
         NkhAd.getInstance().init(this, mNkhAdConfig);
         Admob.getInstance().setDisableAdResumeWhenClickAds(true);

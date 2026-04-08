@@ -33,6 +33,8 @@ import com.ads.nkh.dialog.ResumeLoadingDialog;
 import com.ads.nkh.event.NkhLogEventManager;
 import com.ads.nkh.funtion.AdCallback;
 import com.ads.nkh.funtion.AdType;
+import com.ads.nkh.util.AdDebugDialog;
+import com.ads.nkh.util.AppUtil;
 import com.google.android.gms.ads.AdActivity;
 import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.AdRequest;

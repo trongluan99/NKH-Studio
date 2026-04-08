@@ -38,6 +38,8 @@ import com.ads.nkh.billing.AppPurchase;
 import com.ads.nkh.dialog.PrepareLoadingAdsDialog;
 import com.ads.nkh.event.NkhLogEventManager;
 import com.ads.nkh.funtion.AdCallback;
+import com.ads.nkh.util.AdDebugDialog;
+import com.ads.nkh.util.AppUtil;
 import com.ads.nkh.funtion.AdType;
 import com.ads.nkh.funtion.AdmobHelper;
 import com.ads.nkh.funtion.RewardCallback;
@@ -1823,7 +1825,7 @@ public class Admob {
             e.printStackTrace();
         }
         adView.setNativeAd(nativeAd);
-
+        showNativeDebugDialog(nativeAd, adView);
     }
 
     public void populateUnifiedNativeAdView(NativeAd nativeAd, NativeAdView adView, String colorCTA, int heightCTA, int radiusCTA) {
@@ -1923,7 +1925,7 @@ public class Admob {
             e.printStackTrace();
         }
         adView.setNativeAd(nativeAd);
-
+        showNativeDebugDialog(nativeAd, adView);
 
         try {
             View cta = adView.getCallToActionView();
@@ -2180,6 +2182,29 @@ public class Admob {
         } catch (Exception ignored) {
         }
 
+        showNativeDebugDialog(nativeAd, adView);
+    }
+
+    private void showNativeDebugDialog(NativeAd nativeAd, NativeAdView adView) {
+        adView.post(() -> {
+            String extra = "";
+            if (adView.getMediaView() != null) {
+                extra = "MediaView Size: " + adView.getMediaView().getWidth() + "x" + adView.getMediaView().getHeight();
+            }
+            if (adView.getCallToActionView() != null) {
+                if (!extra.isEmpty()) extra += "\n";
+                float density = adView.getContext().getResources().getDisplayMetrics().density;
+                float pxHeight = adView.getCallToActionView().getHeight();
+                float dpHeight = pxHeight / density;
+                
+                // Convert DP to SDP (sdp is proportional based on 300dp screen width base)
+                float screenWidthDp = adView.getContext().getResources().getDisplayMetrics().widthPixels / density;
+                float sdpHeight = (dpHeight * 300) / screenWidthDp;
+                
+                extra += String.format("CTA Height: %.1f sdp (%.0f px)", sdpHeight, pxHeight);
+            }
+            AdDebugDialog.show(adView.getContext(), adView, "NATIVE", "Native Ad", extra);
+        });
     }
 
     public int getCtaButtonHeight(NativeAdConfig nativeAdConfig) {

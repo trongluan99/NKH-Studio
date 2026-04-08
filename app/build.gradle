@@ -83,6 +83,9 @@ dependencies {
     implementation 'androidx.work:work-runtime-ktx:2.8.0'
 
     implementation 'com.facebook.shimmer:shimmer:0.5.0'
+
+    implementation 'com.sensorsdata.analytics.android:SensorsAnalyticsSDK:6.6.9'
+
 }
 repositories {
     mavenCentral()

@@ -23,6 +23,16 @@ public class NkhAdConfig {
 
     private int intervalInterstitialAd = 0;
 
+    private boolean isShowAdDebugDialog = false;
+
+    public boolean isShowAdDebugDialog() {
+        return isShowAdDebugDialog;
+    }
+
+    public void setShowAdDebugDialog(boolean showAdDebugDialog) {
+        isShowAdDebugDialog = showAdDebugDialog;
+    }
+
     private int prepareLoadingAdsDialogLayout = -1;
     private int resumeLoadingDialogLayout = -1;
 
