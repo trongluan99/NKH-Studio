@@ -18,7 +18,9 @@ public class SplashActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
 
-        /*NkhAd.getInstance().loadSplashInterstitialAds(this, BuildConfig.ad_interstitial_splash, 25000, 5000, new AdCallback() {
+        Log.d("TAG", "onCreate: " + NkhAd.getInstance().getOrganic());
+
+        NkhAd.getInstance().loadSplashInterstitialAds(this, BuildConfig.ad_interstitial_splash, 25000, 5000, new AdCallback() {
             @Override
             public void onNextAction() {
                 super.onNextAction();
@@ -26,10 +28,7 @@ public class SplashActivity extends AppCompatActivity {
                 startActivity(new Intent(SplashActivity.this, MainActivity.class));
                 finish();
             }
-        });*/
-
-        startActivity(new Intent(SplashActivity.this, MainActivity.class));
-        finish();
+        });
     }
 
     @Override
