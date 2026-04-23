@@ -444,6 +444,7 @@ public class Admob {
 
             @Override
             public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
+                AppOpenManager.getInstance().setInterstitialShowing(false);
                 mInterstitialSplash = null;
                 isShowLoadingSplash = false;
                 if (adListener != null) {
@@ -514,6 +515,7 @@ public class Admob {
                         if (dialog != null) {
                             dialog.dismiss();
                         }
+                        AppOpenManager.getInstance().setInterstitialShowing(false);
                         adListener.onNextAction();
                         isShowLoadingSplash = false;
                         Log.d("XXXXXX", "onShowSplash: 6");
@@ -521,6 +523,7 @@ public class Admob {
                 } else {
                     if (dialog != null && dialog.isShowing() && !activity.isDestroyed())
                         dialog.dismiss();
+                    AppOpenManager.getInstance().setInterstitialShowing(false);
                     isShowLoadingSplash = false;
                     assert adListener != null;
                     adListener.onAdFailedToShow(new AdError(0, "Show fail in background after show loading ad", "LuanDT"));
@@ -590,6 +593,7 @@ public class Admob {
 
             @Override
             public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
+                AppOpenManager.getInstance().setInterstitialShowing(false);
                 mInterstitialSplash = null;
                 isShowLoadingSplash = false;
                 if (adListener != null) {
@@ -656,6 +660,7 @@ public class Admob {
                         if (dialog != null) {
                             dialog.dismiss();
                         }
+                        AppOpenManager.getInstance().setInterstitialShowing(false);
                         adListener.onNextAction();
                         isShowLoadingSplash = false;
                     }
@@ -770,6 +775,7 @@ public class Admob {
             @Override
             public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
                 super.onAdFailedToShowFullScreenContent(adError);
+                AppOpenManager.getInstance().setInterstitialShowing(false);
                 if (callback != null) {
                     if (dialog != null) {
                         dialog.dismiss();
@@ -855,8 +861,9 @@ public class Admob {
                         }
                         mInterstitialAd.show((Activity) context);
                     } else {
-                        if (dialog != null && dialog.isShowing() && !((Activity) context).isDestroyed())
+                        if (dialog != null)
                             dialog.dismiss();
+                        AppOpenManager.getInstance().setInterstitialShowing(false);
                         callback.onAdFailedToShow(new AdError(0, "Show fail in background after show loading ad", "LuanDT"));
                     }
                 }, 800);
@@ -2382,6 +2389,7 @@ public class Admob {
                 @Override
                 public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
                     super.onAdFailedToShowFullScreenContent(adError);
+                    AppOpenManager.getInstance().setInterstitialShowing(false);
                     if (adCallback != null)
                         adCallback.onRewardedAdFailedToShow(adError.getCode());
                 }
@@ -2444,6 +2452,7 @@ public class Admob {
                 @Override
                 public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
                     super.onAdFailedToShowFullScreenContent(adError);
+                    AppOpenManager.getInstance().setInterstitialShowing(false);
                     if (adCallback != null)
                         adCallback.onRewardedAdFailedToShow(adError.getCode());
                 }
@@ -2506,6 +2515,7 @@ public class Admob {
                 @Override
                 public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
                     super.onAdFailedToShowFullScreenContent(adError);
+                    AppOpenManager.getInstance().setInterstitialShowing(false);
                     if (adCallback != null)
                         adCallback.onRewardedAdFailedToShow(adError.getCode());
                 }
@@ -3269,6 +3279,7 @@ public class Admob {
             @Override
             public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
                 super.onAdFailedToShowFullScreenContent(adError);
+                AppOpenManager.getInstance().setInterstitialShowing(false);
                 mInterSplashHigh1 = null;
                 isShowLoadingSplash = false;
                 if (adListener != null) {
@@ -3316,6 +3327,7 @@ public class Admob {
                 dialog = new PrepareLoadingAdsDialog(activity);
                 try {
                     dialog.show();
+                    AppOpenManager.getInstance().setInterstitialShowing(true);
                 } catch (Exception e) {
                     adListener.onNextAction();
                     return;
@@ -3342,18 +3354,21 @@ public class Admob {
                         if (dialog != null) {
                             dialog.dismiss();
                         }
+                        AppOpenManager.getInstance().setInterstitialShowing(false);
                         adListener.onNextAction();
                         isShowLoadingSplash = false;
                     }
                 } else {
                     if (dialog != null && dialog.isShowing() && !activity.isDestroyed())
                         dialog.dismiss();
+                    AppOpenManager.getInstance().setInterstitialShowing(false);
                     isShowLoadingSplash = false;
                     Log.e(TAG, "onShowSplash:   show fail in background after show loading ad");
                     adListener.onAdFailedToShow(new AdError(0, " show fail in background after show loading ad", "MiaAd"));
                 }
             }, 800);
         } else {
+            AppOpenManager.getInstance().setInterstitialShowing(false);
             adListener.onAdFailedToShow(new AdError(0, " show fail in background after show loading ad", "MiaAd"));
             Log.e(TAG, "onShowSplash: fail on background");
             isShowLoadingSplash = false;
@@ -3509,6 +3524,7 @@ public class Admob {
             public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
                 super.onAdFailedToShowFullScreenContent(adError);
                 Log.e(TAG, "Splash onAdFailedToShowFullScreenContent: " + adError.getMessage());
+                AppOpenManager.getInstance().setInterstitialShowing(false);
                 mInterSplashHigh2 = null;
                 isShowLoadingSplash = false;
                 if (adListener != null) {
@@ -3745,6 +3761,7 @@ public class Admob {
             public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
                 super.onAdFailedToShowFullScreenContent(adError);
                 Log.e(TAG, "Splash onAdFailedToShowFullScreenContent: " + adError.getMessage());
+                AppOpenManager.getInstance().setInterstitialShowing(false);
                 mInterSplashHigh3 = null;
                 isShowLoadingSplash = false;
                 if (adListener != null) {
@@ -3986,6 +4003,7 @@ public class Admob {
 
             @Override
             public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
+                AppOpenManager.getInstance().setInterstitialShowing(false);
                 mInterSplashNormal = null;
                 isShowLoadingSplash = false;
                 if (adListener != null) {
