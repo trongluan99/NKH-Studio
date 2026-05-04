@@ -20,26 +20,41 @@ public class SplashActivity extends AppCompatActivity {
 
         Log.d("TAG", "onCreate: " + NkhAd.getInstance().getOrganic());
 
-        NkhAd.getInstance().loadSplashInterstitialAds(this, BuildConfig.ad_interstitial_splash, 25000, 5000, new AdCallback() {
+        NkhAd.getInstance().loadInterSplashPriority2SameTime(this, BuildConfig.ad_interstitial_splash, BuildConfig.ad_interstitial_splash, 25000, 5000, new AdCallback() {
+            @Override
+            public void onAdSplashHigh1Ready() {
+                super.onAdSplashHigh1Ready();
+                Log.d("XXXXXX", "onAdSplashHigh1Ready");
+                NkhAd.getInstance().onShowSplashPriority2(SplashActivity.this, new AdCallback() {
+                    @Override
+                    public void onNextAction() {
+                        super.onNextAction();
+                        startActivity(new Intent(SplashActivity.this, MainActivity.class));
+                        finish();
+                    }
+                });
+            }
+
+            @Override
+            public void onAdSplashNormalReady() {
+                super.onAdSplashNormalReady();
+                Log.d("XXXXXX", "onAdSplashNormalReady");
+                NkhAd.getInstance().onShowSplashPriority2(SplashActivity.this, new AdCallback() {
+                    @Override
+                    public void onNextAction() {
+                        super.onNextAction();
+                        startActivity(new Intent(SplashActivity.this, MainActivity.class));
+                        finish();
+                    }
+                });
+            }
+
             @Override
             public void onNextAction() {
                 super.onNextAction();
-                Log.d("XXXXXX", "onNextAction: 1");
                 startActivity(new Intent(SplashActivity.this, MainActivity.class));
                 finish();
             }
         });
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        NkhAd.getInstance().onCheckShowSplashWhenFail(this, new AdCallback() {
-            @Override
-            public void onNextAction() {
-                super.onNextAction();
-                Log.d("XXXXXX", "onNextAction: 2");
-            }
-        }, 1000);
     }
 }

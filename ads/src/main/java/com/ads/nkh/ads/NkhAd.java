@@ -25,6 +25,7 @@ import com.ads.nkh.admob.AppOpenManager;
 import com.ads.nkh.ads.native_ads.NativeAdConfig;
 import com.ads.nkh.ads.wrapper.ApInterstitialAd;
 import com.ads.nkh.ads.wrapper.ApInterstitialPriorityAd;
+import com.ads.nkh.ads.wrapper.ApInterstitialPriority2Ad;
 import com.ads.nkh.ads.wrapper.ApNativeAd;
 import com.ads.nkh.config.NkhAdConfig;
 import com.ads.nkh.event.NkhAdjust;
@@ -805,6 +806,23 @@ public class NkhAd {
         Admob.getInstance().onCheckShowSplashPriority4WhenFail(activity, callback, timeDelay);
     }
 
+    public void loadInterSplashPriority2SameTime(final Context context,
+                                                 String idAdsHigh,
+                                                 String idAdsNormal,
+                                                 long timeOut,
+                                                 long timeDelay,
+                                                 AdCallback adListener) {
+        Admob.getInstance().loadInterSplashPriority2SameTime(context, idAdsHigh, idAdsNormal, timeOut, timeDelay, adListener);
+    }
+
+    public void onShowSplashPriority2(AppCompatActivity activity, AdCallback adListener) {
+        Admob.getInstance().onShowSplashPriority2(activity, adListener);
+    }
+
+    public void onCheckShowSplashPriority2WhenFail(AppCompatActivity activity, AdCallback callback, int timeDelay) {
+        Admob.getInstance().onCheckShowSplashPriority2WhenFail(activity, callback, timeDelay);
+    }
+
     private boolean isFinishLoadNativeAdHigh1 = false;
     private boolean isFinishLoadNativeAdHigh2 = false;
     private boolean isFinishLoadNativeAdHigh3 = false;
@@ -1289,4 +1307,189 @@ public class NkhAd {
                 false
         );
     }
+
+    // ==================== Priority 2 Interstitial Ads ====================
+
+    public void loadPriority2InterstitialAds(Context context, ApInterstitialPriority2Ad apInterstitialPriority2Ad, AdCallback adCallback) {
+        loadPriority2InterstitialAdsFromAdmob(context, apInterstitialPriority2Ad, adCallback);
+    }
+
+    public void loadPriority2InterstitialAdsFromAdmob(Context context,
+                                                      ApInterstitialPriority2Ad apInterstitialPriority2Ad,
+                                                      AdCallback adCallback) {
+        if (!apInterstitialPriority2Ad.getHighPriorityId().isEmpty()
+                && !apInterstitialPriority2Ad.getHighPriorityInterstitialAd().isReady()
+        ) {
+            loadAdsInterHighPriority2(context, apInterstitialPriority2Ad, adCallback);
+        }
+
+        if (!apInterstitialPriority2Ad.getNormalPriorityId().isEmpty()
+                && !apInterstitialPriority2Ad.getNormalPriorityInterstitialAd().isReady()
+        ) {
+            loadInterNormalPriority2(context, apInterstitialPriority2Ad, adCallback);
+        }
+    }
+
+    private void loadAdsInterHighPriority2(Context context, ApInterstitialPriority2Ad apInterstitialPriority2Ad, AdCallback adCallback) {
+        Admob.getInstance().getInterstitialAds(context, apInterstitialPriority2Ad.getHighPriorityId(), new AdCallback() {
+            @Override
+            public void onInterstitialLoad(@Nullable InterstitialAd interstitialAd) {
+                super.onInterstitialLoad(interstitialAd);
+                Log.d(TAG, "onInterstitialLoad idAdsHighPriority");
+                apInterstitialPriority2Ad.getHighPriorityInterstitialAd().setInterstitialAd(interstitialAd);
+                adCallback.onApInterstitialLoad(apInterstitialPriority2Ad.getHighPriorityInterstitialAd());
+            }
+
+            @Override
+            public void onAdFailedToLoad(@Nullable LoadAdError i) {
+                super.onAdFailedToLoad(i);
+                Log.e(TAG, "onAdFailedToLoad: idAdsHighPriority: " + i);
+                adCallback.onAdFailedToLoad(i);
+            }
+
+            @Override
+            public void onAdClicked() {
+                super.onAdClicked();
+                adCallback.onAdClicked();
+            }
+
+            @Override
+            public void onAdClicked(String adUnitId, String mediationAdapterClassName, AdType adType) {
+                super.onAdClicked(adUnitId, mediationAdapterClassName, adType);
+                adCallback.onAdClicked(adUnitId, mediationAdapterClassName, adType);
+            }
+
+            @Override
+            public void onAdLogRev(AdValue adValue, String adUnitId, String mediationAdapterClassName, AdType adType) {
+                super.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType);
+                adCallback.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType);
+            }
+
+            @Override
+            public void onAdImpression() {
+                super.onAdImpression();
+                adCallback.onAdImpression();
+            }
+        });
+    }
+
+    private void loadInterNormalPriority2(Context context, ApInterstitialPriority2Ad apInterstitialPriority2Ad, AdCallback adCallback) {
+        Admob.getInstance().getInterstitialAds(context, apInterstitialPriority2Ad.getNormalPriorityId(), new AdCallback() {
+            @Override
+            public void onInterstitialLoad(@Nullable InterstitialAd interstitialAd) {
+                super.onInterstitialLoad(interstitialAd);
+                Log.d(TAG, "onInterstitialLoad idAdsNormalPriority");
+                apInterstitialPriority2Ad.getNormalPriorityInterstitialAd().setInterstitialAd(interstitialAd);
+                adCallback.onApInterstitialLoad(apInterstitialPriority2Ad.getNormalPriorityInterstitialAd());
+            }
+
+            @Override
+            public void onAdFailedToLoad(@Nullable LoadAdError i) {
+                super.onAdFailedToLoad(i);
+                Log.e(TAG, "onAdFailedToLoad: idAdsNormalPriority: " + i);
+                adCallback.onAdFailedToLoad(i);
+            }
+
+            @Override
+            public void onAdClicked() {
+                super.onAdClicked();
+                adCallback.onAdClicked();
+            }
+
+            @Override
+            public void onAdClicked(String adUnitId, String mediationAdapterClassName, AdType adType) {
+                super.onAdClicked(adUnitId, mediationAdapterClassName, adType);
+                adCallback.onAdClicked(adUnitId, mediationAdapterClassName, adType);
+            }
+
+            @Override
+            public void onAdLogRev(AdValue adValue, String adUnitId, String mediationAdapterClassName, AdType adType) {
+                super.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType);
+                adCallback.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType);
+            }
+
+            @Override
+            public void onAdImpression() {
+                super.onAdImpression();
+                adCallback.onAdImpression();
+            }
+        });
+    }
+
+    public void forceShowInterstitialPriority2(Context context, ApInterstitialPriority2Ad apInterstitialPriority2Ad, AdCallback adCallback, boolean isReloadAds) {
+        ApInterstitialAd interstitialAd;
+        if (apInterstitialPriority2Ad.getHighPriorityInterstitialAd() != null
+                && apInterstitialPriority2Ad.getHighPriorityInterstitialAd().isReady()
+        ) {
+            interstitialAd = apInterstitialPriority2Ad.getHighPriorityInterstitialAd();
+        } else if (apInterstitialPriority2Ad.getNormalPriorityInterstitialAd() != null
+                && apInterstitialPriority2Ad.getNormalPriorityInterstitialAd().isReady()
+        ) {
+            interstitialAd = apInterstitialPriority2Ad.getNormalPriorityInterstitialAd();
+        } else {
+            adCallback.onNextAction();
+            if (isReloadAds) {
+                loadPriority2InterstitialAds(context, apInterstitialPriority2Ad, new AdCallback());
+            }
+            return;
+        }
+        forceShowInterstitial(context,
+                interstitialAd,
+                new AdCallback() {
+                    @Override
+                    public void onNextAction() {
+                        super.onNextAction();
+                        adCallback.onNextAction();
+                    }
+
+                    @Override
+                    public void onAdClosed() {
+                        super.onAdClosed();
+                        interstitialAd.setInterstitialAd(null);
+                        adCallback.onAdClosed();
+                        if (isReloadAds) {
+                            loadPriority2InterstitialAds(context, apInterstitialPriority2Ad, new AdCallback());
+                        }
+                    }
+
+                    @Override
+                    public void onInterstitialShow() {
+                        super.onInterstitialShow();
+                        adCallback.onInterstitialShow();
+                    }
+
+                    @Override
+                    public void onAdClicked() {
+                        super.onAdClicked();
+                        adCallback.onAdClicked();
+                    }
+
+                    @Override
+                    public void onAdClicked(String adUnitId, String mediationAdapterClassName, AdType adType) {
+                        super.onAdClicked(adUnitId, mediationAdapterClassName, adType);
+                        adCallback.onAdClicked(adUnitId, mediationAdapterClassName, adType);
+                    }
+
+                    @Override
+                    public void onAdLogRev(AdValue adValue, String adUnitId, String mediationAdapterClassName, AdType adType) {
+                        super.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType);
+                        adCallback.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType);
+                    }
+
+                    @Override
+                    public void onAdFailedToShow(@Nullable AdError adError) {
+                        super.onAdFailedToShow(adError);
+                        adCallback.onAdFailedToShow(adError);
+                    }
+
+                    @Override
+                    public void onAdImpression() {
+                        super.onAdImpression();
+                        adCallback.onAdImpression();
+                    }
+                },
+                false
+        );
+    }
 }
+

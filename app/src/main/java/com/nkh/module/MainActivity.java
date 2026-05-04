@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.ads.nkh.ads.NkhAd;
 import com.ads.nkh.ads.wrapper.ApInterstitialAd;
+import com.ads.nkh.ads.wrapper.ApInterstitialPriority2Ad;
 import com.ads.nkh.ads.wrapper.ApNativeAd;
 import com.ads.nkh.billing.AppPurchase;
 import com.ads.nkh.funtion.AdCallback;
@@ -25,7 +26,7 @@ import com.google.android.gms.ads.rewarded.RewardItem;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 
 public class MainActivity extends AppCompatActivity {
-    private ApInterstitialAd mInterstitialAd;
+    private ApInterstitialPriority2Ad mInterstitialPriority2Ad;
     private Button btnLoad, btnShow, btnIap, btnLoadReward, btnShowReward;
     private FrameLayout frAds, frBanner;
     private ShimmerFrameLayout shimmerAds;
@@ -49,21 +50,21 @@ public class MainActivity extends AppCompatActivity {
         shimmerAds = findViewById(R.id.shimmer_native);
 
 
-        // Interstitial Ads
+        // Interstitial Priority2 Ads
+        mInterstitialPriority2Ad = new ApInterstitialPriority2Ad(BuildConfig.ad_interstitial_splash, BuildConfig.ad_interstitial_splash);
         btnLoad.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                NkhAd.getInstance().getInterstitialAds(MainActivity.this, BuildConfig.ad_interstitial_splash, new AdCallback() {
+                NkhAd.getInstance().loadPriority2InterstitialAds(MainActivity.this, mInterstitialPriority2Ad, new AdCallback() {
                     @Override
                     public void onApInterstitialLoad(@Nullable ApInterstitialAd apInterstitialAd) {
                         super.onApInterstitialLoad(apInterstitialAd);
-                        mInterstitialAd = apInterstitialAd;
                         Toast.makeText(MainActivity.this, "Ads Ready", Toast.LENGTH_SHORT).show();
                     }
                 });
             }
         });
-        btnShow.setOnClickListener(v -> NkhAd.getInstance().forceShowInterstitial(MainActivity.this, mInterstitialAd, new AdCallback() {
+        btnShow.setOnClickListener(v -> NkhAd.getInstance().forceShowInterstitialPriority2(MainActivity.this, mInterstitialPriority2Ad, new AdCallback() {
         }, true));
 
         // Banner Ads

@@ -4149,4 +4149,257 @@ public class Admob {
         }, timeDelay);
     }
 
+    // ==================== Priority 2 SameTime ====================
+
+    private boolean isInterPriority2High1Failed = false;
+    private boolean isInterPriority2NormalLoaded = false;
+
+    public void loadInterSplashPriority2SameTime(final Context context,
+                                                 String idAdsHigh,
+                                                 String idAdsNormal,
+                                                 long timeOut,
+                                                 long timeDelay,
+                                                 AdCallback adListener) {
+        isInterPriority2High1Failed = false;
+        isInterPriority2NormalLoaded = false;
+        loadInterSplashHigh1(context, idAdsHigh, timeOut, timeDelay, false, new AdCallback() {
+            @Override
+            public void onAdSplashReady() {
+                super.onAdSplashReady();
+                adListener.onAdSplashHigh1Ready();
+            }
+
+            @Override
+            public void onAdFailedToLoad(@Nullable LoadAdError i) {
+                super.onAdFailedToLoad(i);
+                adListener.onAdPriorityFailedToLoad(i);
+            }
+
+            @Override
+            public void onNextAction() {
+                super.onNextAction();
+                if (isInterPriority2NormalLoaded && mInterSplashNormal != null) {
+                    adListener.onAdSplashNormalReady();
+                } else {
+                    // waiting for normal ads loaded
+                    isInterPriority2High1Failed = true;
+                }
+            }
+
+            @Override
+            public void onAdLogRev(AdValue adValue, String adUnitId, String mediationAdapterClassName, AdType adType) {
+                super.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType);
+                adListener.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType);
+            }
+        });
+
+        loadInterSplashNormal(context, idAdsNormal, timeOut, timeDelay, new AdCallback() {
+            @Override
+            public void onAdSplashReady() {
+                super.onAdSplashReady();
+                if (isInterPriority2High1Failed) {
+                    adListener.onAdSplashNormalReady();
+                } else {
+                    isInterPriority2NormalLoaded = true;
+                }
+            }
+
+            @Override
+            public void onNextAction() {
+                super.onNextAction();
+                if (isInterPriority2High1Failed) {
+                    adListener.onNextAction();
+                } else {
+                    isInterPriority2NormalLoaded = true;
+                }
+            }
+
+            @Override
+            public void onAdFailedToLoad(@Nullable LoadAdError i) {
+                super.onAdFailedToLoad(i);
+                adListener.onAdPriorityFailedToLoad(i);
+            }
+
+            @Override
+            public void onAdLogRev(AdValue adValue, String adUnitId, String mediationAdapterClassName, AdType adType) {
+                super.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType);
+                adListener.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType);
+            }
+        });
+    }
+
+    public void onShowSplashPriority2(AppCompatActivity activity, AdCallback adListener) {
+        isFailedPriority = false;
+        if (mInterSplashHigh1 != null) {
+            onShowSplashHigh1(activity, new AdCallback() {
+                @Override
+                public void onAdClosed() {
+                    super.onAdClosed();
+                    adListener.onAdClosed();
+                }
+
+                @Override
+                public void onAdClicked() {
+                    super.onAdClicked();
+                    adListener.onAdClicked();
+                    adListener.onAdClicked(mInterSplashHigh1.getAdUnitId(), mInterSplashHigh1.getResponseInfo().getMediationAdapterClassName(), AdType.INTERSTITIAL);
+                }
+
+                @Override
+                public void onAdImpression() {
+                    super.onAdImpression();
+                    adListener.onAdImpression();
+                }
+
+                @Override
+                public void onInterstitialShow() {
+                    super.onInterstitialShow();
+                }
+
+                @Override
+                public void onAdFailedToShow(@Nullable AdError adError) {
+                    super.onAdFailedToShow(adError);
+                    isShowLoadingSplash = false;
+                    Log.i(TAG, "onAdFailedToShowPriority2: ");
+                    adListener.onAdPriorityFailedToShow(adError);
+                    isFailedPriority = true;
+                    onShowSplashNormal(activity, new AdCallback() {
+                        @Override
+                        public void onAdClosed() {
+                            super.onAdClosed();
+                            adListener.onAdClosed();
+                        }
+
+                        @Override
+                        public void onAdClicked() {
+                            super.onAdClicked();
+                            adListener.onAdClicked();
+                            adListener.onAdClicked(mInterSplashNormal.getAdUnitId(), mInterSplashNormal.getResponseInfo().getMediationAdapterClassName(), AdType.INTERSTITIAL);
+                        }
+
+                        @Override
+                        public void onAdImpression() {
+                            super.onAdImpression();
+                            adListener.onAdImpression();
+                        }
+
+                        @Override
+                        public void onAdFailedToShow(@Nullable AdError adError) {
+                            super.onAdFailedToShow(adError);
+                            isShowLoadingSplash = false;
+                            adListener.onAdFailedToShow(adError);
+                        }
+
+                        @Override
+                        public void onNextAction() {
+                            super.onNextAction();
+                            adListener.onNextAction();
+                        }
+                    });
+                }
+
+                @Override
+                public void onNextAction() {
+                    super.onNextAction();
+                    if (!isFailedPriority) {
+                        adListener.onNextAction();
+                    }
+                }
+            });
+        } else if (mInterSplashNormal != null) {
+            onShowSplashNormal(activity, new AdCallback() {
+                @Override
+                public void onAdClosed() {
+                    super.onAdClosed();
+                    adListener.onAdClosed();
+                }
+
+                @Override
+                public void onAdClicked() {
+                    super.onAdClicked();
+                    adListener.onAdClicked();
+                    adListener.onAdClicked(mInterSplashNormal.getAdUnitId(), mInterSplashNormal.getResponseInfo().getMediationAdapterClassName(), AdType.INTERSTITIAL);
+                }
+
+                @Override
+                public void onAdImpression() {
+                    super.onAdImpression();
+                    adListener.onAdImpression();
+                }
+
+                @Override
+                public void onAdFailedToShow(@Nullable AdError adError) {
+                    super.onAdFailedToShow(adError);
+                    isShowLoadingSplash = false;
+                    adListener.onAdFailedToShow(adError);
+                }
+
+                @Override
+                public void onNextAction() {
+                    super.onNextAction();
+                    adListener.onNextAction();
+                }
+            });
+        } else {
+            adListener.onNextAction();
+        }
+    }
+
+    public void onCheckShowSplashPriority2WhenFail(AppCompatActivity activity, AdCallback callback, int timeDelay) {
+        new Handler(activity.getMainLooper()).postDelayed(() -> {
+            if (!isShowLoadingSplash() && (mInterSplashHigh1 != null || mInterSplashNormal != null)) {
+                onShowSplashPriority2(activity, new AdCallback() {
+                    @Override
+                    public void onAdClosed() {
+                        super.onAdClosed();
+                        Log.i(TAG, "onAdClosed: ");
+                        callback.onAdClosed();
+                    }
+
+                    @Override
+                    public void onAdImpression() {
+                        super.onAdImpression();
+                        callback.onAdImpression();
+                    }
+
+                    @Override
+                    public void onAdClicked() {
+                        super.onAdClicked();
+                        callback.onAdClicked();
+                        if (mInterSplashHigh1 != null) {
+                            callback.onAdClicked(mInterSplashHigh1.getAdUnitId(), mInterSplashHigh1.getResponseInfo().getMediationAdapterClassName(), AdType.INTERSTITIAL);
+                        } else {
+                            callback.onAdClicked(mInterSplashNormal.getAdUnitId(), mInterSplashNormal.getResponseInfo().getMediationAdapterClassName(), AdType.INTERSTITIAL);
+                        }
+                    }
+
+                    @Override
+                    public void onAdPriorityFailedToShow(@Nullable AdError adError) {
+                        super.onAdPriorityFailedToShow(adError);
+                        Log.e(TAG, "onAdPriorityFailedToShow: ");
+                        callback.onAdPriorityFailedToShow(adError);
+                    }
+
+                    @Override
+                    public void onAdFailedToShow(@Nullable AdError adError) {
+                        super.onAdFailedToShow(adError);
+                        Log.e(TAG, "onAdFailedToShow: ");
+                        callback.onAdFailedToShow(adError);
+                        isShowLoadingSplash = false;
+                    }
+
+                    @Override
+                    public void onNextAction() {
+                        super.onNextAction();
+                        Log.i(TAG, "onNextAction: ");
+                        callback.onNextAction();
+                    }
+                });
+            } else {
+                callback.onNextAction();
+
+            }
+        }, timeDelay);
+    }
+
 }
