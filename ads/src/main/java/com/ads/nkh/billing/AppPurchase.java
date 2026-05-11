@@ -274,7 +274,6 @@ public class AppPurchase {
 
     }
 
-
     public void initBilling(final Application application, List<
             String> listINAPId, List<String> listSubsId) {
 
@@ -953,6 +952,14 @@ public class AppPurchase {
             List<ProductDetails.PricingPhase> pricingPhaseList = subsDetail.get(subsDetail.size() - 1).getPricingPhases().getPricingPhaseList();
             return pricingPhaseList.get(pricingPhaseList.size() - 1).getPriceCurrencyCode();
         }
+    }
+
+    public Map<String, ProductDetails> getSkuDetailsINAPMap() {
+        return skuDetailsINAPMap;
+    }
+
+    public Map<String, ProductDetails> getSkuDetailsSubsMap() {
+        return skuDetailsSubsMap;
     }
 
     /**
