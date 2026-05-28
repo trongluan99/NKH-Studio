@@ -24,8 +24,8 @@ import com.ads.nkh.admob.Admob;
 import com.ads.nkh.admob.AppOpenManager;
 import com.ads.nkh.ads.native_ads.NativeAdConfig;
 import com.ads.nkh.ads.wrapper.ApInterstitialAd;
-import com.ads.nkh.ads.wrapper.ApInterstitialPriorityAd;
 import com.ads.nkh.ads.wrapper.ApInterstitialPriority2Ad;
+import com.ads.nkh.ads.wrapper.ApInterstitialPriorityAd;
 import com.ads.nkh.ads.wrapper.ApNativeAd;
 import com.ads.nkh.config.NkhAdConfig;
 import com.ads.nkh.event.NkhAdjust;
@@ -70,7 +70,7 @@ public class NkhAd {
         return SharePreferenceUtils.getIsOrganic(adConfig.getApplication());
     }
 
-    public Boolean getShouldDisplayInterOnboarding() {
+    public Boolean getShouldDisplayNativeOnboardingNormal1() {
         return !getOrganic();
     }
 
@@ -82,9 +82,30 @@ public class NkhAd {
         return !getOrganic();
     }
 
-    public Boolean getShouldDisplayNativeOnboarding2() {
+    public Boolean getShouldDisplayNativeOnboardingNormal2() {
         return !getOrganic();
     }
+
+    public Boolean getShouldDisplayNativeHome() {
+        return !getOrganic();
+    }
+
+    public Boolean getShouldDisplayNativePermission() {
+        return !getOrganic();
+    }
+
+    public Boolean getShouldDisplayInterOnboarding() {
+        return !getOrganic();
+    }
+
+    public Boolean getShouldDisplayNativeWelcomeBack() {
+        return !getOrganic();
+    }
+
+    public Boolean getShouldDisplayInterWelcomeBack() {
+        return !getOrganic();
+    }
+
 
     public Boolean getShouldDisplayWidgetUninstall() {
         return !getOrganic();
