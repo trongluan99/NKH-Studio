@@ -86,6 +86,8 @@ dependencies {
 
     implementation 'com.sensorsdata.analytics.android:SensorsAnalyticsSDK:6.6.9'
 
+    implementation("io.github.maichanchinh:adspace-admob:2.0.6")
+
 }
 repositories {
     mavenCentral()
