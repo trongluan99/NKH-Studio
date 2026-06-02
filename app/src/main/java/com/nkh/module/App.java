@@ -7,8 +7,6 @@ import com.ads.nkh.application.AdsMultiDexApplication;
 import com.ads.nkh.billing.AppPurchase;
 import com.ads.nkh.config.AdjustConfig;
 import com.ads.nkh.config.NkhAdConfig;
-import com.sensorsdata.analytics.android.sdk.SAConfigOptions;
-import com.sensorsdata.analytics.android.sdk.SensorsDataAPI;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +23,7 @@ public class App extends AdsMultiDexApplication {
         String environment = BuildConfig.DEBUG ? NkhAdConfig.ENVIRONMENT_DEVELOP : NkhAdConfig.ENVIRONMENT_PRODUCTION;
         mNkhAdConfig = new NkhAdConfig(this, environment);
 
-        AdjustConfig adjustConfig = new AdjustConfig(true,getString(R.string.adjust_token));
+        AdjustConfig adjustConfig = new AdjustConfig(true, getString(R.string.adjust_token));
         mNkhAdConfig.setAdjustConfig(adjustConfig);
         mNkhAdConfig.setFacebookClientToken(getString(R.string.facebook_client_token));
         mNkhAdConfig.setAdjustTokenTiktok(getString(R.string.tiktok_token));
@@ -39,7 +37,7 @@ public class App extends AdsMultiDexApplication {
         AppOpenManager.getInstance().disableAppResumeWithActivity(MainActivity.class);
     }
 
-    private void initBilling(){
+    private void initBilling() {
         List<String> listIAP = new ArrayList<>();
         listIAP.add("android.test.purchased");
         List<String> listSub = new ArrayList<>();
