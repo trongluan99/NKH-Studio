@@ -7,8 +7,6 @@ import com.ads.nkh.application.AdsMultiDexApplication;
 import com.ads.nkh.billing.AppPurchase;
 import com.ads.nkh.config.AdjustConfig;
 import com.ads.nkh.config.NkhAdConfig;
-import com.sensorsdata.analytics.android.sdk.SAConfigOptions;
-import com.sensorsdata.analytics.android.sdk.SensorsDataAPI;
 
 import java.util.ArrayList;
 import java.util.List;
