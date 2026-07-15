@@ -71,47 +71,123 @@ public class NkhAd {
     }
 
     public Boolean getShouldDisplayNativeOnboardingNormal1() {
+        return getShouldDisplayNativeOnboardingNormal1(false);
+    }
+
+    public Boolean getShouldDisplayNativeOnboardingNormal1(boolean isForceOrganic) {
+        if (isForceOrganic) {
+            return true;
+        }
         return !getOrganic();
     }
 
     public Boolean getShouldDisplayNativeOnboardingFull1() {
+        return getShouldDisplayNativeOnboardingFull1(false);
+    }
+
+    public Boolean getShouldDisplayNativeOnboardingFull1(boolean isForceOrganic) {
+        if (isForceOrganic) {
+            return true;
+        }
         return !getOrganic();
     }
 
     public Boolean getShouldDisplayNativeOnboardingFull2() {
+        return getShouldDisplayNativeOnboardingFull2(false);
+    }
+
+    public Boolean getShouldDisplayNativeOnboardingFull2(boolean isForceOrganic) {
+        if (isForceOrganic) {
+            return true;
+        }
         return !getOrganic();
     }
 
     public Boolean getShouldDisplayNativeOnboardingNormal2() {
+        return getShouldDisplayNativeOnboardingNormal2(false);
+    }
+
+    public Boolean getShouldDisplayNativeOnboardingNormal2(boolean isForceOrganic) {
+        if (isForceOrganic) {
+            return true;
+        }
         return !getOrganic();
     }
 
     public Boolean getShouldDisplayNativeHome() {
+        return getShouldDisplayNativeHome(false);
+    }
+
+    public Boolean getShouldDisplayNativeHome(boolean isForceOrganic) {
+        if (isForceOrganic) {
+            return true;
+        }
         return !getOrganic();
     }
 
     public Boolean getShouldDisplayNativePermission() {
+        return getShouldDisplayNativePermission(false);
+    }
+
+    public Boolean getShouldDisplayNativePermission(boolean isForceOrganic) {
+        if (isForceOrganic) {
+            return true;
+        }
         return !getOrganic();
     }
 
     public Boolean getShouldDisplayInterOnboarding() {
+        return getShouldDisplayInterOnboarding(false);
+    }
+
+    public Boolean getShouldDisplayInterOnboarding(boolean isForceOrganic) {
+        if (isForceOrganic) {
+            return true;
+        }
         return !getOrganic();
     }
 
     public Boolean getShouldDisplayNativeWelcomeBack() {
+        return getShouldDisplayNativeWelcomeBack(false);
+    }
+
+    public Boolean getShouldDisplayNativeWelcomeBack(boolean isForceOrganic) {
+        if (isForceOrganic) {
+            return true;
+        }
         return !getOrganic();
     }
 
     public Boolean getShouldDisplayInterWelcomeBack() {
+        return getShouldDisplayInterWelcomeBack(false);
+    }
+
+    public Boolean getShouldDisplayInterWelcomeBack(boolean isForceOrganic) {
+        if (isForceOrganic) {
+            return true;
+        }
         return !getOrganic();
     }
 
-
     public Boolean getShouldDisplayWidgetUninstall() {
+        return getShouldDisplayWidgetUninstall(false);
+    }
+
+    public Boolean getShouldDisplayWidgetUninstall(boolean isForceOrganic) {
+        if (isForceOrganic) {
+            return true;
+        }
         return !getOrganic();
     }
 
     public Boolean getShouldDisplayHighCTA() {
+        return getShouldDisplayHighCTA(false);
+    }
+
+    public Boolean getShouldDisplayHighCTA(boolean isForceOrganic) {
+        if (isForceOrganic) {
+            return true;
+        }
         return !getOrganic();
     }
 
