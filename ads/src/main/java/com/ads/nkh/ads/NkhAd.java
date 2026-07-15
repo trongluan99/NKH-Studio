@@ -66,15 +66,21 @@ public class NkhAd {
         return INSTANCE;
     }
 
+    private boolean isForceOrganic = false;
+
+    public boolean isForceOrganic() {
+        return isForceOrganic;
+    }
+
+    public void setForceOrganic(boolean forceOrganic) {
+        isForceOrganic = forceOrganic;
+    }
+
     public Boolean getOrganic() {
         return SharePreferenceUtils.getIsOrganic(adConfig.getApplication());
     }
 
     public Boolean getShouldDisplayNativeOnboardingNormal1() {
-        return getShouldDisplayNativeOnboardingNormal1(false);
-    }
-
-    public Boolean getShouldDisplayNativeOnboardingNormal1(boolean isForceOrganic) {
         if (isForceOrganic) {
             return true;
         }
@@ -82,10 +88,6 @@ public class NkhAd {
     }
 
     public Boolean getShouldDisplayNativeOnboardingFull1() {
-        return getShouldDisplayNativeOnboardingFull1(false);
-    }
-
-    public Boolean getShouldDisplayNativeOnboardingFull1(boolean isForceOrganic) {
         if (isForceOrganic) {
             return true;
         }
@@ -93,10 +95,6 @@ public class NkhAd {
     }
 
     public Boolean getShouldDisplayNativeOnboardingFull2() {
-        return getShouldDisplayNativeOnboardingFull2(false);
-    }
-
-    public Boolean getShouldDisplayNativeOnboardingFull2(boolean isForceOrganic) {
         if (isForceOrganic) {
             return true;
         }
@@ -104,10 +102,6 @@ public class NkhAd {
     }
 
     public Boolean getShouldDisplayNativeOnboardingNormal2() {
-        return getShouldDisplayNativeOnboardingNormal2(false);
-    }
-
-    public Boolean getShouldDisplayNativeOnboardingNormal2(boolean isForceOrganic) {
         if (isForceOrganic) {
             return true;
         }
@@ -115,10 +109,6 @@ public class NkhAd {
     }
 
     public Boolean getShouldDisplayNativeHome() {
-        return getShouldDisplayNativeHome(false);
-    }
-
-    public Boolean getShouldDisplayNativeHome(boolean isForceOrganic) {
         if (isForceOrganic) {
             return true;
         }
@@ -126,10 +116,6 @@ public class NkhAd {
     }
 
     public Boolean getShouldDisplayNativePermission() {
-        return getShouldDisplayNativePermission(false);
-    }
-
-    public Boolean getShouldDisplayNativePermission(boolean isForceOrganic) {
         if (isForceOrganic) {
             return true;
         }
@@ -137,10 +123,6 @@ public class NkhAd {
     }
 
     public Boolean getShouldDisplayInterOnboarding() {
-        return getShouldDisplayInterOnboarding(false);
-    }
-
-    public Boolean getShouldDisplayInterOnboarding(boolean isForceOrganic) {
         if (isForceOrganic) {
             return true;
         }
@@ -148,10 +130,6 @@ public class NkhAd {
     }
 
     public Boolean getShouldDisplayNativeWelcomeBack() {
-        return getShouldDisplayNativeWelcomeBack(false);
-    }
-
-    public Boolean getShouldDisplayNativeWelcomeBack(boolean isForceOrganic) {
         if (isForceOrganic) {
             return true;
         }
@@ -159,10 +137,6 @@ public class NkhAd {
     }
 
     public Boolean getShouldDisplayInterWelcomeBack() {
-        return getShouldDisplayInterWelcomeBack(false);
-    }
-
-    public Boolean getShouldDisplayInterWelcomeBack(boolean isForceOrganic) {
         if (isForceOrganic) {
             return true;
         }
@@ -170,10 +144,6 @@ public class NkhAd {
     }
 
     public Boolean getShouldDisplayWidgetUninstall() {
-        return getShouldDisplayWidgetUninstall(false);
-    }
-
-    public Boolean getShouldDisplayWidgetUninstall(boolean isForceOrganic) {
         if (isForceOrganic) {
             return true;
         }
@@ -181,10 +151,6 @@ public class NkhAd {
     }
 
     public Boolean getShouldDisplayHighCTA() {
-        return getShouldDisplayHighCTA(false);
-    }
-
-    public Boolean getShouldDisplayHighCTA(boolean isForceOrganic) {
         if (isForceOrganic) {
             return true;
         }
