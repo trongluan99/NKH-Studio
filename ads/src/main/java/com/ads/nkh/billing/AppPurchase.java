@@ -529,6 +529,15 @@ public class AppPurchase {
         purchase(activity, productId);
     }
 
+    boolean isPurchasePayWall = false;
+
+    public boolean isPurchasePayWall() {
+        return isPurchasePayWall;
+    }
+
+    public void setPurchasePayWall(boolean purchasePayWall) {
+        isPurchasePayWall = purchasePayWall;
+    }
 
     public String purchase(Activity activity, String productId) {
         if (skuListINAPFromStore == null) {
@@ -537,7 +546,7 @@ public class AppPurchase {
             return "";
         }
         ProductDetails productDetails = skuDetailsINAPMap.get(productId);
-        if (AppUtil.VARIANT_DEV) {
+        if (AppUtil.VARIANT_DEV && !isPurchasePayWall)  {
             productId = PRODUCT_ID_TEST;
             PurchaseDevBottomSheet purchaseDevBottomSheet = new PurchaseDevBottomSheet(TYPE_IAP.PURCHASE, productDetails, activity, purchaseListener);
             purchaseDevBottomSheet.show();
@@ -614,7 +623,7 @@ public class AppPurchase {
     }
 
     public String subscribe(Activity activity, String SubsId) {
-        if (AppUtil.VARIANT_DEV) {
+        if (AppUtil.VARIANT_DEV && !isPurchasePayWall) {
             purchase(activity, PRODUCT_ID_TEST);
             return "Billing test";
         } else {
@@ -706,7 +715,7 @@ public class AppPurchase {
      * @return status message
      */
     public String subscribe(Activity activity, String SubsId, String offerToken) {
-        if (AppUtil.VARIANT_DEV) {
+        if (AppUtil.VARIANT_DEV && !isPurchasePayWall) {
             purchase(activity, PRODUCT_ID_TEST);
             return "Billing test";
         } else {
