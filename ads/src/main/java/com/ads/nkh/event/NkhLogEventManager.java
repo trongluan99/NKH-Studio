@@ -147,6 +147,12 @@ public class NkhLogEventManager {
         NkhAdjust.onTrackRevenuePurchase(revenue, currency);
     }
 
+    public static void trackPlayStoreSubscription(long priceMicros, String currency, String sku,
+                                                    String orderId, String signature, String purchaseToken,
+                                                    long purchaseTimeMillis) {
+        NkhAdjust.trackPlayStoreSubscription(priceMicros, currency, sku, orderId, signature, purchaseToken, purchaseTimeMillis);
+    }
+
     public static void pushTrackEventAdmob(AdValue adValue) {
         NkhAdjust.pushTrackEventAdmob(adValue);
     }

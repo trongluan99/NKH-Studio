@@ -3,6 +3,7 @@ package com.ads.nkh.event;
 import com.adjust.sdk.Adjust;
 import com.adjust.sdk.AdjustAdRevenue;
 import com.adjust.sdk.AdjustEvent;
+import com.adjust.sdk.AdjustPlayStoreSubscription;
 import com.ads.nkh.ads.NkhAd;
 import com.google.android.gms.ads.AdValue;
 
@@ -41,6 +42,32 @@ public class NkhAdjust {
             onTrackRevenue(eventNamePurchase, revenue, currency);
         }
 
+    }
+
+    /**
+     * Track a Play Store subscription purchase for server-side verification.
+     * Adjust re-validates the token with Google (Developer API) and tracks
+     * renewals/cancellations/refunds automatically via RTDN, without further
+     * client-side calls on renew.
+     *
+     * @param priceMicros      subscription price in micros (ProductDetails.PricingPhase#getPriceAmountMicros)
+     * @param currency         ISO 4217 currency code
+     * @param sku              subscription product ID
+     * @param orderId          Purchase#getOrderId()
+     * @param signature        Purchase#getSignature()
+     * @param purchaseToken    Purchase#getPurchaseToken()
+     * @param purchaseTimeMillis Purchase#getPurchaseTime()
+     */
+    public static void trackPlayStoreSubscription(long priceMicros, String currency, String sku,
+                                                    String orderId, String signature, String purchaseToken,
+                                                    long purchaseTimeMillis) {
+        if (!NkhAdjust.enableAdjust) {
+            return;
+        }
+        AdjustPlayStoreSubscription subscription = new AdjustPlayStoreSubscription(
+                priceMicros, currency, sku, orderId, signature, purchaseToken);
+        subscription.setPurchaseTime(purchaseTimeMillis);
+        Adjust.trackPlayStoreSubscription(subscription);
     }
 
     public static void pushTrackEventAdmob(AdValue adValue) {

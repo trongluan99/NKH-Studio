@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -36,10 +37,13 @@ import com.google.common.collect.ImmutableList;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Currency;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class AppPurchase {
     private static final String TAG = "PurchaseEG";
@@ -85,6 +89,10 @@ public class AppPurchase {
 
     private Handler handlerTimeout;
     private Runnable rdTimeout;
+
+    private Application application;
+    private static final String PREF_NAME_TRACKED_IAP = "nkh_iap_tracked_tokens";
+    private static final String KEY_TRACKED_TOKENS = "tracked_tokens";
 
     public void setPurchaseListener(PurchaseListener purchaseListener) {
         this.purchaseListener = purchaseListener;
@@ -281,6 +289,8 @@ public class AppPurchase {
     public void initBilling(final Application application, List<
             String> listINAPId, List<String> listSubsId) {
 
+        this.application = application;
+
         if (AppUtil.VARIANT_DEV) {
             listINAPId.add(PRODUCT_ID_TEST);
         }
@@ -364,6 +374,7 @@ public class AppPurchase {
                                         if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
                                             ownerIdInapps.add(productId);
                                             isPurchase = true;
+                                            trackPurchaseIfNeeded(purchase, productId, TYPE_IAP.PURCHASE);
                                             if (!purchase.isAcknowledged()) {
                                                 AcknowledgePurchaseParams acknowledgePurchaseParams =
                                                         AcknowledgePurchaseParams.newBuilder()
@@ -403,6 +414,7 @@ public class AppPurchase {
                                             );
                                             addOrUpdateOwnerIdSub(purchaseResult, productId);
                                             isPurchase = true;
+                                            trackPurchaseIfNeeded(purchase, productId, TYPE_IAP.SUBSCRIPTION);
                                             if (!purchase.isAcknowledged()) {
                                                 AcknowledgePurchaseParams acknowledgePurchaseParams =
                                                         AcknowledgePurchaseParams.newBuilder()
@@ -471,6 +483,7 @@ public class AppPurchase {
                                                 ownerIdInapps.add(id.zza());
                                             }
                                             isPurchase = true;
+                                            trackPurchaseIfNeeded(purchase, id.zza(), TYPE_IAP.PURCHASE);
                                         }
                                     }
                                 }
@@ -503,6 +516,7 @@ public class AppPurchase {
                                             );
                                             addOrUpdateOwnerIdSub(purchaseResult, id.zza());
                                             isPurchase = true;
+                                            trackPurchaseIfNeeded(purchase, id.zza(), TYPE_IAP.SUBSCRIPTION);
                                         }
                                     }
                                 }
@@ -883,9 +897,31 @@ public class AppPurchase {
     }
 
     private void handlePurchase(Purchase purchase) {
-        double price = getPriceWithoutCurrency(idPurchaseCurrent, typeIap, offerTokenCurrent);
-        String currency = getCurrency(idPurchaseCurrent, typeIap, offerTokenCurrent);
-        NkhLogEventManager.onTrackRevenuePurchase((float) price, currency, idPurchaseCurrent, typeIap);
+        try {
+            double price = getPriceWithoutCurrency(idPurchaseCurrent, typeIap, offerTokenCurrent);
+            String currency = getCurrency(idPurchaseCurrent, typeIap, offerTokenCurrent);
+            String sku = !purchase.getProducts().isEmpty() ? purchase.getProducts().get(0) : idPurchaseCurrent;
+
+            if (typeIap == TYPE_IAP.SUBSCRIPTION) {
+                // Subscription: report the raw purchase (token/signature/orderId) to Adjust so
+                // Adjust can server-side verify with Google and auto-track renew/cancel/refund
+                // via RTDN. No further client-side call is needed on renewal.
+                NkhLogEventManager.trackPlayStoreSubscription(
+                        (long) price,
+                        currency,
+                        sku,
+                        purchase.getOrderId(),
+                        purchase.getSignature(),
+                        purchase.getPurchaseToken(),
+                        purchase.getPurchaseTime());
+            } else {
+                NkhLogEventManager.onTrackRevenuePurchase((float) price, currency, idPurchaseCurrent, typeIap);
+            }
+            markTokenTracked(purchase.getPurchaseToken());
+        } catch (Exception e) {
+            // Never let a tracking/SDK failure crash the purchase flow itself.
+            Log.e(TAG, "handlePurchase: track revenue failed - " + e.getMessage());
+        }
 
         if (purchaseListener != null) {
             isPurchase = true;
@@ -920,6 +956,70 @@ public class AppPurchase {
                     });
                 }
             }
+        }
+    }
+
+    private boolean isTokenTracked(String purchaseToken) {
+        if (application == null || purchaseToken == null) {
+            return false;
+        }
+        try {
+            SharedPreferences prefs = application.getSharedPreferences(PREF_NAME_TRACKED_IAP, Context.MODE_PRIVATE);
+            return prefs.getStringSet(KEY_TRACKED_TOKENS, Collections.emptySet()).contains(purchaseToken);
+        } catch (Exception e) {
+            Log.e(TAG, "isTokenTracked: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private void markTokenTracked(String purchaseToken) {
+        if (application == null || purchaseToken == null) {
+            return;
+        }
+        try {
+            SharedPreferences prefs = application.getSharedPreferences(PREF_NAME_TRACKED_IAP, Context.MODE_PRIVATE);
+            Set<String> tokens = new HashSet<>(prefs.getStringSet(KEY_TRACKED_TOKENS, Collections.emptySet()));
+            tokens.add(purchaseToken);
+            prefs.edit().putStringSet(KEY_TRACKED_TOKENS, tokens).apply();
+        } catch (Exception e) {
+            Log.e(TAG, "markTokenTracked: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Track a purchase found via verifyPurchased()/updatePurchaseStatus() (app relaunch,
+     * restore on a new device) that was never sent to Adjust because handlePurchase() only
+     * fires for a purchase made in the current billing-flow session.
+     * No-op (safe to call every time) if the token was already tracked, or if ProductDetails
+     * for the product hasn't loaded yet - in that case it silently retries on the next call.
+     */
+    private void trackPurchaseIfNeeded(Purchase purchase, String productId, int typeIAP) {
+        try {
+            String token = purchase.getPurchaseToken();
+            if (token == null || token.isEmpty() || isTokenTracked(token)) {
+                return;
+            }
+            double price = getPriceWithoutCurrency(productId, typeIAP);
+            String currency = getCurrency(productId, typeIAP);
+            if (price <= 0 || currency == null || currency.isEmpty()) {
+                return;
+            }
+            if (typeIAP == TYPE_IAP.SUBSCRIPTION) {
+                NkhLogEventManager.trackPlayStoreSubscription(
+                        (long) price,
+                        currency,
+                        productId,
+                        purchase.getOrderId(),
+                        purchase.getSignature(),
+                        token,
+                        purchase.getPurchaseTime());
+            } else {
+                NkhLogEventManager.onTrackRevenuePurchase((float) price, currency, productId, typeIAP);
+            }
+            markTokenTracked(token);
+        } catch (Exception e) {
+            // Never let a tracking/SDK failure crash the verify/update flow.
+            Log.e(TAG, "trackPurchaseIfNeeded: " + e.getMessage());
         }
     }
 
