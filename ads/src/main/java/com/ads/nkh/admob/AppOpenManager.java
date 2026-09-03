@@ -179,6 +179,10 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
         this.disableAdResumeByClickAction = disableAdResumeByClickAction;
     }
 
+    public boolean isDisableAdResumeByClickAction() {
+        return disableAdResumeByClickAction;
+    }
+
     public boolean isShowingAd() {
         return isShowingAd;
     }
