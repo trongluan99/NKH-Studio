@@ -4402,4 +4402,197 @@ public class Admob {
         }, timeDelay);
     }
 
+    public void loadAndShowInterstitial(final Context context, String id, long timeOut, final AdCallback callback) {
+        if (AppPurchase.getInstance().isPurchased(context)) {
+            if (callback != null) {
+                callback.onNextAction();
+            }
+            return;
+        }
+
+        if (AdmobHelper.getNumClickAdsPerDay(context, id) >= maxClickAds) {
+            if (callback != null) {
+                callback.onNextAction();
+            }
+            return;
+        }
+
+        // Hiển thị loading dialog
+        AppCompatActivity activity = (AppCompatActivity) context;
+        if (!ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+            if (callback != null) {
+                callback.onAdFailedToShow(new AdError(0, "App is in background", "BzAd"));
+                callback.onNextAction();
+            }
+            return;
+        }
+
+        try {
+            if (dialog != null && dialog.isShowing()) {
+                dialog.dismiss();
+            }
+            dialog = new PrepareLoadingAdsDialog(context);
+            dialog.setCancelable(false);
+            try {
+                dialog.show();
+            } catch (Exception e) {
+                if (callback != null) {
+                    callback.onNextAction();
+                }
+                return;
+            }
+        } catch (Exception e) {
+            dialog = null;
+            e.printStackTrace();
+        }
+
+        // Setup timeout
+        final boolean[] isTimeoutFlag = { false };
+        final Handler timeoutHandler = new Handler();
+        final Runnable timeoutRunnable;
+        if (timeOut > 0) {
+            timeoutRunnable = () -> {
+                isTimeoutFlag[0] = true;
+                Log.e(TAG, "loadAndShowInterstitial: timeout");
+                if (dialog != null && dialog.isShowing() && !activity.isDestroyed()) {
+                    dialog.dismiss();
+                }
+                if (callback != null) {
+                    callback.onNextAction();
+                }
+            };
+            timeoutHandler.postDelayed(timeoutRunnable, timeOut);
+        } else {
+            timeoutRunnable = null;
+        }
+
+        // Load interstitial
+        InterstitialAd.load(context, id, getAdRequest(), new InterstitialAdLoadCallback() {
+            @Override
+            public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
+                Log.i(TAG, "loadAndShowInterstitial: ad loaded");
+                if (isTimeoutFlag[0]) {
+                    return;
+                }
+                if (timeoutRunnable != null) {
+                    timeoutHandler.removeCallbacks(timeoutRunnable);
+                }
+
+                interstitialAd.setOnPaidEventListener(adValue -> {
+                    Log.d(TAG, "OnPaidEvent loadAndShowInterstitial:" + adValue.getValueMicros());
+                    NkhLogEventManager.logPaidAdImpression(context,
+                            adValue,
+                            interstitialAd.getAdUnitId(),
+                            interstitialAd.getResponseInfo()
+                                    .getMediationAdapterClassName());
+                    if (tokenAdjust != null) {
+                        NkhLogEventManager.logPaidAdjustWithToken(adValue, interstitialAd.getAdUnitId(), tokenAdjust);
+                    }
+                });
+
+                interstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
+                    @Override
+                    public void onAdShowedFullScreenContent() {
+                        AppOpenManager.getInstance().setInterstitialShowing(true);
+                        if (callback != null) {
+                            callback.onInterstitialShow();
+                        }
+                    }
+
+                    @Override
+                    public void onAdDismissedFullScreenContent() {
+                        AppOpenManager.getInstance().setInterstitialShowing(false);
+                        SharePreferenceUtils.setLastImpressionInterstitialTime(context);
+                        if (dialog != null && dialog.isShowing() && !activity.isDestroyed()) {
+                            dialog.dismiss();
+                        }
+                        if (callback != null) {
+                            if (!openActivityAfterShowInterAds) {
+                                callback.onNextAction();
+                            }
+                            callback.onAdClosed();
+                        }
+                    }
+
+                    @Override
+                    public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
+                        Log.e(TAG,
+                                "loadAndShowInterstitial onAdFailedToShowFullScreenContent: " + adError.getMessage());
+                        AppOpenManager.getInstance().setInterstitialShowing(false);
+                        if (dialog != null && dialog.isShowing() && !activity.isDestroyed()) {
+                            dialog.dismiss();
+                        }
+                        if (callback != null) {
+                            callback.onAdFailedToShow(adError);
+                            if (!openActivityAfterShowInterAds) {
+                                callback.onNextAction();
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onAdClicked() {
+                        super.onAdClicked();
+                        if (disableAdResumeWhenClickAds)
+                            AppOpenManager.getInstance().disableAdResumeByClickAction();
+                        if (callback != null) {
+                            callback.onAdClicked();
+                        }
+                        NkhLogEventManager.logClickAdsEvent(context, interstitialAd.getAdUnitId());
+                    }
+
+                    @Override
+                    public void onAdImpression() {
+                        super.onAdImpression();
+                        if (callback != null) {
+                            callback.onAdImpression();
+                        }
+                    }
+                });
+
+                // Hiển thị ad sau khi đã load xong
+                new Handler().postDelayed(() -> {
+                    if (activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+                        if (openActivityAfterShowInterAds && callback != null) {
+                            callback.onNextAction();
+                            new Handler().postDelayed(() -> {
+                                if (dialog != null && dialog.isShowing() && !activity.isDestroyed())
+                                    dialog.dismiss();
+                            }, 1500);
+                        }
+                        interstitialAd.show(activity);
+                    } else {
+                        if (dialog != null && dialog.isShowing() && !activity.isDestroyed()) {
+                            dialog.dismiss();
+                        }
+                        if (callback != null) {
+                            callback.onAdFailedToShow(new AdError(0, "Show fail in background", "BzAd"));
+                            if (!openActivityAfterShowInterAds) {
+                                callback.onNextAction();
+                            }
+                        }
+                    }
+                }, 800);
+            }
+
+            @Override
+            public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                Log.e(TAG, "loadAndShowInterstitial: load failed - " + loadAdError.getMessage());
+                if (isTimeoutFlag[0]) {
+                    return;
+                }
+                if (timeoutRunnable != null) {
+                    timeoutHandler.removeCallbacks(timeoutRunnable);
+                }
+                if (dialog != null && dialog.isShowing() && !activity.isDestroyed()) {
+                    dialog.dismiss();
+                }
+                if (callback != null) {
+                    callback.onAdFailedToLoad(loadAdError);
+                    callback.onNextAction();
+                }
+            }
+        });
+    }
+
 }

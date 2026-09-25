@@ -1,42 +1,70 @@
-<?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white">
-
     <FrameLayout
         android:id="@+id/fr_ads"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:descendantFocusability="blocksDescendants"
         app:layout_constraintTop_toTopOf="parent">
 
         <include layout="@layout/shimmer_native_large" />
     </FrameLayout>
-
-    <Button
-        android:id="@+id/btnLoad"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Load Inter"
-        app:layout_constraintBottom_toTopOf="@+id/btnShow"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <Button
-        android:id="@+id/btnShow"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Show Inter"
-        app:layout_constraintBottom_toBottomOf="parent"
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollButtons"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toTopOf="@+id/frBanner"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/fr_ads">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingVertical="16dp">
+
+            <Button
+                android:id="@+id/btnLoad"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Load Inter" />
+
+            <Button
+                android:id="@+id/btnShow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Show Inter" />
+
+            <Button
+                android:id="@+id/btnIap"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="IAP" />
+
+            <Button
+                android:id="@+id/btnLoadReward"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Load Reward" />
+
+            <Button
+                android:id="@+id/btnShowReward"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Show Reward" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
     <FrameLayout
         android:id="@+id/frBanner"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:descendantFocusability="blocksDescendants"
         app:layout_constraintBottom_toBottomOf="parent">
 
         <include
@@ -44,32 +72,4 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
     </FrameLayout>
-
-    <Button
-        android:id="@+id/btnIap"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="IAP"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btnShow" />
-
-    <Button
-        android:id="@+id/btnLoadReward"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Load Reward"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btnIap" />
-
-    <Button
-        android:id="@+id/btnShowReward"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Show Reward"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btnLoadReward" />
-
 </androidx.constraintlayout.widget.ConstraintLayout>

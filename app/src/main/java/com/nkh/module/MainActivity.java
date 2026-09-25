@@ -1,6 +1,7 @@
 package com.nkh.module;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
@@ -62,9 +63,22 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         });
-        btnShow.setOnClickListener(v -> NkhAd.getInstance().forceShowInterstitialPriority2(MainActivity.this, mInterstitialPriority2Ad, new AdCallback() {
-        }, true));
+        /*btnShow.setOnClickListener(v -> NkhAd.getInstance().forceShowInterstitialPriority2(MainActivity.this, mInterstitialPriority2Ad, new AdCallback() {
+        }, true));*/
 
+        btnShow.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.d("XXXXXX", "onClick: 1");
+                NkhAd.getInstance().loadAndShowInterstitial(MainActivity.this, BuildConfig.ad_interstitial_splash, 15000, false, new AdCallback() {
+                    @Override
+                    public void onNextAction() {
+                        super.onNextAction();
+                        Toast.makeText(MainActivity.this, "Ads Ready", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        });
         // Banner Ads
         /*NkhAd.getInstance().loadBanner(this, BuildConfig.ad_banner);*/
         /*NkhAd.getInstance().loadCollapsibleBanner(this, BuildConfig.ad_banner, AppConstant.CollapsibleGravity.BOTTOM, new AdCallback());*/
@@ -85,8 +99,8 @@ public class MainActivity extends AppCompatActivity {
         });*/
 
 
-        NkhAd.getInstance().loadNativeAd(this, BuildConfig.ad_native, R.layout.native_large, frAds, shimmerAds, "#FF0000", 40, 20, new AdCallback() {
-        });
+        /*NkhAd.getInstance().loadNativeAd(this, BuildConfig.ad_native, R.layout.native_large, frAds, shimmerAds, "#FF0000", 40, 20, new AdCallback() {
+        });*/
 
         // Native Ads: Load
         /*NkhAd.getInstance().loadNativeAdResultCallback(this, BuildConfig.ad_native, R.layout.native_large, new AdCallback() {

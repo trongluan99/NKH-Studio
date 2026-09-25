@@ -1658,5 +1658,14 @@ public class NkhAd {
                 false
         );
     }
+
+    public void loadAndShowInterstitial(final Context context, String id, long timeOut, boolean isDelayInterval, final AdCallback callback) {
+        if (System.currentTimeMillis() - SharePreferenceUtils.getLastImpressionInterstitialTime(context) < NkhAd.getInstance().adConfig.getIntervalInterstitialAd() * 1000L
+                && isDelayInterval) {
+            callback.onNextAction();
+            return;
+        }
+        Admob.getInstance().loadAndShowInterstitial(context, id, timeOut, callback);
+    }
 }
 

@@ -20,7 +20,7 @@ public class SplashActivity extends AppCompatActivity {
 
         Log.d("TAG", "onCreate: " + NkhAd.getInstance().getOrganic());
 
-        NkhAd.getInstance().loadInterSplashPriority2SameTime(this, BuildConfig.ad_interstitial_splash, BuildConfig.ad_interstitial_splash, 25000, 5000, new AdCallback() {
+        /*NkhAd.getInstance().loadInterSplashPriority2SameTime(this, BuildConfig.ad_interstitial_splash, BuildConfig.ad_interstitial_splash, 25000, 5000, new AdCallback() {
             @Override
             public void onAdSplashHigh1Ready() {
                 super.onAdSplashHigh1Ready();
@@ -55,6 +55,8 @@ public class SplashActivity extends AppCompatActivity {
                 startActivity(new Intent(SplashActivity.this, MainActivity.class));
                 finish();
             }
-        });
+        });*/
+        startActivity(new Intent(SplashActivity.this, MainActivity.class));
+        finish();
     }
 }
