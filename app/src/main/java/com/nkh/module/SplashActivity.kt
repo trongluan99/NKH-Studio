@@ -13,6 +13,7 @@ import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 @SuppressLint("CustomSplashScreen")
 class SplashActivity : AppCompatActivity() {
     private var isNavigated = false
+    private var isSplashShowing = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,6 +55,8 @@ class SplashActivity : AppCompatActivity() {
     }
 
     private fun showSplashAndNavigate() {
+        if (isSplashShowing || isNavigated || isFinishing || isDestroyed) return
+        isSplashShowing = true
         NkhAd.getInstance().onShowSplashPriority2(
             this@SplashActivity,
             object : AdCallback() {

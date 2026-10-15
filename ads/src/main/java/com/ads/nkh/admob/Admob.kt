@@ -602,14 +602,15 @@ class Admob private constructor() {
                     Log.d(TAG, "onAdDismissedFullScreenContent ")
                     AppOpenManager.getInstance().setInterstitialShowing(false)
                     mInterstitialSplash = null
+                    try {
+                        dialog?.dismiss()
+                    } catch (_: Exception) {
+                    }
                     if (adListener != null) {
                         if (!openActivityAfterShowInterAds) {
                             adListener.onNextAction()
                         }
                         adListener.onAdClosed()
-                        if (dialog != null) {
-                            dialog?.dismiss()
-                        }
                     }
                     isShowLoadingSplash = false
                 }
@@ -620,13 +621,14 @@ class Admob private constructor() {
                     Log.e(TAG, "onAdFailedToShowFullScreenContent : " + adError.message)
                     mInterstitialSplash = null
                     isShowLoadingSplash = false
+                    try {
+                        dialog?.dismiss()
+                    } catch (_: Exception) {
+                    }
                     if (adListener != null) {
                         adListener.onAdFailedToShow(adError)
                         if (!openActivityAfterShowInterAds) {
                             adListener.onNextAction()
-                        }
-                        if (dialog != null) {
-                            dialog?.dismiss()
                         }
                     }
                 }
@@ -738,8 +740,8 @@ class Admob private constructor() {
                 object : AdLoadCallback<InterstitialAd> {
                     override fun onAdLoaded(interstitialAd: InterstitialAd) {
                         runOnUiThread {
-                            adCallback?.onInterstitialLoad(interstitialAd)
                             registerInterstitialPaidListener(interstitialAd, context, adCallback)
+                            adCallback?.onInterstitialLoad(interstitialAd)
                             Log.i(TAG, "InterstitialAds onAdLoaded")
                         }
                     }
@@ -799,14 +801,15 @@ class Admob private constructor() {
                 runOnUiThread {
                     AppOpenManager.getInstance().setInterstitialShowing(false)
                     SharePreferenceUtils.setLastImpressionInterstitialTime(context)
+                    try {
+                        dialog?.dismiss()
+                    } catch (_: Exception) {
+                    }
                     if (callback != null) {
                         if (!openActivityAfterShowInterAds) {
                             callback.onNextAction()
                         }
                         callback.onAdClosed()
-                    }
-                    if (dialog != null) {
-                        dialog?.dismiss()
                     }
                     Log.e(TAG, "onAdDismissedFullScreenContent")
                 }
@@ -816,13 +819,14 @@ class Admob private constructor() {
                 runOnUiThread {
                     Log.e(TAG, "onAdFailedToShowFullScreenContent: " + adError.message)
                     AppOpenManager.getInstance().setInterstitialShowing(false)
+                    try {
+                        dialog?.dismiss()
+                    } catch (_: Exception) {
+                    }
                     if (callback != null) {
                         callback.onAdFailedToShow(adError)
                         if (!openActivityAfterShowInterAds) {
                             callback.onNextAction()
-                        }
-                        if (dialog != null) {
-                            dialog?.dismiss()
                         }
                     }
                 }
@@ -1477,8 +1481,8 @@ class Admob private constructor() {
                 object : NativeAdLoaderCallback {
                     override fun onNativeAdLoaded(nativeAd: NativeAd) {
                         runOnUiThread {
-                            callback?.onUnifiedNativeAdLoaded(nativeAd)
                             nativeAd.adEventCallback = createNativeAdEventCallback(context, nativeAd, id, callback)
+                            callback?.onUnifiedNativeAdLoaded(nativeAd)
                         }
                     }
 
@@ -1508,8 +1512,8 @@ class Admob private constructor() {
                 object : NativeAdLoaderCallback {
                     override fun onNativeAdLoaded(nativeAd: NativeAd) {
                         runOnUiThread {
-                            callback?.onUnifiedNativeAdLoaded(nativeAd)
                             nativeAd.adEventCallback = createNativeAdEventCallback(context, nativeAd, id, callback)
+                            callback?.onUnifiedNativeAdLoaded(nativeAd)
                         }
                     }
 
@@ -2235,7 +2239,6 @@ class Admob private constructor() {
                             if (callback != null) {
                                 rewardLoadCallbacks[rewardedAd] = callback
                             }
-                            callback?.onRewardAdLoaded(rewardedAd)
                             rewardedAd.adEventCallback = object : RewardedAdEventCallback {
                                 override fun onAdPaid(adValue: AdValue) {
                                     runOnUiThread {
@@ -2250,6 +2253,7 @@ class Admob private constructor() {
                                     }
                                 }
                             }
+                            callback?.onRewardAdLoaded(rewardedAd)
                             Log.i(TAG, "RewardedAd onAdLoaded")
                         }
                     }
@@ -2283,7 +2287,6 @@ class Admob private constructor() {
                             if (callback != null) {
                                 rewardLoadCallbacks[rewardedAd] = callback
                             }
-                            callback?.onRewardAdLoaded(rewardedAd)
                             rewardedAd.adEventCallback = object : RewardedInterstitialAdEventCallback {
                                 override fun onAdPaid(adValue: AdValue) {
                                     runOnUiThread {
@@ -2298,6 +2301,7 @@ class Admob private constructor() {
                                     }
                                 }
                             }
+                            callback?.onRewardAdLoaded(rewardedAd)
                             Log.i(TAG, "RewardInterstitial onAdLoaded ")
                         }
                     }
@@ -3098,15 +3102,28 @@ class Admob private constructor() {
         })
     }
 
+    private fun cancelAllSplashPriorityTimeouts() {
+        if (handlerTimeoutHigh1 != null && rdTimeoutHigh1 != null) {
+            handlerTimeoutHigh1?.removeCallbacks(rdTimeoutHigh1!!)
+        }
+        if (handlerTimeoutHigh2 != null && rdTimeoutHigh2 != null) {
+            handlerTimeoutHigh2?.removeCallbacks(rdTimeoutHigh2!!)
+        }
+        if (handlerTimeoutHigh3 != null && rdTimeoutHigh3 != null) {
+            handlerTimeoutHigh3?.removeCallbacks(rdTimeoutHigh3!!)
+        }
+        if (handlerTimeoutNormal != null && rdTimeoutNormal != null) {
+            handlerTimeoutNormal?.removeCallbacks(rdTimeoutNormal!!)
+        }
+    }
+
     fun onShowSplashHigh1(activity: AppCompatActivity, adListener: AdCallback?) {
         isShowLoadingSplashHigh1 = true
         if (mInterSplashHigh1 == null) {
             adListener?.onNextAction()
             return
         }
-        if (handlerTimeoutHigh1 != null && rdTimeoutHigh1 != null) {
-            handlerTimeoutHigh1?.removeCallbacks(rdTimeoutHigh1!!)
-        }
+        cancelAllSplashPriorityTimeouts()
         adListener?.onInterstitialShow()
         val ad = mInterSplashHigh1!!
         ad.adEventCallback = object : InterstitialAdEventCallback {
@@ -3128,12 +3145,15 @@ class Admob private constructor() {
                 runOnUiThread {
                     AppOpenManager.getInstance().setInterstitialShowing(false)
                     mInterSplashHigh1 = null
+                    try {
+                        dialogHigh1?.dismiss()
+                    } catch (_: Exception) {
+                    }
                     if (adListener != null) {
                         if (!openActivityAfterShowInterAds) {
                             adListener.onNextAction()
                         }
                         adListener.onAdClosed()
-                        dialogHigh1?.dismiss()
                     }
                     isShowLoadingSplashHigh1 = false
                 }
@@ -3143,12 +3163,15 @@ class Admob private constructor() {
                 runOnUiThread {
                     mInterSplashHigh1 = null
                     isShowLoadingSplashHigh1 = false
+                    try {
+                        dialogHigh1?.dismiss()
+                    } catch (_: Exception) {
+                    }
                     if (adListener != null) {
                         adListener.onAdFailedToShow(adError)
                         if (!openActivityAfterShowInterAds) {
                             adListener.onNextAction()
                         }
-                        dialogHigh1?.dismiss()
                     }
                 }
             }
@@ -3312,9 +3335,7 @@ class Admob private constructor() {
             adListener?.onNextAction()
             return
         }
-        if (handlerTimeoutHigh2 != null && rdTimeoutHigh2 != null) {
-            handlerTimeoutHigh2?.removeCallbacks(rdTimeoutHigh2!!)
-        }
+        cancelAllSplashPriorityTimeouts()
         adListener?.onInterstitialShow()
         val ad = mInterSplashHigh2!!
         ad.adEventCallback = object : InterstitialAdEventCallback {
@@ -3336,12 +3357,15 @@ class Admob private constructor() {
                 runOnUiThread {
                     AppOpenManager.getInstance().setInterstitialShowing(false)
                     mInterSplashHigh2 = null
+                    try {
+                        dialogHigh2?.dismiss()
+                    } catch (_: Exception) {
+                    }
                     if (adListener != null) {
                         if (!openActivityAfterShowInterAds) {
                             adListener.onNextAction()
                         }
                         adListener.onAdClosed()
-                        dialogHigh2?.dismiss()
                     }
                     isShowLoadingSplashHigh2 = false
                 }
@@ -3351,12 +3375,15 @@ class Admob private constructor() {
                 runOnUiThread {
                     mInterSplashHigh2 = null
                     isShowLoadingSplashHigh2 = false
+                    try {
+                        dialogHigh2?.dismiss()
+                    } catch (_: Exception) {
+                    }
                     if (adListener != null) {
                         adListener.onAdFailedToShow(adError)
                         if (!openActivityAfterShowInterAds) {
                             adListener.onNextAction()
                         }
-                        dialogHigh2?.dismiss()
                     }
                 }
             }
@@ -3520,9 +3547,7 @@ class Admob private constructor() {
             adListener?.onNextAction()
             return
         }
-        if (handlerTimeoutHigh3 != null && rdTimeoutHigh3 != null) {
-            handlerTimeoutHigh3?.removeCallbacks(rdTimeoutHigh3!!)
-        }
+        cancelAllSplashPriorityTimeouts()
         adListener?.onInterstitialShow()
         val ad = mInterSplashHigh3!!
         ad.adEventCallback = object : InterstitialAdEventCallback {
@@ -3544,12 +3569,15 @@ class Admob private constructor() {
                 runOnUiThread {
                     AppOpenManager.getInstance().setInterstitialShowing(false)
                     mInterSplashHigh3 = null
+                    try {
+                        dialogHigh3?.dismiss()
+                    } catch (_: Exception) {
+                    }
                     if (adListener != null) {
                         if (!openActivityAfterShowInterAds) {
                             adListener.onNextAction()
                         }
                         adListener.onAdClosed()
-                        dialogHigh3?.dismiss()
                     }
                     isShowLoadingSplashHigh3 = false
                 }
@@ -3559,12 +3587,15 @@ class Admob private constructor() {
                 runOnUiThread {
                     mInterSplashHigh3 = null
                     isShowLoadingSplashHigh3 = false
+                    try {
+                        dialogHigh3?.dismiss()
+                    } catch (_: Exception) {
+                    }
                     if (adListener != null) {
                         adListener.onAdFailedToShow(adError)
                         if (!openActivityAfterShowInterAds) {
                             adListener.onNextAction()
                         }
-                        dialogHigh3?.dismiss()
                     }
                 }
             }
@@ -3728,9 +3759,7 @@ class Admob private constructor() {
             adListener?.onNextAction()
             return
         }
-        if (handlerTimeoutNormal != null && rdTimeoutNormal != null) {
-            handlerTimeoutNormal?.removeCallbacks(rdTimeoutNormal!!)
-        }
+        cancelAllSplashPriorityTimeouts()
         adListener?.onInterstitialShow()
         val ad = mInterSplashNormal!!
         ad.adEventCallback = object : InterstitialAdEventCallback {
@@ -3752,12 +3781,15 @@ class Admob private constructor() {
                 runOnUiThread {
                     AppOpenManager.getInstance().setInterstitialShowing(false)
                     mInterSplashNormal = null
+                    try {
+                        dialogNormal?.dismiss()
+                    } catch (_: Exception) {
+                    }
                     if (adListener != null) {
                         if (!openActivityAfterShowInterAds) {
                             adListener.onNextAction()
                         }
                         adListener.onAdClosed()
-                        dialogNormal?.dismiss()
                     }
                     isShowLoadingSplashNormal = false
                 }
@@ -3767,12 +3799,15 @@ class Admob private constructor() {
                 runOnUiThread {
                     mInterSplashNormal = null
                     isShowLoadingSplashNormal = false
+                    try {
+                        dialogNormal?.dismiss()
+                    } catch (_: Exception) {
+                    }
                     if (adListener != null) {
                         adListener.onAdFailedToShow(adError)
                         if (!openActivityAfterShowInterAds) {
                             adListener.onNextAction()
                         }
-                        dialogNormal?.dismiss()
                     }
                 }
             }
@@ -4209,12 +4244,15 @@ class Admob private constructor() {
                                             AppOpenManager.getInstance().setInterstitialShowing(false)
                                             SharePreferenceUtils.setLastImpressionInterstitialTime(context)
                                             this@Admob.interstitialAd = null
+                                            try {
+                                                dialog?.dismiss()
+                                            } catch (_: Exception) {
+                                            }
                                             if (callback != null) {
                                                 if (!openActivityAfterShowInterAds) {
                                                     callback.onNextAction()
                                                 }
                                                 callback.onAdClosed()
-                                                dialog?.dismiss()
                                             }
                                             isShowLoadingSplash = false
                                         }
@@ -4226,12 +4264,15 @@ class Admob private constructor() {
                                             AppOpenManager.getInstance().setInterstitialShowing(false)
                                             mInterstitialSplash = null
                                             isShowLoadingSplash = false
+                                            try {
+                                                dialog?.dismiss()
+                                            } catch (_: Exception) {
+                                            }
                                             if (callback != null) {
                                                 callback.onAdFailedToShow(adError)
                                                 if (!openActivityAfterShowInterAds) {
                                                     callback.onNextAction()
                                                 }
-                                                dialog?.dismiss()
                                             }
                                         }
                                     }
@@ -4807,8 +4848,6 @@ class Admob private constructor() {
                             if (nativeAd.isCustomClickGestureEnabled()) {
                                 nativeAd.enableCustomClickGesture()
                             }
-                            callback?.onUnifiedNativeAdLoaded(nativeAd)
-                            callback?.onAdLoaded()
                             nativeAd.adEventCallback = object : NativeAdEventCallback {
                                 override fun onAdPaid(adValue: AdValue) {
                                     runOnUiThread {
@@ -4853,6 +4892,8 @@ class Admob private constructor() {
                                     }
                                 }
                             }
+                            callback?.onUnifiedNativeAdLoaded(nativeAd)
+                            callback?.onAdLoaded()
                         }
                     }
 

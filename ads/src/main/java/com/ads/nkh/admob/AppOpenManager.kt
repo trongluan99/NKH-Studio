@@ -1059,8 +1059,8 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
                 object : AdLoadCallback<InterstitialAd> {
                     override fun onAdLoaded(interstitialAd: InterstitialAd) {
                         runOnUiThread {
-                            adListener?.onInterstitialLoad(interstitialAd)
                             statusInter = Type_Load_Success
+                            splashAdInter = interstitialAd
 
                             // Log paid Ads Interstitial
                             interstitialAd.adEventCallback = object : InterstitialAdEventCallback {
@@ -1087,7 +1087,7 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
                                 }
                             }
 
-                            splashAdInter = interstitialAd
+                            adListener?.onInterstitialLoad(interstitialAd)
                         }
                     }
 
