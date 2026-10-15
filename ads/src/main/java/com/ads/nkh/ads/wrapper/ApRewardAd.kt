@@ -14,32 +14,48 @@ class ApRewardAd : ApAdBase {
     constructor(status: StatusAd) : super(status)
 
     constructor(maxReward: MaxRewardedAd?) : super() {
-        this.maxReward = maxReward
-        status = StatusAd.AD_LOADED
+        setMaxReward(maxReward)
     }
 
     constructor(admobRewardInter: RewardedInterstitialAd?) : super() {
-        this.admobRewardInter = admobRewardInter
-        status = StatusAd.AD_LOADED
+        setAdmobReward(admobRewardInter)
     }
 
     constructor(admobReward: RewardedAd?) : super() {
-        this.admobReward = admobReward
-        status = StatusAd.AD_LOADED
+        setAdmobReward(admobReward)
     }
 
     fun setAdmobReward(admobReward: RewardedAd?) {
         this.admobReward = admobReward
-        status = StatusAd.AD_LOADED
+        if (admobReward != null) {
+            status = StatusAd.AD_LOADED
+        } else if (admobRewardInter == null && maxReward == null &&
+            (status == StatusAd.AD_LOADED || status == StatusAd.AD_RENDER_SUCCESS)
+        ) {
+            status = StatusAd.AD_INIT
+        }
     }
 
     fun setAdmobReward(admobRewardInter: RewardedInterstitialAd?) {
         this.admobRewardInter = admobRewardInter
+        if (admobRewardInter != null) {
+            status = StatusAd.AD_LOADED
+        } else if (admobReward == null && maxReward == null &&
+            (status == StatusAd.AD_LOADED || status == StatusAd.AD_RENDER_SUCCESS)
+        ) {
+            status = StatusAd.AD_INIT
+        }
     }
 
     fun setMaxReward(maxReward: MaxRewardedAd?) {
         this.maxReward = maxReward
-        status = StatusAd.AD_LOADED
+        if (maxReward != null) {
+            status = StatusAd.AD_LOADED
+        } else if (admobReward == null && admobRewardInter == null &&
+            (status == StatusAd.AD_LOADED || status == StatusAd.AD_RENDER_SUCCESS)
+        ) {
+            status = StatusAd.AD_INIT
+        }
     }
 
     fun getAdmobReward(): RewardedAd? {
@@ -61,6 +77,7 @@ class ApRewardAd : ApAdBase {
         maxReward = null
         admobReward = null
         admobRewardInter = null
+        status = StatusAd.AD_INIT
     }
 
     val isRewardInterstitial: Boolean

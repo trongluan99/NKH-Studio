@@ -5,5 +5,6 @@ enum class StatusAd {
     AD_LOADING,
     AD_LOADED,
     AD_LOAD_FAIL,
-    AD_RENDER_SUCCESS
+    AD_RENDER_SUCCESS,
+    AD_IMPRESSED
 }

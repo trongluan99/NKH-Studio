@@ -102,6 +102,55 @@ class NkhAdsUnitTest {
     }
 
     @Test
+    fun testStatusAdAllTransitionsAndNullSafety() {
+        // 1. ApInterstitialAd: null constructor or setting null must NOT set AD_LOADED
+        val interFromNull = ApInterstitialAd(null as com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd?)
+        assertEquals(StatusAd.AD_INIT, interFromNull.getStatus())
+        interFromNull.setStatus(StatusAd.AD_LOADED)
+        interFromNull.interstitialAd = null
+        assertEquals(StatusAd.AD_INIT, interFromNull.getStatus())
+
+        // If status is AD_LOAD_FAIL, setting interstitialAd = null must preserve AD_LOAD_FAIL
+        interFromNull.setStatus(StatusAd.AD_LOAD_FAIL)
+        interFromNull.interstitialAd = null
+        assertEquals(StatusAd.AD_LOAD_FAIL, interFromNull.getStatus())
+        assertTrue(interFromNull.isLoadFail())
+
+        // 2. ApNativeAd: null constructor or setting null must NOT set AD_LOADED
+        val nativeFromNull = ApNativeAd(0, null as com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd?)
+        assertEquals(StatusAd.AD_INIT, nativeFromNull.getStatus())
+        nativeFromNull.setStatus(StatusAd.AD_RENDER_SUCCESS)
+        assertTrue(nativeFromNull.isRenderSuccess())
+        nativeFromNull.admobNativeAd = null
+        assertEquals(StatusAd.AD_INIT, nativeFromNull.getStatus())
+
+        // 3. ApRewardAd: null constructor & clean() must reset to AD_INIT
+        val rewardFromNull = ApRewardAd(null as com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd?)
+        assertEquals(StatusAd.AD_INIT, rewardFromNull.getStatus())
+        rewardFromNull.setStatus(StatusAd.AD_LOADED)
+        rewardFromNull.clean()
+        assertEquals(StatusAd.AD_INIT, rewardFromNull.getStatus())
+
+        // 4. ApPipAd & ApSwipeableAd: destroy() resets to AD_INIT
+        val pipAd = ApPipAd(StatusAd.AD_LOADED)
+        pipAd.destroy()
+        assertEquals(StatusAd.AD_INIT, pipAd.getStatus())
+
+        val swipeableAd = ApSwipeableAd(StatusAd.AD_RENDER_SUCCESS)
+        swipeableAd.destroy()
+        assertEquals(StatusAd.AD_INIT, swipeableAd.getStatus())
+
+        // 5. StatusAd enum completeness
+        val statuses = StatusAd.entries
+        assertTrue(statuses.contains(StatusAd.AD_INIT))
+        assertTrue(statuses.contains(StatusAd.AD_LOADING))
+        assertTrue(statuses.contains(StatusAd.AD_LOADED))
+        assertTrue(statuses.contains(StatusAd.AD_LOAD_FAIL))
+        assertTrue(statuses.contains(StatusAd.AD_RENDER_SUCCESS))
+        assertTrue(statuses.contains(StatusAd.AD_IMPRESSED))
+    }
+
+    @Test
     fun testPurchaseResultModel() {
         val result = PurchaseResult(
             "GPA.1234-5678",

@@ -8,6 +8,8 @@ class ApPipAd : ApAdBase {
             field = value
             if (value != null) {
                 status = StatusAd.AD_LOADED
+            } else if (status == StatusAd.AD_LOADED || status == StatusAd.AD_RENDER_SUCCESS) {
+                status = StatusAd.AD_INIT
             }
         }
 
@@ -17,9 +19,6 @@ class ApPipAd : ApAdBase {
 
     constructor(pictureInPictureAd: PictureInPictureAd?) : super() {
         this.pictureInPictureAd = pictureInPictureAd
-        if (pictureInPictureAd != null) {
-            status = StatusAd.AD_LOADED
-        }
     }
 
     override fun isReady(): Boolean {
@@ -33,5 +32,6 @@ class ApPipAd : ApAdBase {
     fun destroy() {
         pictureInPictureAd?.destroy()
         pictureInPictureAd = null
+        status = StatusAd.AD_INIT
     }
 }

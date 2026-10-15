@@ -31,6 +31,9 @@ abstract class ApAdBase {
     val isLoadFail: Boolean
         @JvmName("_isLoadFail_prop") get() = isLoadFail()
 
+    val isRenderSuccess: Boolean
+        @JvmName("_isRenderSuccess_prop") get() = isRenderSuccess()
+
     abstract fun isReady(): Boolean
 
     fun isNotReady(): Boolean {
@@ -43,5 +46,9 @@ abstract class ApAdBase {
 
     fun isLoadFail(): Boolean {
         return status == StatusAd.AD_LOAD_FAIL
+    }
+
+    fun isRenderSuccess(): Boolean {
+        return status == StatusAd.AD_RENDER_SUCCESS
     }
 }

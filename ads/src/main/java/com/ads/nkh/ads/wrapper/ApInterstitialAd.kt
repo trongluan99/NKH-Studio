@@ -7,13 +7,25 @@ class ApInterstitialAd : ApAdBase {
     var interstitialAd: InterstitialAd? = null
         set(value) {
             field = value
-            status = StatusAd.AD_LOADED
+            if (value != null) {
+                status = StatusAd.AD_LOADED
+            } else if (maxInterstitialAd == null &&
+                (status == StatusAd.AD_LOADED || status == StatusAd.AD_RENDER_SUCCESS)
+            ) {
+                status = StatusAd.AD_INIT
+            }
         }
 
     var maxInterstitialAd: MaxInterstitialAd? = null
         set(value) {
             field = value
-            status = StatusAd.AD_LOADED
+            if (value != null) {
+                status = StatusAd.AD_LOADED
+            } else if (interstitialAd == null &&
+                (status == StatusAd.AD_LOADED || status == StatusAd.AD_RENDER_SUCCESS)
+            ) {
+                status = StatusAd.AD_INIT
+            }
         }
 
     constructor(status: StatusAd) : super(status)
@@ -22,12 +34,10 @@ class ApInterstitialAd : ApAdBase {
 
     constructor(maxInterstitialAd: MaxInterstitialAd?) : super() {
         this.maxInterstitialAd = maxInterstitialAd
-        status = StatusAd.AD_LOADED
     }
 
     constructor(interstitialAd: InterstitialAd?) : super() {
         this.interstitialAd = interstitialAd
-        status = StatusAd.AD_LOADED
     }
 
     override fun isReady(): Boolean {

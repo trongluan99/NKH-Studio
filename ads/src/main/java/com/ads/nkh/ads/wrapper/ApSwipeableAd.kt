@@ -10,6 +10,8 @@ class ApSwipeableAd : ApAdBase {
             field = value
             if (value != null) {
                 status = StatusAd.AD_LOADED
+            } else if (status == StatusAd.AD_LOADED || status == StatusAd.AD_RENDER_SUCCESS) {
+                status = StatusAd.AD_INIT
             }
         }
 
@@ -19,9 +21,6 @@ class ApSwipeableAd : ApAdBase {
 
     constructor(swipeableInterstitialAd: SwipeableInterstitialAd?) : super() {
         this.swipeableInterstitialAd = swipeableInterstitialAd
-        if (swipeableInterstitialAd != null) {
-            status = StatusAd.AD_LOADED
-        }
     }
 
     override fun isReady(): Boolean {
@@ -37,5 +36,6 @@ class ApSwipeableAd : ApAdBase {
             ad.destroy()
         }
         swipeableInterstitialAd = null
+        status = StatusAd.AD_INIT
     }
 }

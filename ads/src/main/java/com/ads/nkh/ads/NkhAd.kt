@@ -323,23 +323,28 @@ class NkhAd {
     }
 
     fun getInterstitialAds(context: Context, id: String, adListener: AdCallback): ApInterstitialAd {
-        val apInterstitialAd = ApInterstitialAd()
+        val apInterstitialAd = ApInterstitialAd(StatusAd.AD_LOADING)
         Admob.getInstance().getInterstitialAds(context, id, object : AdCallback() {
             override fun onInterstitialLoad(interstitialAd: InterstitialAd?) {
                 super.onInterstitialLoad(interstitialAd)
                 apInterstitialAd.interstitialAd = interstitialAd
+                if (interstitialAd == null) {
+                    apInterstitialAd.setStatus(StatusAd.AD_LOAD_FAIL)
+                }
                 adListener.onApInterstitialLoad(apInterstitialAd)
             }
 
             override fun onAdFailedToLoad(i: LoadAdError?) {
                 super.onAdFailedToLoad(i)
                 Log.d(TAG, "Admob onAdFailedToLoad")
+                apInterstitialAd.setStatus(StatusAd.AD_LOAD_FAIL)
                 adListener.onAdFailedToLoad(i)
             }
 
             override fun onAdFailedToShow(adError: FullScreenContentError?) {
                 super.onAdFailedToShow(adError)
                 Log.d(TAG, "Admob onAdFailedToShow")
+                apInterstitialAd.setStatus(StatusAd.AD_LOAD_FAIL)
                 adListener.onAdFailedToShow(adError)
             }
 
@@ -387,26 +392,34 @@ class NkhAd {
                 super.onAdClosed()
                 callback.onAdClosed()
                 if (shouldReloadAds && adUnitId != null) {
+                    mInterstitialAd.interstitialAd = null
+                    mInterstitialAd.setStatus(StatusAd.AD_LOADING)
                     Admob.getInstance().getInterstitialAds(context, adUnitId, object : AdCallback() {
                         override fun onInterstitialLoad(interstitialAd: InterstitialAd?) {
                             super.onInterstitialLoad(interstitialAd)
                             mInterstitialAd.interstitialAd = interstitialAd
+                            if (interstitialAd == null) {
+                                mInterstitialAd.setStatus(StatusAd.AD_LOAD_FAIL)
+                            }
                             callback.onInterstitialLoad(mInterstitialAd.interstitialAd)
                         }
 
                         override fun onAdFailedToLoad(i: LoadAdError?) {
                             super.onAdFailedToLoad(i)
                             mInterstitialAd.interstitialAd = null
+                            mInterstitialAd.setStatus(StatusAd.AD_LOAD_FAIL)
                             callback.onAdFailedToLoad(i)
                         }
 
                         override fun onAdFailedToShow(adError: FullScreenContentError?) {
                             super.onAdFailedToShow(adError)
+                            mInterstitialAd.setStatus(StatusAd.AD_LOAD_FAIL)
                             callback.onAdFailedToShow(adError)
                         }
                     })
                 } else {
                     mInterstitialAd.interstitialAd = null
+                    mInterstitialAd.setStatus(StatusAd.AD_INIT)
                 }
             }
 
@@ -419,20 +432,28 @@ class NkhAd {
                 super.onAdFailedToShow(adError)
                 callback.onAdFailedToShow(adError)
                 if (shouldReloadAds && adUnitId != null) {
+                    mInterstitialAd.interstitialAd = null
+                    mInterstitialAd.setStatus(StatusAd.AD_LOADING)
                     Admob.getInstance().getInterstitialAds(context, adUnitId, object : AdCallback() {
                         override fun onInterstitialLoad(interstitialAd: InterstitialAd?) {
                             super.onInterstitialLoad(interstitialAd)
                             mInterstitialAd.interstitialAd = interstitialAd
+                            if (interstitialAd == null) {
+                                mInterstitialAd.setStatus(StatusAd.AD_LOAD_FAIL)
+                            }
                             callback.onInterstitialLoad(mInterstitialAd.interstitialAd)
                         }
 
                         override fun onAdFailedToLoad(i: LoadAdError?) {
                             super.onAdFailedToLoad(i)
+                            mInterstitialAd.interstitialAd = null
+                            mInterstitialAd.setStatus(StatusAd.AD_LOAD_FAIL)
                             callback.onAdFailedToLoad(i)
                         }
 
                         override fun onAdFailedToShow(adError: FullScreenContentError?) {
                             super.onAdFailedToShow(adError)
+                            mInterstitialAd.setStatus(StatusAd.AD_LOAD_FAIL)
                             callback.onAdFailedToShow(adError)
                         }
 
@@ -448,6 +469,7 @@ class NkhAd {
                     })
                 } else {
                     mInterstitialAd.interstitialAd = null
+                    mInterstitialAd.setStatus(StatusAd.AD_LOAD_FAIL)
                 }
             }
 
@@ -477,11 +499,13 @@ class NkhAd {
 
             override fun onInterstitialShow() {
                 super.onInterstitialShow()
+                mInterstitialAd.setStatus(StatusAd.AD_RENDER_SUCCESS)
                 callback.onInterstitialShow()
             }
 
             override fun onAdImpression() {
                 super.onAdImpression()
+                mInterstitialAd.setStatus(StatusAd.AD_RENDER_SUCCESS)
                 callback.onAdImpression()
             }
         }
@@ -547,10 +571,11 @@ class NkhAd {
         Admob.getInstance().loadNativeAd(activity as Context, id, object : AdCallback() {
             override fun onUnifiedNativeAdLoaded(unifiedNativeAd: NativeAd) {
                 super.onUnifiedNativeAdLoaded(unifiedNativeAd)
-                callback.onNativeAdLoaded(ApNativeAd(layoutCustomNative, unifiedNativeAd))
+                val apNativeAd = ApNativeAd(layoutCustomNative, unifiedNativeAd)
+                callback.onNativeAdLoaded(apNativeAd)
                 populateNativeAdView(
                     activity,
-                    ApNativeAd(layoutCustomNative, unifiedNativeAd),
+                    apNativeAd,
                     adPlaceHolder,
                     containerShimmerLoading
                 )
@@ -609,10 +634,11 @@ class NkhAd {
         Admob.getInstance().loadNativeAd(activity as Context, id, object : AdCallback() {
             override fun onUnifiedNativeAdLoaded(unifiedNativeAd: NativeAd) {
                 super.onUnifiedNativeAdLoaded(unifiedNativeAd)
-                callback.onNativeAdLoaded(ApNativeAd(layoutCustomNative, unifiedNativeAd))
+                val apNativeAd = ApNativeAd(layoutCustomNative, unifiedNativeAd)
+                callback.onNativeAdLoaded(apNativeAd)
                 populateNativeAdView(
                     activity,
-                    ApNativeAd(layoutCustomNative, unifiedNativeAd),
+                    apNativeAd,
                     adPlaceHolder,
                     containerShimmerLoading,
                     isShowClose
@@ -672,10 +698,11 @@ class NkhAd {
         Admob.getInstance().loadNativeAd(activity as Context, id, object : AdCallback() {
             override fun onUnifiedNativeAdLoaded(unifiedNativeAd: NativeAd) {
                 super.onUnifiedNativeAdLoaded(unifiedNativeAd)
-                callback.onNativeAdLoaded(ApNativeAd(layoutCustomNative, unifiedNativeAd))
+                val apNativeAd = ApNativeAd(layoutCustomNative, unifiedNativeAd, nativeAdConfig)
+                callback.onNativeAdLoaded(apNativeAd)
                 populateNativeAdView(
                     activity,
-                    ApNativeAd(layoutCustomNative, unifiedNativeAd),
+                    apNativeAd,
                     adPlaceHolder,
                     containerShimmerLoading,
                     nativeAdConfig
@@ -737,10 +764,11 @@ class NkhAd {
         Admob.getInstance().loadNativeAd(activity as Context, id, object : AdCallback() {
             override fun onUnifiedNativeAdLoaded(unifiedNativeAd: NativeAd) {
                 super.onUnifiedNativeAdLoaded(unifiedNativeAd)
-                callback.onNativeAdLoaded(ApNativeAd(layoutCustomNative, unifiedNativeAd))
+                val apNativeAd = ApNativeAd(layoutCustomNative, unifiedNativeAd)
+                callback.onNativeAdLoaded(apNativeAd)
                 populateNativeAdView(
                     activity,
-                    ApNativeAd(layoutCustomNative, unifiedNativeAd),
+                    apNativeAd,
                     adPlaceHolder,
                     containerShimmerLoading,
                     colorCTA,
@@ -823,6 +851,7 @@ class NkhAd {
         Admob.getInstance().populateUnifiedNativeAdView(apNativeAd.admobNativeAd, adView)
         adPlaceHolder.removeAllViews()
         adPlaceHolder.addView(adView)
+        apNativeAd.setStatus(StatusAd.AD_RENDER_SUCCESS)
     }
 
     fun populateNativeAdView(
@@ -837,6 +866,7 @@ class NkhAd {
         Admob.getInstance().populateUnifiedNativeAdView(apNativeAd.admobNativeAd, adView)
         adPlaceHolder.removeAllViews()
         adPlaceHolder.addView(adView)
+        apNativeAd.setStatus(StatusAd.AD_RENDER_SUCCESS)
 
         if (isShowClose) {
             val marginInDp = 10
@@ -879,6 +909,7 @@ class NkhAd {
         )
         adPlaceHolder.removeAllViews()
         adPlaceHolder.addView(adView)
+        apNativeAd.setStatus(StatusAd.AD_RENDER_SUCCESS)
     }
 
     fun populateNativeAdView(
@@ -893,6 +924,7 @@ class NkhAd {
         Admob.getInstance().populateUnifiedNativeAdView(apNativeAd.admobNativeAd, adView, nativeAdConfig)
         adPlaceHolder.removeAllViews()
         adPlaceHolder.addView(adView)
+        apNativeAd.setStatus(StatusAd.AD_RENDER_SUCCESS)
     }
 
     fun initRewardAds(context: Context, id: String, callback: RewardCallback) {
@@ -1259,17 +1291,22 @@ class NkhAd {
         logLabel: String,
         adCallback: AdCallback
     ) {
+        targetAd?.setStatus(StatusAd.AD_LOADING)
         Admob.getInstance().getInterstitialAds(context, adUnitId, object : AdCallback() {
             override fun onInterstitialLoad(interstitialAd: InterstitialAd?) {
                 super.onInterstitialLoad(interstitialAd)
                 Log.d(TAG, "onInterstitialLoad $logLabel")
                 targetAd?.interstitialAd = interstitialAd
+                if (interstitialAd == null) {
+                    targetAd?.setStatus(StatusAd.AD_LOAD_FAIL)
+                }
                 adCallback.onApInterstitialLoad(targetAd)
             }
 
             override fun onAdFailedToLoad(i: LoadAdError?) {
                 super.onAdFailedToLoad(i)
                 Log.e(TAG, "onAdFailedToLoad: $logLabel: $i")
+                targetAd?.setStatus(StatusAd.AD_LOAD_FAIL)
                 adCallback.onAdFailedToLoad(i)
             }
 
@@ -1395,6 +1432,7 @@ class NkhAd {
                 override fun onAdClosed() {
                     super.onAdClosed()
                     interstitialAd.interstitialAd = null
+                    interstitialAd.setStatus(StatusAd.AD_INIT)
                     adCallback.onAdClosed()
                     if (isReloadAds) {
                         loadPriorityInterstitialAds(context, apInterstitialPriorityAd, AdCallback())
@@ -1531,6 +1569,7 @@ class NkhAd {
                 override fun onAdClosed() {
                     super.onAdClosed()
                     interstitialAd.interstitialAd = null
+                    interstitialAd.setStatus(StatusAd.AD_INIT)
                     adCallback.onAdClosed()
                     if (isReloadAds) {
                         loadPriority2InterstitialAds(context, apInterstitialPriority2Ad, AdCallback())
@@ -1611,6 +1650,9 @@ class NkhAd {
         Admob.getInstance().loadPipAd(context, id, object : AdCallback() {
             override fun onPipAdLoaded(pipAd: PictureInPictureAd?) {
                 apPipAd.pictureInPictureAd = pipAd
+                if (pipAd == null) {
+                    apPipAd.setStatus(StatusAd.AD_LOAD_FAIL)
+                }
                 adCallback?.onPipAdLoaded(pipAd)
                 adCallback?.onApPipAdLoaded(apPipAd)
                 adCallback?.onAdLoaded()
@@ -1622,6 +1664,7 @@ class NkhAd {
             }
 
             override fun onPipAdShown() {
+                apPipAd.setStatus(StatusAd.AD_RENDER_SUCCESS)
                 adCallback?.onPipAdShown()
             }
 
@@ -1630,6 +1673,7 @@ class NkhAd {
             }
 
             override fun onAdImpression() {
+                apPipAd.setStatus(StatusAd.AD_RENDER_SUCCESS)
                 adCallback?.onAdImpression()
             }
 
@@ -1674,6 +1718,9 @@ class NkhAd {
         adCallback: AdCallback? = null
     ) {
         val pipAd = apPipAd?.pictureInPictureAd ?: Admob.getInstance().getCurrentPipAd()
+        if (pipAd != null) {
+            apPipAd?.setStatus(StatusAd.AD_RENDER_SUCCESS)
+        }
         Admob.getInstance().showPipAd(activity, pipAd, position, scope, adCallback)
     }
 
@@ -1729,6 +1776,9 @@ class NkhAd {
             object : AdCallback() {
                 override fun onSwipeableAdLoaded(swipeableAd: SwipeableInterstitialAd?) {
                     apSwipeableAd.swipeableInterstitialAd = swipeableAd
+                    if (swipeableAd == null) {
+                        apSwipeableAd.setStatus(StatusAd.AD_LOAD_FAIL)
+                    }
                     adCallback?.onSwipeableAdLoaded(swipeableAd)
                     adCallback?.onApSwipeableAdLoaded(apSwipeableAd)
                     adCallback?.onAdLoaded()
@@ -1744,6 +1794,7 @@ class NkhAd {
                 }
 
                 override fun onAdImpression() {
+                    apSwipeableAd.setStatus(StatusAd.AD_RENDER_SUCCESS)
                     adCallback?.onAdImpression()
                 }
 
@@ -1788,7 +1839,11 @@ class NkhAd {
         adCallback: AdCallback? = null
     ): View? {
         val ad = apSwipeableAd?.swipeableInterstitialAd ?: Admob.getInstance().getCurrentSwipeableAd()
-        return Admob.getInstance().renderSwipeableInterstitialAd(activity, container, ad, adCallback)
+        val renderedView = Admob.getInstance().renderSwipeableInterstitialAd(activity, container, ad, adCallback)
+        if (renderedView != null) {
+            apSwipeableAd?.setStatus(StatusAd.AD_RENDER_SUCCESS)
+        }
+        return renderedView
     }
 
     @JvmOverloads
