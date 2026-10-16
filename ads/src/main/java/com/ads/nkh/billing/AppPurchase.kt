@@ -211,10 +211,26 @@ class AppPurchase private constructor() {
                 Log.d(TAG, "onBillingSetupFinished: $code")
 
                 if (code != BillingClient.BillingResponseCode.OK) {
-                    // Retry connection in background; if verify hasn't finished yet, timeout or retry will handle callback
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        billingClient?.startConnection(this)
-                    }, 2000)
+                    // Unblock Splash immediately if Play Store is unavailable (e.g. no Google account)
+                    verifyFinish = true
+                    if (billingListener != null && !isInitBillingFinish) {
+                        isInitBillingFinish = true
+                        if (handlerTimeout != null && rdTimeout != null) {
+                            handlerTimeout?.removeCallbacks(rdTimeout!!)
+                        }
+                        Handler(Looper.getMainLooper()).post {
+                            billingListener?.onInitBillingFinished(code)
+                        }
+                    }
+                    // Retry connection in background for transient errors
+                    if (code == BillingClient.BillingResponseCode.SERVICE_DISCONNECTED ||
+                        code == BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE ||
+                        code == BillingClient.BillingResponseCode.NETWORK_ERROR
+                    ) {
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            billingClient?.startConnection(this)
+                        }, 2000)
+                    }
                     return
                 }
 
@@ -272,6 +288,7 @@ class AppPurchase private constructor() {
         listSubsId: List<String>
     ) {
         this.application = application
+        this.isPurchase = loadCachedPurchased()
 
         val mutableInapList = ArrayList(listINAPId)
         if (AppUtil.VARIANT_DEV && !mutableInapList.contains(PRODUCT_ID_TEST)) {
@@ -306,6 +323,7 @@ class AppPurchase private constructor() {
 
     fun setPurchase(purchase: Boolean) {
         isPurchase = purchase
+        saveCachedPurchased(purchase)
     }
 
     fun isPurchased(): Boolean {
@@ -454,6 +472,9 @@ class AppPurchase private constructor() {
     private fun checkAndFinishCallback(isCallback: Boolean, billingResult: BillingResult) {
         if (isVerifyINAP && isVerifySUBS) {
             verifyFinish = true
+            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                saveCachedPurchased(isPurchase)
+            }
             if (billingListener != null && isCallback && !isInitBillingFinish) {
                 isInitBillingFinish = true
                 if (handlerTimeout != null && rdTimeout != null) {
@@ -495,6 +516,7 @@ class AppPurchase private constructor() {
                 }
                 isUpdateInapps = true
                 if (isUpdateSubs) {
+                    saveCachedPurchased(isPurchase)
                     updatePurchaseListener?.onUpdateFinished()
                 }
             }
@@ -526,6 +548,7 @@ class AppPurchase private constructor() {
                 }
                 isUpdateSubs = true
                 if (isUpdateInapps) {
+                    saveCachedPurchased(isPurchase)
                     updatePurchaseListener?.onUpdateFinished()
                 }
             }
@@ -898,6 +921,7 @@ class AppPurchase private constructor() {
         idPurchased = sku
         if (!isConsumePurchase) {
             isPurchase = true
+            saveCachedPurchased(true)
             if (resolvedTypeIap == TYPE_IAP.SUBSCRIPTION) {
                 val purchaseResult = PurchaseResult(
                     purchase.packageName,
@@ -942,6 +966,7 @@ class AppPurchase private constructor() {
 
         if (purchaseListener != null) {
             isPurchase = true
+            saveCachedPurchased(true)
             purchaseListener?.onProductPurchased(purchase.orderId, purchase.originalJson)
         }
         if (isConsumePurchase) {
@@ -966,6 +991,27 @@ class AppPurchase private constructor() {
                     }
                 )
             }
+        }
+    }
+
+    private fun loadCachedPurchased(): Boolean {
+        val app = application ?: return false
+        return try {
+            val prefs = app.getSharedPreferences(PREF_NAME_TRACKED_IAP, Context.MODE_PRIVATE)
+            prefs.getBoolean(KEY_CACHED_IS_PURCHASED, false)
+        } catch (e: Exception) {
+            Log.e(TAG, "loadCachedPurchased: " + e.message)
+            false
+        }
+    }
+
+    private fun saveCachedPurchased(purchased: Boolean) {
+        val app = application ?: return
+        try {
+            val prefs = app.getSharedPreferences(PREF_NAME_TRACKED_IAP, Context.MODE_PRIVATE)
+            prefs.edit().putBoolean(KEY_CACHED_IS_PURCHASED, purchased).apply()
+        } catch (e: Exception) {
+            Log.e(TAG, "saveCachedPurchased: " + e.message)
         }
     }
 
@@ -1391,6 +1437,7 @@ class AppPurchase private constructor() {
 
         private const val PREF_NAME_TRACKED_IAP = "nkh_iap_tracked_tokens"
         private const val KEY_TRACKED_TOKENS = "tracked_tokens"
+        private const val KEY_CACHED_IS_PURCHASED = "cached_is_purchased"
 
         @JvmStatic
         fun getInstance(): AppPurchase {
