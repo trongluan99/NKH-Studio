@@ -11,6 +11,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -52,6 +53,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mInterstitialPriority2Ad: ApInterstitialPriority2Ad
     private lateinit var mInterstitialPriority4Ad: ApInterstitialPriorityAd
 
+    private lateinit var scrollTestLog: ScrollView
     private lateinit var tvTestLog: TextView
     private lateinit var tvStatLoaded: TextView
     private lateinit var tvStatImpression: TextView
@@ -82,8 +84,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         setupEdgeToEdgeInsets()
 
+        scrollTestLog = findViewById(R.id.scrollTestLog)
         tvTestLog = findViewById(R.id.tvTestLog)
-        tvTestLog.movementMethod = ScrollingMovementMethod()
         tvStatLoaded = findViewById(R.id.tvStatLoaded)
         tvStatImpression = findViewById(R.id.tvStatImpression)
         tvStatPaid = findViewById(R.id.tvStatPaid)
@@ -114,6 +116,16 @@ class MainActivity : AppCompatActivity() {
         runTestCase4BannerAdaptive()
     }
 
+    private fun scrollToLatestLog() {
+        scrollTestLog.post {
+            val child = scrollTestLog.getChildAt(0)
+            if (child != null) {
+                val targetY = (child.bottom - scrollTestLog.height).coerceAtLeast(0)
+                scrollTestLog.scrollTo(0, targetY)
+            }
+        }
+    }
+
     private fun appendTestLog(message: String) {
         Log.d(TAG, message)
         runOnUiThread {
@@ -140,11 +152,12 @@ class MainActivity : AppCompatActivity() {
                 tvRewardBadge.setBackgroundColor(Color.parseColor("#D1FAE5"))
             }
             val line = "[${timeFormat.format(Date())}] $message"
-            if (logLines.size >= 40) {
+            if (logLines.size >= 60) {
                 logLines.removeFirst()
             }
             logLines.addLast(line)
             tvTestLog.text = logLines.joinToString("\n")
+            scrollToLatestLog()
         }
     }
 
@@ -158,9 +171,10 @@ class MainActivity : AppCompatActivity() {
                 targetDp.toFloat(),
                 resources.displayMetrics
             ).toInt()
-            tvTestLog.layoutParams = tvTestLog.layoutParams.apply { height = px }
-            tvTestLog.requestLayout()
+            scrollTestLog.layoutParams = scrollTestLog.layoutParams.apply { height = px }
+            scrollTestLog.requestLayout()
             btnToggleLogSize.text = if (isLogExpanded) "↕ Thu gọn" else "↕ Mở rộng"
+            scrollToLatestLog()
         }
 
         findViewById<TextView>(R.id.btnClearLog).setOnClickListener {
@@ -172,6 +186,7 @@ class MainActivity : AppCompatActivity() {
             tvStatImpression.text = "👁 Impr: 0"
             tvStatPaid.text = "💰 Paid: 0"
             tvTestLog.text = "Đã xóa log. Sẵn sàng kiểm thử..."
+            scrollToLatestLog()
         }
 
         val btnTogglePreview = findViewById<TextView>(R.id.btnTogglePreview)
