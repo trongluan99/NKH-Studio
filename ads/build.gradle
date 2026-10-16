@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    compileSdkVersion 36
+    compileSdk 36
 
     defaultConfig {
         minSdkVersion 24
-        targetSdkVersion 36
+        targetSdk 36
         versionCode 1
         versionName "1.0"
     }
@@ -64,48 +64,48 @@ dependencies {
 
     // Mediation (GMA Next-Gen SDK bundles com.google.android.gms.ads.mediation.* compatibility classes;
     // exclude legacy play-services-ads transitive artifacts to prevent duplicate class errors)
-    implementation('com.google.ads.mediation:facebook:6.21.0.3') {
+    implementation('com.google.ads.mediation:facebook:6.22.0.1') {
         exclude group: 'com.google.android.gms', module: 'play-services-ads'
         exclude group: 'com.google.android.gms', module: 'play-services-ads-api'
         exclude group: 'com.google.android.gms', module: 'play-services-ads-lite'
     }
-    implementation('com.google.ads.mediation:applovin:13.6.2.0') {
+    implementation('com.google.ads.mediation:applovin:13.6.4.2') {
         exclude group: 'com.google.android.gms', module: 'play-services-ads'
         exclude group: 'com.google.android.gms', module: 'play-services-ads-api'
         exclude group: 'com.google.android.gms', module: 'play-services-ads-lite'
     }
-    implementation('com.google.ads.mediation:vungle:7.7.4.0') {
+    implementation('com.google.ads.mediation:vungle:7.7.8.1') {
         exclude group: 'com.google.android.gms', module: 'play-services-ads'
         exclude group: 'com.google.android.gms', module: 'play-services-ads-api'
         exclude group: 'com.google.android.gms', module: 'play-services-ads-lite'
     }
-    implementation('com.google.ads.mediation:pangle:8.0.0.5.0') {
+    implementation('com.google.ads.mediation:pangle:8.3.0.4.0') {
         exclude group: 'com.google.android.gms', module: 'play-services-ads'
         exclude group: 'com.google.android.gms', module: 'play-services-ads-api'
         exclude group: 'com.google.android.gms', module: 'play-services-ads-lite'
     }
-    implementation('com.google.ads.mediation:mintegral:17.1.61.0') {
+    implementation('com.google.ads.mediation:mintegral:17.1.81.1') {
         exclude group: 'com.google.android.gms', module: 'play-services-ads'
         exclude group: 'com.google.android.gms', module: 'play-services-ads-api'
         exclude group: 'com.google.android.gms', module: 'play-services-ads-lite'
     }
-    implementation 'com.unity3d.ads:unity-ads:4.18.1'
-    implementation('com.google.ads.mediation:unity:4.18.0.0') {
+    implementation 'com.unity3d.ads:unity-ads:4.21.0'
+    implementation('com.google.ads.mediation:unity:4.21.0.0') {
         exclude group: 'com.google.android.gms', module: 'play-services-ads'
         exclude group: 'com.google.android.gms', module: 'play-services-ads-api'
         exclude group: 'com.google.android.gms', module: 'play-services-ads-lite'
     }
-    implementation('com.google.ads.mediation:ironsource:9.4.2.0') {
+    implementation('com.google.ads.mediation:ironsource:9.6.1.0') {
         exclude group: 'com.google.android.gms', module: 'play-services-ads'
         exclude group: 'com.google.android.gms', module: 'play-services-ads-api'
         exclude group: 'com.google.android.gms', module: 'play-services-ads-lite'
     }
 
     // Facebook SDK
-    implementation 'com.facebook.android:facebook-android-sdk:18.2.3'
+    implementation 'com.facebook.android:facebook-android-sdk:18.3.0'
 
     // Adjust
-    implementation 'com.adjust.sdk:adjust-android:5.7.0'
+    implementation 'com.adjust.sdk:adjust-android:5.8.0'
     implementation 'com.android.installreferrer:installreferrer:2.2'
 
     // Lottie

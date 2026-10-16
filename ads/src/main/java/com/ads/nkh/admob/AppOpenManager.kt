@@ -462,6 +462,12 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
                                 }
                                 isShowingAd = true
                                 splashAd = null
+                                Handler(Looper.getMainLooper()).postDelayed({
+                                    try {
+                                        dialogSplash?.dismiss()
+                                    } catch (ignored: Exception) {
+                                    }
+                                }, 200L)
                             }
                         }
 
@@ -560,6 +566,9 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
                             }
                             isShowingAd = true
                             appResumeAd = null
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                dismissDialogLoading()
+                            }, 200L)
                         }
                     }
 

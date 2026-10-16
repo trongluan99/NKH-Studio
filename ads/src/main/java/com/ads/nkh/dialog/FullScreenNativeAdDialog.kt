@@ -288,6 +288,26 @@ class FullScreenNativeAdDialog(
         root.addView(backButton)
 
         setContentView(root)
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
+            val bars = insets.getInsets(
+                androidx.core.view.WindowInsetsCompat.Type.systemBars() or
+                    androidx.core.view.WindowInsetsCompat.Type.displayCutout()
+            )
+            val topInset = maxOf(bars.top, dpToPx(28))
+            (backButton.layoutParams as? FrameLayout.LayoutParams)?.let { lp ->
+                lp.topMargin = topInset + dpToPx(12)
+                backButton.layoutParams = lp
+            }
+            (statusView.layoutParams as? FrameLayout.LayoutParams)?.let { lp ->
+                lp.topMargin = topInset + dpToPx(14)
+                statusView.layoutParams = lp
+            }
+            (bottomCard.layoutParams as? FrameLayout.LayoutParams)?.let { lp ->
+                lp.bottomMargin = maxOf(bars.bottom, dpToPx(16)) + dpToPx(16)
+                bottomCard.layoutParams = lp
+            }
+            insets
+        }
         window?.setLayout(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT

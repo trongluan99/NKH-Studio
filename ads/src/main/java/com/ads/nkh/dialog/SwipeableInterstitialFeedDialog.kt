@@ -134,6 +134,22 @@ class SwipeableInterstitialFeedDialog(
         root.addView(holdCountdownBadge)
 
         setContentView(root)
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
+            val bars = insets.getInsets(
+                androidx.core.view.WindowInsetsCompat.Type.systemBars() or
+                    androidx.core.view.WindowInsetsCompat.Type.displayCutout()
+            )
+            val topInset = maxOf(bars.top, dpToPx(28))
+            (backButton.layoutParams as? FrameLayout.LayoutParams)?.let { lp ->
+                lp.topMargin = topInset + dpToPx(12)
+                backButton.layoutParams = lp
+            }
+            (holdCountdownBadge.layoutParams as? FrameLayout.LayoutParams)?.let { lp ->
+                lp.topMargin = topInset + dpToPx(14)
+                holdCountdownBadge.layoutParams = lp
+            }
+            insets
+        }
         window?.setLayout(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT

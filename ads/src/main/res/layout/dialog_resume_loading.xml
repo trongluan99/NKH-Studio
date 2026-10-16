@@ -1,24 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root_loading_overlay"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white"
-    android:gravity="center"
-    android:orientation="vertical">
+    android:background="#B80F172A"
+    android:clickable="true"
+    android:focusable="true">
 
-    <ProgressBar
-        android:id="@+id/spin_kit"
-        android:layout_width="@dimen/_32sdp"
-        android:layout_height="@dimen/_32sdp"
-        android:indeterminateTint="#2F53FF" />
-
-    <TextView
+    <LinearLayout
+        android:id="@+id/card_loading_container"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/_16sdp"
-        android:text="@string/well_comeback"
-        android:textColor="@color/gntBlack"
-        android:textSize="@dimen/_18sdp" />
+        android:layout_gravity="center"
+        android:background="@drawable/bg_dialog_loading_card"
+        android:elevation="@dimen/_10sdp"
+        android:gravity="center"
+        android:minWidth="@dimen/_185sdp"
+        android:orientation="vertical"
+        android:paddingStart="@dimen/_24sdp"
+        android:paddingTop="@dimen/_20sdp"
+        android:paddingEnd="@dimen/_24sdp"
+        android:paddingBottom="@dimen/_20sdp">
 
+        <ProgressBar
+            android:id="@+id/spin_kit"
+            android:layout_width="@dimen/_32sdp"
+            android:layout_height="@dimen/_32sdp"
+            android:layout_gravity="center"
+            android:indeterminate="true"
+            android:indeterminateTint="#2F53FF" />
 
-</LinearLayout>
+        <TextView
+            android:id="@+id/loading_dialog_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/_12sdp"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:letterSpacing="0.01"
+            android:text="@string/well_comeback"
+            android:textColor="#0F172A"
+            android:textSize="@dimen/_14sdp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/loading_dialog_sub_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/_3sdp"
+            android:gravity="center"
+            android:text="@string/well_comeback_subtitle"
+            android:textColor="#64748B"
+            android:textSize="@dimen/_10sdp" />
+
+    </LinearLayout>
+
+</FrameLayout>

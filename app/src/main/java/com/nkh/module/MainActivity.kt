@@ -12,6 +12,9 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import com.ads.nkh.admob.Admob
 import com.ads.nkh.admob.AppOpenManager
 import com.ads.nkh.ads.NkhAd
@@ -75,6 +78,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        setupEdgeToEdgeInsets()
 
         tvTestLog = findViewById(R.id.tvTestLog)
         tvTestLog.movementMethod = ScrollingMovementMethod()
@@ -997,6 +1001,33 @@ class MainActivity : AppCompatActivity() {
                 appendTestLog("TC16 ℹ️ [IAP Cancelled]")
             }
         })
+    }
+
+    private fun setupEdgeToEdgeInsets() {
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = true
+        }
+        val topHeaderBar = findViewById<View>(R.id.topHeaderBar)
+        val bannerBar = findViewById<View>(R.id.frBanner)
+        val headerInitLeft = topHeaderBar.paddingLeft
+        val headerInitTop = topHeaderBar.paddingTop
+        val headerInitRight = topHeaderBar.paddingRight
+        val headerInitBottom = topHeaderBar.paddingBottom
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content)) { _, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            topHeaderBar.setPadding(
+                headerInitLeft + bars.left,
+                headerInitTop + bars.top,
+                headerInitRight + bars.right,
+                headerInitBottom
+            )
+            bannerBar.setPadding(bars.left, 0, bars.right, bars.bottom)
+            insets
+        }
     }
 
     companion object {

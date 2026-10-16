@@ -594,6 +594,14 @@ class Admob private constructor() {
                     Log.d(TAG, "onAdShowedFullScreenContent ")
                     AppOpenManager.getInstance().setInterstitialShowing(true)
                     isShowLoadingSplash = false
+                    if (!openActivityAfterShowInterAds) {
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            try {
+                                dialog?.dismiss()
+                            } catch (_: Exception) {
+                            }
+                        }, 200L)
+                    }
                 }
             }
 
@@ -836,6 +844,14 @@ class Admob private constructor() {
                 runOnUiThread {
                     Log.e(TAG, "onAdShowedFullScreenContent ")
                     AppOpenManager.getInstance().setInterstitialShowing(true)
+                    if (!openActivityAfterShowInterAds) {
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            try {
+                                dialog?.dismiss()
+                            } catch (_: Exception) {
+                            }
+                        }, 200L)
+                    }
                 }
             }
 
@@ -3138,6 +3154,14 @@ class Admob private constructor() {
                 runOnUiThread {
                     AppOpenManager.getInstance().setInterstitialShowing(true)
                     isShowLoadingSplashHigh1 = false
+                    if (!openActivityAfterShowInterAds) {
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            try {
+                                dialogHigh1?.dismiss()
+                            } catch (_: Exception) {
+                            }
+                        }, 200L)
+                    }
                 }
             }
 
@@ -3350,6 +3374,14 @@ class Admob private constructor() {
                 runOnUiThread {
                     AppOpenManager.getInstance().setInterstitialShowing(true)
                     isShowLoadingSplashHigh2 = false
+                    if (!openActivityAfterShowInterAds) {
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            try {
+                                dialogHigh2?.dismiss()
+                            } catch (_: Exception) {
+                            }
+                        }, 200L)
+                    }
                 }
             }
 
@@ -3562,6 +3594,14 @@ class Admob private constructor() {
                 runOnUiThread {
                     AppOpenManager.getInstance().setInterstitialShowing(true)
                     isShowLoadingSplashHigh3 = false
+                    if (!openActivityAfterShowInterAds) {
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            try {
+                                dialogHigh3?.dismiss()
+                            } catch (_: Exception) {
+                            }
+                        }, 200L)
+                    }
                 }
             }
 
@@ -3774,6 +3814,14 @@ class Admob private constructor() {
                 runOnUiThread {
                     AppOpenManager.getInstance().setInterstitialShowing(true)
                     isShowLoadingSplashNormal = false
+                    if (!openActivityAfterShowInterAds) {
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            try {
+                                dialogNormal?.dismiss()
+                            } catch (_: Exception) {
+                            }
+                        }, 200L)
+                    }
                 }
             }
 
@@ -4235,6 +4283,14 @@ class Admob private constructor() {
                                             callback?.onInterstitialShow()
                                             AppOpenManager.getInstance().setInterstitialShowing(true)
                                             isShowLoadingSplash = false
+                                            if (!openActivityAfterShowInterAds) {
+                                                Handler(Looper.getMainLooper()).postDelayed({
+                                                    try {
+                                                        dialog?.dismiss()
+                                                    } catch (_: Exception) {
+                                                    }
+                                                }, 200L)
+                                            }
                                         }
                                     }
 

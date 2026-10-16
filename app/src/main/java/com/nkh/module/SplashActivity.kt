@@ -4,7 +4,12 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.view.animation.DecelerateInterpolator
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import com.ads.nkh.ads.NkhAd
 import com.ads.nkh.funtion.AdCallback
 import com.google.android.libraries.ads.mobile.sdk.common.FullScreenContentError
@@ -18,6 +23,18 @@ class SplashActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = false
+        }
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content)) { view, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            insets
+        }
+        animateSplashEntrance()
 
         Log.d(TAG, "onCreate: organic=" + NkhAd.getInstance().organic)
 
@@ -54,6 +71,34 @@ class SplashActivity : AppCompatActivity() {
         )
     }
 
+    private fun animateSplashEntrance() {
+        findViewById<View>(R.id.layoutSplashBrand)?.apply {
+            alpha = 0f
+            scaleX = 0.92f
+            scaleY = 0.92f
+            translationY = 24f
+            animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .translationY(0f)
+                .setDuration(420L)
+                .setInterpolator(DecelerateInterpolator())
+                .start()
+        }
+        findViewById<View>(R.id.layoutSplashBottom)?.apply {
+            alpha = 0f
+            translationY = 16f
+            animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setStartDelay(120L)
+                .setDuration(360L)
+                .setInterpolator(DecelerateInterpolator())
+                .start()
+        }
+    }
+
     private fun showSplashAndNavigate() {
         if (isSplashShowing || isNavigated || isFinishing || isDestroyed) return
         isSplashShowing = true
@@ -80,10 +125,12 @@ class SplashActivity : AppCompatActivity() {
         )
     }
 
+    @Suppress("DEPRECATION")
     private fun navigateToMain() {
         if (isNavigated || isFinishing || isDestroyed) return
         isNavigated = true
         startActivity(Intent(this@SplashActivity, MainActivity::class.java))
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         finish()
     }
 
