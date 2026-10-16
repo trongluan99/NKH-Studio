@@ -24,7 +24,6 @@ import android.util.Log
 import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
-import android.webkit.WebView
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.RatingBar
@@ -345,16 +344,6 @@ class Admob private constructor() {
     }
 
     fun init(context: Context, testDeviceList: List<String>? = null, tokenAdjust: String?) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val processName = Application.getProcessName()
-            val packageName = context.packageName
-            if (packageName != processName) {
-                try {
-                    WebView.setDataDirectorySuffix(processName)
-                } catch (ignored: Exception) {
-                }
-            }
-        }
         NkhAdConfig.ADJUST_TOKEN_TIKTOK = tokenAdjust ?: ""
         val appContext = context.applicationContext ?: context
         this.context = appContext
@@ -365,12 +354,8 @@ class Admob private constructor() {
         }
 
         // Google GMA Next-Gen SDK initializes its internal DI container and multi-threaded
-        // background coroutines (GMA(BG)) directly inside MobileAds.initialize().
-        // Running MobileAds.initialize() immediately on a dedicated high-priority background
-        // thread without a sequential WebSettings.getDefaultUserAgent() pre-call avoids
-        // blocking SDK init for ~1.4s on cold start, while waiting for OnAdapterInitializationCompleteListener
-        // ensures all Mediation & RTB Bidding adapters (Meta, Mintegral, Pangle, AppLovin, Liftoff,
-        // Unity, ironSource) are READY before dispatching the first Splash/Onboarding ad request.
+        // background coroutines (GMA(BG)) directly inside MobileAds.initialize() on a dedicated
+        // high-priority background thread for fast native Android startup.
         val initStartMs = System.currentTimeMillis()
         sdkInitExecutor.execute {
             try {
