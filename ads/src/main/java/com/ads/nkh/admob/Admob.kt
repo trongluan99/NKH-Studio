@@ -122,6 +122,142 @@ class Admob private constructor() {
     private var isSdkInitStarted = false
     @Volatile
     private var isSdkInitialized = false
+    @Volatile
+    var lastInitializationStatus: com.google.android.libraries.ads.mobile.sdk.initialization.InitializationStatus? = null
+        private set
+    @Volatile
+    var lastInitLatencyMs: Long = 0L
+        private set
+    @Volatile
+    private var biddingStatusListener: Runnable? = null
+
+    data class BiddingNetworkInfo(
+        val networkName: String,
+        val adapterClassName: String,
+        val isIntegrated: Boolean,
+        val isRtbBiddingSupported: Boolean,
+        val adapterVersion: String,
+        val sdkVersion: String,
+        val serverState: String,
+        val serverLatencyMs: Int,
+        val serverDescription: String
+    )
+
+    fun setOnBiddingStatusUpdatedListener(listener: Runnable?) {
+        this.biddingStatusListener = listener
+    }
+
+    fun inspectBiddingNetworks(): List<BiddingNetworkInfo> {
+        val statusMap = lastInitializationStatus?.adapterStatusMap ?: emptyMap()
+        val results = ArrayList<BiddingNetworkInfo>()
+
+        // 1. Google AdMob / GMA Next-Gen SDK Core
+        val gmaClass = "com.google.android.libraries.ads.mobile.sdk.MobileAds"
+        val gmaStatus = statusMap[gmaClass]
+        val gmaVer = try {
+            MobileAds.getVersion().toString()
+        } catch (_: Throwable) {
+            "1.5.0"
+        }
+        results.add(
+            BiddingNetworkInfo(
+                networkName = "Google AdMob (GMA Next-Gen)",
+                adapterClassName = gmaClass,
+                isIntegrated = true,
+                isRtbBiddingSupported = true,
+                adapterVersion = gmaVer,
+                sdkVersion = gmaVer,
+                serverState = gmaStatus?.initializationState?.name ?: if (isSdkInitialized) "READY" else "INITIALIZING",
+                serverLatencyMs = gmaStatus?.latency ?: 0,
+                serverDescription = gmaStatus?.description ?: "Core GMA Next-Gen SDK"
+            )
+        )
+
+        // 2..8: All 7 Mediation & RTB Bidding Networks
+        val networks = listOf(
+            "Meta Audience Network (Facebook)" to listOf("com.google.ads.mediation.facebook.FacebookMediationAdapter"),
+            "Mintegral (Bidding & Waterfall)" to listOf("com.google.ads.mediation.mintegral.MintegralMediationAdapter"),
+            "Pangle / TikTok (Bidding & Waterfall)" to listOf("com.google.ads.mediation.pangle.PangleMediationAdapter"),
+            "AppLovin (Bidding & Waterfall)" to listOf("com.google.ads.mediation.applovin.AppLovinMediationAdapter"),
+            "Liftoff Monetize / Vungle (Bidding)" to listOf("com.google.ads.mediation.vungle.VungleMediationAdapter"),
+            "Unity Ads (Bidding & Waterfall)" to listOf(
+                "com.google.ads.mediation.unity.UnityMediationAdapter",
+                "com.google.ads.mediation.unity.UnityAdapter"
+            ),
+            "ironSource / LevelPlay (Bidding)" to listOf("com.google.ads.mediation.ironsource.IronSourceMediationAdapter")
+        )
+
+        for ((displayName, candidateClasses) in networks) {
+            var loadedClass: Class<*>? = null
+            var resolvedClassName = candidateClasses.first()
+            for (clsName in candidateClasses) {
+                try {
+                    loadedClass = Class.forName(clsName)
+                    resolvedClassName = clsName
+                    break
+                } catch (_: Throwable) {
+                }
+            }
+
+            var isIntegrated = false
+            var isRtb = false
+            var adapterVer = "N/A"
+            var sdkVer = "N/A"
+
+            if (loadedClass != null) {
+                isIntegrated = true
+                var curr: Class<*>? = loadedClass
+                while (curr != null) {
+                    if (curr.name.endsWith("RtbAdapter")) {
+                        isRtb = true
+                        break
+                    }
+                    curr = curr.superclass
+                }
+                if (!isRtb) {
+                    isRtb = loadedClass.methods.any { it.name == "collectSignals" }
+                }
+                try {
+                    val instance = loadedClass.getDeclaredConstructor().newInstance()
+                    val vInfoObj = loadedClass.getMethod("getVersionInfo").invoke(instance)
+                    if (vInfoObj != null) {
+                        val vCls = vInfoObj.javaClass
+                        val major = vCls.getMethod("getMajorVersion").invoke(vInfoObj)
+                        val minor = vCls.getMethod("getMinorVersion").invoke(vInfoObj)
+                        val micro = vCls.getMethod("getMicroVersion").invoke(vInfoObj)
+                        adapterVer = "$major.$minor.$micro"
+                    }
+                    val sInfoObj = loadedClass.getMethod("getSDKVersionInfo").invoke(instance)
+                    if (sInfoObj != null) {
+                        val sCls = sInfoObj.javaClass
+                        val major = sCls.getMethod("getMajorVersion").invoke(sInfoObj)
+                        val minor = sCls.getMethod("getMinorVersion").invoke(sInfoObj)
+                        val micro = sCls.getMethod("getMicroVersion").invoke(sInfoObj)
+                        sdkVer = "$major.$minor.$micro"
+                    }
+                } catch (_: Throwable) {
+                }
+            }
+
+            val srvStatus = statusMap[resolvedClassName]
+            results.add(
+                BiddingNetworkInfo(
+                    networkName = displayName,
+                    adapterClassName = resolvedClassName,
+                    isIntegrated = isIntegrated,
+                    isRtbBiddingSupported = isRtb,
+                    adapterVersion = adapterVer,
+                    sdkVersion = sdkVer,
+                    serverState = srvStatus?.initializationState?.name ?: if (isIntegrated) "LINKED_READY" else "MISSING",
+                    serverLatencyMs = srvStatus?.latency ?: 0,
+                    serverDescription = srvStatus?.description ?: ""
+                )
+            )
+        }
+
+        return results
+    }
+
     private val sdkInitLock = Any()
     private val pendingAdActions = ArrayList<Runnable>()
     private val sdkInitExecutor = Executors.newSingleThreadExecutor { runnable ->
@@ -247,8 +383,15 @@ class Admob private constructor() {
                 }
                 MobileAds.initialize(appContext, initConfigBuilder.build()) { initializationStatus ->
                     val totalLatency = System.currentTimeMillis() - initStartMs
-                    Log.d(TAG, "GMA Next-Gen SDK & Bidding adapters initialized in ${totalLatency}ms")
+                    lastInitializationStatus = initializationStatus
                     val statusMap = initializationStatus.adapterStatusMap
+                    val gmaCoreLatency = statusMap["com.google.android.libraries.ads.mobile.sdk.MobileAds"]?.latency
+                    if (gmaCoreLatency != null && gmaCoreLatency > 0) {
+                        lastInitLatencyMs = gmaCoreLatency.toLong()
+                    } else if (lastInitLatencyMs <= 0L) {
+                        lastInitLatencyMs = totalLatency
+                    }
+                    Log.d(TAG, "GMA Next-Gen SDK & Bidding adapters initialized in ${totalLatency}ms (GMA Core: ${lastInitLatencyMs}ms)")
                     for ((adapterClass, status) in statusMap) {
                         Log.d(
                             TAG,
@@ -260,10 +403,16 @@ class Admob private constructor() {
                             )
                         )
                     }
+                    biddingStatusListener?.let { listener ->
+                        runOnUiThread(listener)
+                    }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "MobileAds.initialize error: ${e.message}", e)
             } finally {
+                if (lastInitLatencyMs <= 0L) {
+                    lastInitLatencyMs = (System.currentTimeMillis() - initStartMs).coerceAtLeast(1L)
+                }
                 completeSdkInitAndDrainPendingAds()
             }
         }

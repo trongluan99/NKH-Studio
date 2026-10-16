@@ -6,9 +6,11 @@ import android.os.Bundle
 import android.text.method.ScrollingMovementMethod
 import android.util.Log
 import android.util.TypedValue
+import android.view.Gravity
 import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -181,19 +183,21 @@ class MainActivity : AppCompatActivity() {
 
         // Category Filter Tabs
         val tabAll = findViewById<MaterialButton>(R.id.tabAll)
+        val tabBidding = findViewById<MaterialButton>(R.id.tabBidding)
         val tabNextGen = findViewById<MaterialButton>(R.id.tabNextGen)
         val tabNative = findViewById<MaterialButton>(R.id.tabNative)
         val tabBanner = findViewById<MaterialButton>(R.id.tabBanner)
         val tabInter = findViewById<MaterialButton>(R.id.tabInter)
         val tabReward = findViewById<MaterialButton>(R.id.tabReward)
-        val allTabs = listOf(tabAll, tabNextGen, tabNative, tabBanner, tabInter, tabReward)
+        val allTabs = listOf(tabAll, tabBidding, tabNextGen, tabNative, tabBanner, tabInter, tabReward)
 
+        val cardBidding = findViewById<View>(R.id.cardSectionBidding)
         val cardNextGen = findViewById<View>(R.id.cardSectionNextGen)
         val cardNative = findViewById<View>(R.id.cardSectionNative)
         val cardBanner = findViewById<View>(R.id.cardSectionBanner)
         val cardInter = findViewById<View>(R.id.cardSectionInter)
         val cardReward = findViewById<View>(R.id.cardSectionReward)
-        val allCards = listOf(cardNextGen, cardNative, cardBanner, cardInter, cardReward)
+        val allCards = listOf(cardBidding, cardNextGen, cardNative, cardBanner, cardInter, cardReward)
 
         fun selectFilter(activeTab: MaterialButton, visibleCards: List<View>) {
             for (t in allTabs) {
@@ -206,14 +210,32 @@ class MainActivity : AppCompatActivity() {
             for (c in allCards) {
                 c.visibility = if (visibleCards.contains(c)) View.VISIBLE else View.GONE
             }
+            findViewById<View>(R.id.scrollButtons)?.scrollTo(0, 0)
         }
 
         tabAll.setOnClickListener { selectFilter(tabAll, allCards) }
+        tabBidding.setOnClickListener { selectFilter(tabBidding, listOf(cardBidding)) }
         tabNextGen.setOnClickListener { selectFilter(tabNextGen, listOf(cardNextGen)) }
         tabNative.setOnClickListener { selectFilter(tabNative, listOf(cardNative)) }
         tabBanner.setOnClickListener { selectFilter(tabBanner, listOf(cardBanner)) }
         tabInter.setOnClickListener { selectFilter(tabInter, listOf(cardInter)) }
         tabReward.setOnClickListener { selectFilter(tabReward, listOf(cardReward)) }
+
+        findViewById<Button>(R.id.btnVerifyBidding)?.setOnClickListener {
+            renderBiddingNetworksCard(logToConsole = true, showToast = true)
+        }
+        findViewById<Button>(R.id.btnBiddingAdInspector)?.setOnClickListener {
+            appendTestLog("Bidding [AdInspector]: Mở GMA Next-Gen Ad Inspector...")
+            MobileAds.openAdInspector { error ->
+                appendTestLog("Bidding [AdInspector] Closed: error=${error?.message ?: "none"}")
+            }
+        }
+        Admob.getInstance().setOnBiddingStatusUpdatedListener(Runnable {
+            if (!isFinishing && !isDestroyed) {
+                renderBiddingNetworksCard(logToConsole = false, showToast = false)
+            }
+        })
+        renderBiddingNetworksCard(logToConsole = true, showToast = false)
 
         // PiP Corner Position Selector
         val posBottomRight = findViewById<TextView>(R.id.pipPosBottomRight)
@@ -236,6 +258,112 @@ class MainActivity : AppCompatActivity() {
                 }
                 appendTestLog("TC18 [PiP]: Đã chọn góc hiển thị ${pos.name}")
             }
+        }
+    }
+
+    private fun dpToPx(dp: Float): Int {
+        return TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            dp,
+            resources.displayMetrics
+        ).toInt()
+    }
+
+    private fun renderBiddingNetworksCard(logToConsole: Boolean, showToast: Boolean) {
+        val container = findViewById<LinearLayout>(R.id.layoutBiddingNetworksContainer) ?: return
+        val badgeSummary = findViewById<TextView>(R.id.tvBiddingSummaryBadge)
+        val subtitle = findViewById<TextView>(R.id.tvBiddingInitSubtitle)
+
+        val networks = Admob.getInstance().inspectBiddingNetworks()
+        val readyCount = networks.count { it.isIntegrated }
+        val rtbCount = networks.count { it.isRtbBiddingSupported }
+
+        badgeSummary?.text = "✅ $readyCount/${networks.size} Sẵn sàng (RTB: $rtbCount)"
+        val initMs = Admob.getInstance().lastInitLatencyMs
+        subtitle?.text = if (initMs > 0L) {
+            "Đã tích hợp đủ ${networks.size} SDK Bidding & Mediation • Init: ${initMs}ms"
+        } else {
+            "Đã tích hợp đủ ${networks.size} SDK Bidding & Mediation (RtbAdapter & Waterfall)"
+        }
+
+        container.removeAllViews()
+        for ((index, info) in networks.withIndex()) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dpToPx(6f), dpToPx(3f), dpToPx(6f), dpToPx(3f))
+                if (index < networks.size - 1) {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        bottomMargin = dpToPx(2f)
+                    }
+                }
+                setBackgroundColor(Color.parseColor("#FFFFFF"))
+            }
+
+            val leftCol = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+
+            val statusIcon = if (info.isIntegrated) "✅" else "❌"
+            val titleTv = TextView(this).apply {
+                text = "$statusIcon ${info.networkName}"
+                setTextColor(Color.parseColor("#0F172A"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                paint.isFakeBoldText = true
+            }
+
+            val detailTv = TextView(this).apply {
+                val verStr = "Adapter: ${info.adapterVersion} • SDK: ${info.sdkVersion}"
+                text = verStr
+                setTextColor(Color.parseColor("#64748B"))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
+            }
+
+            leftCol.addView(titleTv)
+            leftCol.addView(detailTv)
+
+            val badgeTv = TextView(this).apply {
+                text = when {
+                    !info.isIntegrated -> "THIẾU SDK"
+                    info.isRtbBiddingSupported -> "RTB Bidding ✅"
+                    else -> "Mediation ✅"
+                }
+                setTextColor(
+                    Color.parseColor(
+                        if (info.isIntegrated) "#059669" else "#DC2626"
+                    )
+                )
+                setBackgroundColor(
+                    Color.parseColor(
+                        if (info.isIntegrated) "#D1FAE5" else "#FEE2E2"
+                    )
+                )
+                setPadding(dpToPx(7f), dpToPx(3f), dpToPx(7f), dpToPx(3f))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+                paint.isFakeBoldText = true
+            }
+
+            row.addView(leftCol)
+            row.addView(badgeTv)
+            container.addView(row)
+
+            if (logToConsole) {
+                appendTestLog(
+                    "📡 Bidding [${info.networkName}]: ${if (info.isRtbBiddingSupported) "RTB" else "Mediation"} | Adapter=${info.adapterVersion} | SDK=${info.sdkVersion}"
+                )
+            }
+        }
+
+        if (showToast) {
+            Toast.makeText(
+                this,
+                "Đã kiểm tra: $readyCount/${networks.size} mạng Bidding & Mediation sẵn sàng!",
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 

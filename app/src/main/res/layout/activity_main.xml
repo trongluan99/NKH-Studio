@@ -237,6 +237,28 @@
                 app:cornerRadius="17dp" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/tabBidding"
+                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:backgroundTint="#E2E8F0"
+                android:includeFontPadding="false"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:maxLines="1"
+                android:minWidth="0dp"
+                android:minHeight="34dp"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:text="📡 Bidding (8)"
+                android:textAllCaps="false"
+                android:textColor="#1E293B"
+                android:textSize="11.5sp"
+                android:textStyle="bold"
+                app:cornerRadius="17dp" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/tabNextGen"
                 style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
                 android:layout_width="wrap_content"
@@ -362,10 +384,126 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:descendantFocusability="blocksDescendants"
             android:orientation="vertical"
             android:paddingHorizontal="10dp"
             android:paddingTop="4dp"
             android:paddingBottom="16dp">
+
+            <!-- ==================== CARD 0: BIDDING & MEDIATION NETWORKS ==================== -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardSectionBidding"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                app:cardBackgroundColor="#FFFFFF"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="1dp"
+                app:strokeColor="#A7F3D0"
+                app:strokeWidth="1.5dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="📡 Mạng Bidding &amp; Mediation"
+                            android:textColor="#0F172A"
+                            android:textSize="13.5sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvBiddingSummaryBadge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="#D1FAE5"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="3dp"
+                            android:text="✅ 8/8 Sẵn sàng"
+                            android:textColor="#059669"
+                            android:textSize="10.5sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvBiddingInitSubtitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginBottom="8dp"
+                        android:text="Kiểm tra trực tiếp RtbAdapter, SDK Version &amp; trạng thái khởi tạo các mạng Bidding."
+                        android:textColor="#64748B"
+                        android:textSize="11sp" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutBiddingNetworksContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="#F8FAFC"
+                        android:orientation="vertical"
+                        android:padding="8dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnVerifyBidding"
+                            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="4dp"
+                            android:layout_weight="1"
+                            android:backgroundTint="#059669"
+                            android:includeFontPadding="false"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minHeight="40dp"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="6dp"
+                            android:text="🔄 Kiểm tra Bidding"
+                            android:textAllCaps="false"
+                            android:textColor="#FFFFFF"
+                            android:textSize="11.5sp"
+                            android:textStyle="bold"
+                            app:cornerRadius="10dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnBiddingAdInspector"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:layout_weight="1"
+                            android:includeFontPadding="false"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minHeight="40dp"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="6dp"
+                            android:text="🔍 Mở Ad Inspector"
+                            android:textAllCaps="false"
+                            android:textColor="#0F172A"
+                            android:textSize="11.5sp"
+                            android:textStyle="bold"
+                            app:cornerRadius="10dp"
+                            app:strokeColor="#CBD5E1" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- ==================== CARD 1: NEXT-GEN PIP & SWIPEABLE ADS ==================== -->
             <com.google.android.material.card.MaterialCardView
