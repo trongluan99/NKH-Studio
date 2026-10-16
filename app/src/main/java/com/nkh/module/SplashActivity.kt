@@ -43,7 +43,7 @@ class SplashActivity : AppCompatActivity() {
             BuildConfig.ad_interstitial_splash,
             BuildConfig.ad_interstitial_splash,
             15000,
-            2000,
+            500,
             object : AdCallback() {
                 override fun onAdSplashHigh1Ready() {
                     super.onAdSplashHigh1Ready()

@@ -127,6 +127,12 @@ class Admob private constructor() {
     private val sdkInitExecutor = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "NkhAd-SdkInit").apply {
             isDaemon = true
+            priority = Thread.MAX_PRIORITY
+        }
+    }
+    private val bgExecutor = Executors.newCachedThreadPool { runnable ->
+        Thread(runnable, "NkhAd-BgWorker").apply {
+            isDaemon = true
         }
     }
 
@@ -165,7 +171,7 @@ class Admob private constructor() {
     }
 
     fun runOnBackgroundThread(action: Runnable) {
-        sdkInitExecutor.execute(action)
+        bgExecutor.execute(action)
     }
 
     fun runWhenSdkInitialized(action: Runnable) {
@@ -179,10 +185,25 @@ class Admob private constructor() {
             }
         }
         if (runImmediate) {
-            if (Looper.myLooper() == Looper.getMainLooper()) {
-                action.run()
-            } else {
-                runOnUiThread(action)
+            action.run()
+        }
+    }
+
+    private fun completeSdkInitAndDrainPendingAds() {
+        val actionsToRun: List<Runnable>
+        synchronized(sdkInitLock) {
+            if (isSdkInitialized) {
+                return
+            }
+            isSdkInitialized = true
+            actionsToRun = ArrayList(pendingAdActions)
+            pendingAdActions.clear()
+        }
+        for (pending in actionsToRun) {
+            try {
+                pending.run()
+            } catch (t: Throwable) {
+                Log.e(TAG, "Error running pending ad action: ${t.message}", t)
             }
         }
     }
@@ -207,15 +228,16 @@ class Admob private constructor() {
             isSdkInitStarted = true
         }
 
-        // Google GMA Next-Gen SDK best practice: pre-warm WebView provider and call
-        // MobileAds.initialize() on a background thread before dispatching AdView/NativeAd
-        // requests on the Main Thread to eliminate WebViewFactory monitor contention & Cold Start ANRs.
+        // Google GMA Next-Gen SDK initializes its internal DI container and multi-threaded
+        // background coroutines (GMA(BG)) directly inside MobileAds.initialize().
+        // Running MobileAds.initialize() immediately on a dedicated high-priority background
+        // thread without a sequential WebSettings.getDefaultUserAgent() pre-call avoids
+        // blocking SDK init for ~1.4s on cold start, while waiting for OnAdapterInitializationCompleteListener
+        // ensures all Mediation & RTB Bidding adapters (Meta, Mintegral, Pangle, AppLovin, Liftoff,
+        // Unity, ironSource) are READY before dispatching the first Splash/Onboarding ad request.
+        val initStartMs = System.currentTimeMillis()
         sdkInitExecutor.execute {
             try {
-                try {
-                    android.webkit.WebSettings.getDefaultUserAgent(appContext)
-                } catch (_: Throwable) {
-                }
                 val appId = readManifestApplicationId(appContext)
                 val initConfigBuilder = InitializationConfig.Builder(appId)
                 if (!deviceListCopy.isNullOrEmpty()) {
@@ -224,6 +246,8 @@ class Admob private constructor() {
                     )
                 }
                 MobileAds.initialize(appContext, initConfigBuilder.build()) { initializationStatus ->
+                    val totalLatency = System.currentTimeMillis() - initStartMs
+                    Log.d(TAG, "GMA Next-Gen SDK & Bidding adapters initialized in ${totalLatency}ms")
                     val statusMap = initializationStatus.adapterStatusMap
                     for ((adapterClass, status) in statusMap) {
                         Log.d(
@@ -240,19 +264,7 @@ class Admob private constructor() {
             } catch (e: Exception) {
                 Log.e(TAG, "MobileAds.initialize error: ${e.message}", e)
             } finally {
-                val actionsToRun: List<Runnable>
-                synchronized(sdkInitLock) {
-                    isSdkInitialized = true
-                    actionsToRun = ArrayList(pendingAdActions)
-                    pendingAdActions.clear()
-                }
-                if (actionsToRun.isNotEmpty()) {
-                    runOnUiThread {
-                        for (pending in actionsToRun) {
-                            pending.run()
-                        }
-                    }
-                }
+                completeSdkInitAndDrainPendingAds()
             }
         }
     }
@@ -1111,100 +1123,102 @@ class Admob private constructor() {
         containerShimmer?.visibility = View.VISIBLE
         containerShimmer?.startShimmer()
         runWhenSdkInitialized(Runnable {
-            try {
-                val adSize = explicitAdSize ?: getAdSize(mActivity, useInlineAdaptive, inlineStyle)
-                val adView = AdView(mActivity)
-                val layerHeight = adSize.getHeightInPixels(mActivity)
-                val layoutHeight = if (useInlineAdaptive || layerHeight <= 0) {
-                    FrameLayout.LayoutParams.WRAP_CONTENT
-                } else {
-                    layerHeight
-                }
-                adContainer?.removeAllViews()
-                adContainer?.addView(
-                    adView,
-                    FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, layoutHeight)
-                )
-                val requestBuilder = BannerAdRequest.Builder(id, adSize)
-                if (useCollapsible && gravity != null) {
-                    val extras = Bundle()
-                    extras.putString("collapsible", gravity)
-                    requestBuilder.setGoogleExtrasBundle(extras)
-                }
-                adView.loadAd(
-                    requestBuilder.build(),
-                    object : AdLoadCallback<BannerAd> {
-                        override fun onAdLoaded(bannerAd: BannerAd) {
-                            runOnUiThread {
-                                containerShimmer?.stopShimmer()
-                                containerShimmer?.visibility = View.GONE
-                                adContainer?.visibility = View.VISIBLE
-                                bannerAd.adEventCallback = object : BannerAdEventCallback {
-                                    override fun onAdPaid(adValue: AdValue) {
-                                        runOnUiThread {
-                                            NkhLogEventManager.logPaidAdImpression(
-                                                mActivity,
-                                                adValue,
-                                                bannerAd.adUnitId,
-                                                bannerAd.getResponseInfo().adapterClassName
-                                            )
-                                            NkhLogEventManager.logPaidAdjustWithToken(
-                                                adValue,
-                                                bannerAd.adUnitId,
-                                                NkhAdConfig.ADJUST_TOKEN_TIKTOK
-                                            )
-                                            callback?.onAdLogRev(
-                                                adValue,
-                                                bannerAd.adUnitId,
-                                                bannerAd.getResponseInfo().adapterClassName,
-                                                if (useCollapsible) AdType.COLLAPSIBLE_BANNER else AdType.BANNER
-                                            )
-                                        }
-                                    }
-
-                                    override fun onAdClicked() {
-                                        runOnUiThread {
-                                            if (disableAdResumeWhenClickAds) {
-                                                AppOpenManager.getInstance().disableAdResumeByClickAction()
-                                            }
-                                            if (callback != null) {
-                                                callback.onAdClicked()
-                                                callback.onAdClicked(
+            runOnUiThread {
+                try {
+                    val adSize = explicitAdSize ?: getAdSize(mActivity, useInlineAdaptive, inlineStyle)
+                    val adView = AdView(mActivity)
+                    val layerHeight = adSize.getHeightInPixels(mActivity)
+                    val layoutHeight = if (useInlineAdaptive || layerHeight <= 0) {
+                        FrameLayout.LayoutParams.WRAP_CONTENT
+                    } else {
+                        layerHeight
+                    }
+                    adContainer?.removeAllViews()
+                    adContainer?.addView(
+                        adView,
+                        FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, layoutHeight)
+                    )
+                    val requestBuilder = BannerAdRequest.Builder(id, adSize)
+                    if (useCollapsible && gravity != null) {
+                        val extras = Bundle()
+                        extras.putString("collapsible", gravity)
+                        requestBuilder.setGoogleExtrasBundle(extras)
+                    }
+                    adView.loadAd(
+                        requestBuilder.build(),
+                        object : AdLoadCallback<BannerAd> {
+                            override fun onAdLoaded(bannerAd: BannerAd) {
+                                runOnUiThread {
+                                    containerShimmer?.stopShimmer()
+                                    containerShimmer?.visibility = View.GONE
+                                    adContainer?.visibility = View.VISIBLE
+                                    bannerAd.adEventCallback = object : BannerAdEventCallback {
+                                        override fun onAdPaid(adValue: AdValue) {
+                                            runOnUiThread {
+                                                NkhLogEventManager.logPaidAdImpression(
+                                                    mActivity,
+                                                    adValue,
+                                                    bannerAd.adUnitId,
+                                                    bannerAd.getResponseInfo().adapterClassName
+                                                )
+                                                NkhLogEventManager.logPaidAdjustWithToken(
+                                                    adValue,
+                                                    bannerAd.adUnitId,
+                                                    NkhAdConfig.ADJUST_TOKEN_TIKTOK
+                                                )
+                                                callback?.onAdLogRev(
+                                                    adValue,
                                                     bannerAd.adUnitId,
                                                     bannerAd.getResponseInfo().adapterClassName,
                                                     if (useCollapsible) AdType.COLLAPSIBLE_BANNER else AdType.BANNER
                                                 )
-                                                Log.d(
-                                                    TAG,
-                                                    "onAdClicked() called with bannerAdLoaded" + bannerAd.adUnitId
-                                                )
                                             }
-                                            NkhLogEventManager.logClickAdsEvent(mActivity, id)
                                         }
-                                    }
 
-                                    override fun onAdImpression() {
-                                        runOnUiThread {
-                                            callback?.onAdImpression()
+                                        override fun onAdClicked() {
+                                            runOnUiThread {
+                                                if (disableAdResumeWhenClickAds) {
+                                                    AppOpenManager.getInstance().disableAdResumeByClickAction()
+                                                }
+                                                if (callback != null) {
+                                                    callback.onAdClicked()
+                                                    callback.onAdClicked(
+                                                        bannerAd.adUnitId,
+                                                        bannerAd.getResponseInfo().adapterClassName,
+                                                        if (useCollapsible) AdType.COLLAPSIBLE_BANNER else AdType.BANNER
+                                                    )
+                                                    Log.d(
+                                                        TAG,
+                                                        "onAdClicked() called with bannerAdLoaded" + bannerAd.adUnitId
+                                                    )
+                                                }
+                                                NkhLogEventManager.logClickAdsEvent(mActivity, id)
+                                            }
+                                        }
+
+                                        override fun onAdImpression() {
+                                            runOnUiThread {
+                                                callback?.onAdImpression()
+                                            }
                                         }
                                     }
+                                    callback?.onAdLoaded()
                                 }
-                                callback?.onAdLoaded()
                             }
-                        }
 
-                        override fun onAdFailedToLoad(adError: LoadAdError) {
-                            runOnUiThread {
-                                containerShimmer?.stopShimmer()
-                                adContainer?.visibility = View.GONE
-                                containerShimmer?.visibility = View.GONE
-                                callback?.onAdFailedToLoad(adError)
+                            override fun onAdFailedToLoad(adError: LoadAdError) {
+                                runOnUiThread {
+                                    containerShimmer?.stopShimmer()
+                                    adContainer?.visibility = View.GONE
+                                    containerShimmer?.visibility = View.GONE
+                                    callback?.onAdFailedToLoad(adError)
+                                }
                             }
                         }
-                    }
-                )
-            } catch (e: Exception) {
-                e.printStackTrace()
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         })
     }

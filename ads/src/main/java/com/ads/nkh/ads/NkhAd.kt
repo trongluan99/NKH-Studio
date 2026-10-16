@@ -162,6 +162,24 @@ class NkhAd {
             setupAdjust(adConfig.isVariantDev, adConfig.adjustConfig.adjustToken)
         }
 
+        val appContext = context.applicationContext ?: context
+        val fbToken = adConfig.facebookClientToken
+        if (!fbToken.isNullOrBlank()) {
+            try {
+                FacebookSdk.setClientToken(fbToken)
+            } catch (e: Exception) {
+                Log.w(TAG, "FacebookSdk setClientToken skipped: ${e.message}")
+            }
+        }
+        Admob.getInstance().runOnBackgroundThread(Runnable {
+            try {
+                @Suppress("DEPRECATION")
+                FacebookSdk.sdkInitialize(appContext)
+            } catch (e: Exception) {
+                Log.w(TAG, "FacebookSdk background init skipped: ${e.message}")
+            }
+        })
+
         Admob.getInstance().init(context, adConfig.listDeviceTest, adConfig.adjustTokenTiktok)
         if (adConfig.isEnableAdResume) {
             AppOpenManager.getInstance().init(adConfig.application, adConfig.idAdResume)
@@ -169,19 +187,6 @@ class NkhAd {
 
         initAdSuccess = true
         initCallback?.initAdSuccess()
-        val appContext = context.applicationContext ?: context
-        val fbToken = adConfig.facebookClientToken
-        Admob.getInstance().runOnBackgroundThread(Runnable {
-            try {
-                if (!fbToken.isNullOrBlank()) {
-                    FacebookSdk.setClientToken(fbToken)
-                }
-                @Suppress("DEPRECATION")
-                FacebookSdk.sdkInitialize(appContext)
-            } catch (e: Exception) {
-                Log.w(TAG, "FacebookSdk background init skipped: ${e.message}")
-            }
-        })
     }
 
     fun loadNativeConfigFromAssets(context: Context, remoteFile: String): NativeAdConfig {
