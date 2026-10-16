@@ -167,17 +167,31 @@ class AppPurchase private constructor() {
     @JvmField
     var purchasesUpdatedListener: PurchasesUpdatedListener =
         PurchasesUpdatedListener { billingResult, list ->
-            Log.e(TAG, "onPurchasesUpdated code: " + billingResult.responseCode)
-            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && list != null) {
-                for (purchase in list) {
-                    val sku: List<String> = purchase.skus
-                    handlePurchase(purchase)
+            Log.d(TAG, "onPurchasesUpdated code: ${billingResult.responseCode}, msg: ${billingResult.debugMessage}")
+            when (billingResult.responseCode) {
+                BillingClient.BillingResponseCode.OK -> {
+                    if (list != null) {
+                        for (purchase in list) {
+                            handlePurchase(purchase)
+                        }
+                    }
                 }
-            } else if (billingResult.responseCode == BillingClient.BillingResponseCode.USER_CANCELED) {
-                purchaseListener?.onUserCancelBilling()
-                Log.d(TAG, "onPurchasesUpdated:USER_CANCELED ")
-            } else {
-                Log.d(TAG, "onPurchasesUpdated:... ")
+                BillingClient.BillingResponseCode.USER_CANCELED -> {
+                    purchaseListener?.onUserCancelBilling()
+                    Log.d(TAG, "onPurchasesUpdated: USER_CANCELED")
+                }
+                BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
+                    Log.d(TAG, "onPurchasesUpdated: ITEM_ALREADY_OWNED -> syncing ownership")
+                    verifyPurchased(false)
+                    purchaseListener?.displayErrorMessage("Selected item is already owned")
+                }
+                else -> {
+                    val errMsg = billingResult.debugMessage.ifEmpty {
+                        "Billing error (code=${billingResult.responseCode})"
+                    }
+                    purchaseListener?.displayErrorMessage(errMsg)
+                    Log.w(TAG, "onPurchasesUpdated error: $errMsg")
+                }
             }
         }
 
@@ -196,10 +210,8 @@ class AppPurchase private constructor() {
                 val code = billingResult.responseCode
                 Log.d(TAG, "onBillingSetupFinished: $code")
 
-                isInitBillingFinish = true
-
                 if (code != BillingClient.BillingResponseCode.OK) {
-                    // retry init
+                    // Retry connection in background; if verify hasn't finished yet, timeout or retry will handle callback
                     Handler(Looper.getMainLooper()).postDelayed({
                         billingClient?.startConnection(this)
                     }, 2000)
@@ -209,10 +221,7 @@ class AppPurchase private constructor() {
                 // ====== BILLING READY ======
                 isAvailable = true
 
-                // 1️⃣ VERIFY PURCHASE (AN TOÀN)
-                verifyPurchased(true)
-
-                // 2️⃣ LOAD INAPP
+                // 1️⃣ LOAD INAPP PRODUCT DETAILS
                 val inapList = listINAPId
                 if (!inapList.isNullOrEmpty()) {
                     val paramsINAP = QueryProductDetailsParams.newBuilder()
@@ -228,7 +237,7 @@ class AppPurchase private constructor() {
                     }
                 }
 
-                // 3️⃣ LOAD SUBS
+                // 2️⃣ LOAD SUBS PRODUCT DETAILS
                 val subsList = listSubscriptionId
                 if (!subsList.isNullOrEmpty()) {
                     val paramsSUBS = QueryProductDetailsParams.newBuilder()
@@ -243,6 +252,9 @@ class AppPurchase private constructor() {
                         }
                     }
                 }
+
+                // 3️⃣ VERIFY PURCHASE OWNERSHIP BEFORE FIRING onInitBillingFinished
+                verifyPurchased(true)
             }
         }
 
@@ -348,7 +360,10 @@ class AppPurchase private constructor() {
                         for (productId in productIdsINAP) {
                             if (purchase.products.contains(productId)) {
                                 if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
-                                    ownerIdInapps.add(productId)
+                                    if (!ownerIdInapps.contains(productId)) {
+                                        ownerIdInapps.add(productId)
+                                    }
+                                    idPurchased = productId
                                     isPurchase = true
                                     trackPurchaseIfNeeded(purchase, productId, TYPE_IAP.PURCHASE)
                                     if (!purchase.isAcknowledged) {
@@ -391,6 +406,7 @@ class AppPurchase private constructor() {
                                         purchase.isAutoRenewing
                                     )
                                     addOrUpdateOwnerIdSub(purchaseResult, productId)
+                                    idPurchased = productId
                                     isPurchase = true
                                     trackPurchaseIfNeeded(purchase, productId, TYPE_IAP.SUBSCRIPTION)
                                     if (!purchase.isAcknowledged) {
@@ -416,6 +432,13 @@ class AppPurchase private constructor() {
         } else {
             isVerifySUBS = true
         }
+
+        if (isVerifyINAP && isVerifySUBS) {
+            checkAndFinishCallback(
+                isCallback,
+                BillingResult.newBuilder().setResponseCode(BillingClient.BillingResponseCode.OK).build()
+            )
+        }
     }
 
     private fun getProductIds(productList: ArrayList<QueryProductDetailsParams.Product>?): ArrayList<String> {
@@ -433,9 +456,11 @@ class AppPurchase private constructor() {
             verifyFinish = true
             if (billingListener != null && isCallback && !isInitBillingFinish) {
                 isInitBillingFinish = true
-                billingListener?.onInitBillingFinished(billingResult.responseCode)
                 if (handlerTimeout != null && rdTimeout != null) {
                     handlerTimeout?.removeCallbacks(rdTimeout!!)
+                }
+                Handler(Looper.getMainLooper()).post {
+                    billingListener?.onInitBillingFinished(billingResult.responseCode)
                 }
             }
         }
@@ -624,6 +649,8 @@ class AppPurchase private constructor() {
         }
 
         val offerToken = getOfferToken(subsDetail)
+        idPurchaseCurrent = SubsId
+        typeIap = TYPE_IAP.SUBSCRIPTION
 
         val productDetailsParamsList = ImmutableList.of(
             BillingFlowParams.ProductDetailsParams.newBuilder()
@@ -702,6 +729,9 @@ class AppPurchase private constructor() {
         if (offerToken.isNullOrEmpty()) {
             return "Offer token is required"
         }
+
+        idPurchaseCurrent = SubsId
+        typeIap = TYPE_IAP.SUBSCRIPTION
 
         val productDetailsParamsList = ImmutableList.of(
             BillingFlowParams.ProductDetailsParams.newBuilder()
@@ -847,28 +877,64 @@ class AppPurchase private constructor() {
     }
 
     private fun handlePurchase(purchase: Purchase) {
-        try {
-            val price = getPriceWithoutCurrency(idPurchaseCurrent, typeIap, offerTokenCurrent)
-            val currency = getCurrency(idPurchaseCurrent, typeIap, offerTokenCurrent)
-            val sku = if (purchase.products.isNotEmpty()) purchase.products[0] else idPurchaseCurrent
+        if (purchase.purchaseState == Purchase.PurchaseState.PENDING) {
+            Log.d(TAG, "handlePurchase: Purchase is PENDING (${purchase.products}), waiting for completion")
+            purchaseListener?.displayErrorMessage("Purchase is pending approval")
+            return
+        }
+        if (purchase.purchaseState != Purchase.PurchaseState.PURCHASED) {
+            Log.w(TAG, "handlePurchase: Ignored purchase with state=${purchase.purchaseState}")
+            return
+        }
 
-            if (typeIap == TYPE_IAP.SUBSCRIPTION) {
-                // Subscription: report the raw purchase (token/signature/orderId) to Adjust so
-                // Adjust can server-side verify with Google and auto-track renew/cancel/refund
-                // via RTDN. No further client-side call is needed on renewal.
-                NkhLogEventManager.trackPlayStoreSubscription(
-                    price.toLong(),
-                    currency,
-                    sku,
-                    purchase.orderId,
-                    purchase.signature,
-                    purchase.purchaseToken,
-                    purchase.purchaseTime
+        val sku = if (purchase.products.isNotEmpty()) purchase.products[0] else idPurchaseCurrent
+        val resolvedTypeIap = when {
+            skuDetailsSubsMap.containsKey(sku) || getListSubId().contains(sku) -> TYPE_IAP.SUBSCRIPTION
+            skuDetailsINAPMap.containsKey(sku) || getListInappId().contains(sku) -> TYPE_IAP.PURCHASE
+            typeIap != 0 -> typeIap
+            else -> TYPE_IAP.PURCHASE
+        }
+
+        idPurchased = sku
+        if (!isConsumePurchase) {
+            isPurchase = true
+            if (resolvedTypeIap == TYPE_IAP.SUBSCRIPTION) {
+                val purchaseResult = PurchaseResult(
+                    purchase.packageName,
+                    purchase.products,
+                    purchase.purchaseState,
+                    purchase.isAutoRenewing
                 )
-            } else {
-                NkhLogEventManager.onTrackRevenuePurchase(price.toFloat(), currency, idPurchaseCurrent, typeIap)
+                addOrUpdateOwnerIdSub(purchaseResult, sku)
+            } else if (sku.isNotEmpty() && !ownerIdInapps.contains(sku)) {
+                ownerIdInapps.add(sku)
             }
-            markTokenTracked(purchase.purchaseToken)
+        }
+
+        try {
+            val token = purchase.purchaseToken
+            if (!isTokenTracked(token)) {
+                val price = getPriceWithoutCurrency(sku, resolvedTypeIap, offerTokenCurrent)
+                val currency = getCurrency(sku, resolvedTypeIap, offerTokenCurrent)
+
+                if (resolvedTypeIap == TYPE_IAP.SUBSCRIPTION) {
+                    // Subscription: report the raw purchase (token/signature/orderId) to Adjust so
+                    // Adjust can server-side verify with Google and auto-track renew/cancel/refund
+                    // via RTDN. No further client-side call is needed on renewal.
+                    NkhLogEventManager.trackPlayStoreSubscription(
+                        price.toLong(),
+                        currency,
+                        sku,
+                        purchase.orderId,
+                        purchase.signature,
+                        token,
+                        purchase.purchaseTime
+                    )
+                } else {
+                    NkhLogEventManager.onTrackRevenuePurchase(price.toFloat(), currency, sku, resolvedTypeIap)
+                }
+                markTokenTracked(token)
+            }
         } catch (e: Exception) {
             // Never let a tracking/SDK failure crash the purchase flow itself.
             Log.e(TAG, "handlePurchase: track revenue failed - " + e.message)
@@ -889,18 +955,16 @@ class AppPurchase private constructor() {
 
             billingClient?.consumeAsync(consumeParams, listener)
         } else {
-            if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
-                val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder()
-                    .setPurchaseToken(purchase.purchaseToken)
-                    .build()
-                if (!purchase.isAcknowledged) {
-                    billingClient?.acknowledgePurchase(
-                        acknowledgePurchaseParams,
-                        AcknowledgePurchaseResponseListener { billingResult ->
-                            Log.d(TAG, "onAcknowledgePurchaseResponse: " + billingResult.debugMessage)
-                        }
-                    )
-                }
+            val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder()
+                .setPurchaseToken(purchase.purchaseToken)
+                .build()
+            if (!purchase.isAcknowledged) {
+                billingClient?.acknowledgePurchase(
+                    acknowledgePurchaseParams,
+                    AcknowledgePurchaseResponseListener { billingResult ->
+                        Log.d(TAG, "onAcknowledgePurchaseResponse: " + billingResult.debugMessage)
+                    }
+                )
             }
         }
     }

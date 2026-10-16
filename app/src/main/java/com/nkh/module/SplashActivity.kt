@@ -11,7 +11,9 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import com.ads.nkh.ads.NkhAd
+import com.ads.nkh.billing.AppPurchase
 import com.ads.nkh.funtion.AdCallback
+import com.ads.nkh.funtion.BillingListener
 import com.google.android.libraries.ads.mobile.sdk.common.FullScreenContentError
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 
@@ -36,8 +38,30 @@ class SplashActivity : AppCompatActivity() {
         }
         animateSplashEntrance()
 
-        Log.d(TAG, "onCreate: organic=" + NkhAd.getInstance().organic)
+        Log.d(TAG, "onCreate: waiting for Billing verification before Splash Ads...")
 
+        // Chuẩn luồng IAP tại Splash:
+        // Đợi AppPurchase.verifyPurchased() kiểm tra xong trạng thái mua hàng (timeout 5000ms).
+        // - Nếu user ĐÃ MUA (isPurchased == true) -> Bỏ qua toàn bộ quảng cáo Splash, vào thẳng Main.
+        // - Nếu user CHƯA MUA (isPurchased == false) -> Tải và hiển thị quảng cáo Splash.
+        AppPurchase.getInstance().setBillingListener(
+            BillingListener { code ->
+                runOnUiThread {
+                    if (AppPurchase.getInstance().isPurchased) {
+                        Log.d(TAG, "Billing ready (code=$code): User already purchased VIP -> skip Splash Ads")
+                        navigateToMain()
+                    } else {
+                        Log.d(TAG, "Billing ready (code=$code): User NOT purchased -> load Splash Ads")
+                        loadSplashAds()
+                    }
+                }
+            },
+            5000
+        )
+    }
+
+    private fun loadSplashAds() {
+        if (isNavigated || isFinishing || isDestroyed) return
         NkhAd.getInstance().loadInterSplashPriority2SameTime(
             this,
             BuildConfig.ad_interstitial_splash,
