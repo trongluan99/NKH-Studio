@@ -9,11 +9,9 @@ import java.util.ArrayList
 @Deprecated("Use AdsMultiDexApplication instead")
 abstract class AdsApplication : Application() {
 
-    @JvmField
-    protected var mNkhAdConfig: NkhAdConfig? = null
+    protected lateinit var mNkhAdConfig: NkhAdConfig
 
-    @JvmField
-    protected var listTestDevice: MutableList<String>? = null
+    protected lateinit var listTestDevice: MutableList<String>
 
     override fun onCreate() {
         super.onCreate()

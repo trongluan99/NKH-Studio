@@ -371,10 +371,10 @@ class Admob private constructor() {
                     lastInitializationStatus = initializationStatus
                     val statusMap = initializationStatus.adapterStatusMap
                     val gmaCoreLatency = statusMap["com.google.android.libraries.ads.mobile.sdk.MobileAds"]?.latency
-                    if (gmaCoreLatency != null && gmaCoreLatency > 0) {
-                        lastInitLatencyMs = gmaCoreLatency.toLong()
-                    } else if (lastInitLatencyMs <= 0L) {
-                        lastInitLatencyMs = totalLatency
+                    lastInitLatencyMs = if (gmaCoreLatency != null && gmaCoreLatency > 0) {
+                        gmaCoreLatency.toLong()
+                    } else {
+                        totalLatency.coerceAtLeast(1L)
                     }
                     Log.d(TAG, "GMA Next-Gen SDK & Bidding adapters initialized in ${totalLatency}ms (GMA Core: ${lastInitLatencyMs}ms)")
                     for ((adapterClass, status) in statusMap) {
@@ -394,10 +394,10 @@ class Admob private constructor() {
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "MobileAds.initialize error: ${e.message}", e)
-            } finally {
                 if (lastInitLatencyMs <= 0L) {
                     lastInitLatencyMs = (System.currentTimeMillis() - initStartMs).coerceAtLeast(1L)
                 }
+            } finally {
                 completeSdkInitAndDrainPendingAds()
             }
         }
@@ -724,6 +724,7 @@ class Admob private constructor() {
             handlerTimeout?.removeCallbacks(rdTimeout!!)
         }
 
+        adListener?.onAdLoaded()
         adListener?.onInterstitialShow()
 
         val ad = mInterstitialSplash!!
@@ -3288,6 +3289,7 @@ class Admob private constructor() {
             return
         }
         cancelAllSplashPriorityTimeouts()
+        adListener?.onAdLoaded()
         adListener?.onInterstitialShow()
         val ad = mInterSplashHigh1!!
         ad.adEventCallback = object : InterstitialAdEventCallback {
@@ -3508,6 +3510,7 @@ class Admob private constructor() {
             return
         }
         cancelAllSplashPriorityTimeouts()
+        adListener?.onAdLoaded()
         adListener?.onInterstitialShow()
         val ad = mInterSplashHigh2!!
         ad.adEventCallback = object : InterstitialAdEventCallback {
@@ -3728,6 +3731,7 @@ class Admob private constructor() {
             return
         }
         cancelAllSplashPriorityTimeouts()
+        adListener?.onAdLoaded()
         adListener?.onInterstitialShow()
         val ad = mInterSplashHigh3!!
         ad.adEventCallback = object : InterstitialAdEventCallback {
@@ -3948,6 +3952,7 @@ class Admob private constructor() {
             return
         }
         cancelAllSplashPriorityTimeouts()
+        adListener?.onAdLoaded()
         adListener?.onInterstitialShow()
         val ad = mInterSplashNormal!!
         ad.adEventCallback = object : InterstitialAdEventCallback {

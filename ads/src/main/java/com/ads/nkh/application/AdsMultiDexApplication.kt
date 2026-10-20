@@ -8,11 +8,9 @@ import java.util.ArrayList
 
 abstract class AdsMultiDexApplication : MultiDexApplication() {
 
-    @JvmField
-    protected var mNkhAdConfig: NkhAdConfig? = null
+    protected lateinit var mNkhAdConfig: NkhAdConfig
 
-    @JvmField
-    protected var listTestDevice: MutableList<String>? = null
+    protected lateinit var listTestDevice: MutableList<String>
 
     override fun onCreate() {
         super.onCreate()
