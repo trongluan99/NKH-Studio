@@ -366,6 +366,12 @@ class Admob private constructor() {
                         RequestConfiguration.Builder().setTestDeviceIds(deviceListCopy).build()
                     )
                 }
+                // Safety fallback: if a 3rd-party adapter delays the callback beyond 3000ms,
+                // unblock pending ad requests so app flow is never stuck.
+                handlerTimeout?.postDelayed({
+                    completeSdkInitAndDrainPendingAds()
+                }, 3000L)
+
                 MobileAds.initialize(appContext, initConfigBuilder.build()) { initializationStatus ->
                     val totalLatency = System.currentTimeMillis() - initStartMs
                     lastInitializationStatus = initializationStatus
@@ -381,13 +387,18 @@ class Admob private constructor() {
                         Log.d(
                             TAG,
                             String.format(
-                                "Adapter name: %s, Description: %s, Latency: %d",
+                                "Adapter Name: %s, Status: %s, Latency: %dms, Description: %s",
                                 adapterClass,
-                                status.description,
-                                status.latency
+                                status.initializationState,
+                                status.latency,
+                                status.description
                             )
                         )
                     }
+                    // Official GMA Next-Gen Bidding Best Practice:
+                    // Drain queued ad requests inside OnInitializationCompleteListener callback
+                    // so RTB Bidding adapters are ready to collect signals on the first request.
+                    completeSdkInitAndDrainPendingAds()
                     biddingStatusListener?.let { listener ->
                         runOnUiThread(listener)
                     }
@@ -397,7 +408,6 @@ class Admob private constructor() {
                 if (lastInitLatencyMs <= 0L) {
                     lastInitLatencyMs = (System.currentTimeMillis() - initStartMs).coerceAtLeast(1L)
                 }
-            } finally {
                 completeSdkInitAndDrainPendingAds()
             }
         }
