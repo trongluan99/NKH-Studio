@@ -223,6 +223,10 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
         }
     }
 
+    fun setAppResumeAdId(appResumeAdIdHigh: String?, appResumeAdId: String?) {
+        setAppResumeHighFloor(appResumeAdIdHigh, appResumeAdId)
+    }
+
     fun setAppResumeAdIdHigh(appResumeAdIdHigh: String?) {
         if (this.appResumeAdIdHigh != appResumeAdIdHigh) {
             this.appResumeAdIdHigh = appResumeAdIdHigh
@@ -1705,6 +1709,7 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
                         splashAd = null
                         isShowingAd = false
                         isAppOpenShowed = false
+                        adCallback?.onAdClosed()
                         adCallback?.onNextAction()
                         Log.d("AppOpenSplash Failed", "onAdDismissedFullScreenContent: vao 1")
                     }
@@ -2179,6 +2184,167 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
     private var isOpenHigh2Loaded = false
     private var isOpenHigh3Loaded = false
     private var isOpenNormalLoaded = false
+
+    fun loadAndShowOpenSplash2SameTime(
+        context: Context,
+        idOpenHigh: String,
+        idOpenNormal: String,
+        timeOut: Long,
+        adCallback: AdCallback
+    ) {
+        isOpenHigh1Failed = false
+        isOpenHigh2Loaded = true
+        isOpenHigh3Loaded = true
+        isOpenNormalLoaded = false
+
+        if (!isNetworkConnected(context)) {
+            Handler(Looper.getMainLooper()).postDelayed({
+                adCallback.onAdFailedToLoad(null)
+                adCallback.onNextAction()
+            }, 3000L)
+        } else {
+            loadOpenHigh1(context, idOpenHigh, timeOut, object : AdCallback() {
+                override fun onAdSplashReady() {
+                    super.onAdSplashReady()
+                    adCallback.onAdSplashHigh1Ready()
+                }
+
+                override fun onAdFailedToLoad(i: LoadAdError?) {
+                    super.onAdFailedToLoad(i)
+                    adCallback.onAdPriorityFailedToLoad(i)
+                }
+
+                override fun onAdLogRev(
+                    adValue: AdValue?,
+                    adUnitId: String?,
+                    mediationAdapterClassName: String?,
+                    adType: AdType?
+                ) {
+                    super.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType)
+                    adCallback.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType)
+                }
+
+                override fun onNextAction() {
+                    super.onNextAction()
+                    if (!isOpenHigh1Failed) {
+                        if (isOpenNormalLoaded && mOpenSplashNormal != null) {
+                            adCallback.onAdSplashNormalReady()
+                            isOpenHigh1Failed = true
+                        } else {
+                            isOpenHigh1Failed = true
+                        }
+                    }
+                }
+            })
+
+            loadOpenNormal(context, idOpenNormal, timeOut, object : AdCallback() {
+                override fun onAdSplashReady() {
+                    super.onAdSplashReady()
+                    if (isOpenHigh1Failed) {
+                        adCallback.onAdSplashNormalReady()
+                    } else {
+                        isOpenNormalLoaded = true
+                    }
+                }
+
+                override fun onAdLogRev(
+                    adValue: AdValue?,
+                    adUnitId: String?,
+                    mediationAdapterClassName: String?,
+                    adType: AdType?
+                ) {
+                    super.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType)
+                    adCallback.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType)
+                }
+
+                override fun onNextAction() {
+                    super.onNextAction()
+                    if (isOpenHigh1Failed) {
+                        adCallback.onNextAction()
+                    } else {
+                        isOpenNormalLoaded = true
+                    }
+                }
+
+                override fun onAdFailedToLoad(i: LoadAdError?) {
+                    super.onAdFailedToLoad(i)
+                    adCallback.onAdPriorityFailedToLoad(i)
+                }
+            })
+        }
+    }
+
+    fun showOpenSplash2SameTime(activity: AppCompatActivity, adListener: AdCallback?) {
+        isFailedPriority = false
+        if (mOpenSplashHigh1 != null) {
+            onShowSplashHigh1(
+                activity,
+                createSplashPriorityCallback(
+                    adListener,
+                    onFailed = {
+                        isFailedPriority = true
+                        onShowSplashNormal(
+                            activity,
+                            createSplashPriorityCallback(
+                                adListener,
+                                onFailed = { err -> adListener?.onAdFailedToShow(err) },
+                                onNext = { adListener?.onNextAction() }
+                            )
+                        )
+                    },
+                    onNext = {
+                        if (!isFailedPriority) {
+                            adListener?.onNextAction()
+                        }
+                    }
+                )
+            )
+        } else if (mOpenSplashNormal != null) {
+            onShowSplashNormal(
+                activity,
+                createSplashPriorityCallback(
+                    adListener,
+                    onFailed = { err -> adListener?.onAdFailedToShow(err) },
+                    onNext = { adListener?.onNextAction() }
+                )
+            )
+        } else {
+            adListener?.onNextAction()
+        }
+    }
+
+    fun loadAndShowOpenSplash2Sequentially(
+        context: Context,
+        idOpenHigh: String?,
+        idOpenNormal: String?,
+        timeOut: Long,
+        adCallback: AdCallback
+    ) {
+        val list = ArrayList<String>(2)
+        if (!idOpenHigh.isNullOrEmpty()) list.add(idOpenHigh)
+        if (!idOpenNormal.isNullOrEmpty()) list.add(idOpenNormal)
+        loadAndShowOpenSplashSequentially(context, list, timeOut, adCallback)
+    }
+
+    fun loadAndShowOpenSplashSequentially(
+        context: Context,
+        listIdOpen: List<String>?,
+        timeOut: Long,
+        adCallback: AdCallback
+    ) {
+        loadOpenAppAdSplashHighFloor(
+            context = context,
+            listIdResumeSplash = listIdOpen ?: emptyList(),
+            timeDelay = 0L,
+            timeOut = timeOut,
+            isShowAdIfReady = false,
+            adCallback = adCallback
+        )
+    }
+
+    fun showOpenSplashSequentially(activity: AppCompatActivity, adListener: AdCallback?) {
+        showAppOpenSplash(activity, adListener)
+    }
 
     fun loadAndShowOpenSplash4SameTime(
         context: Context,

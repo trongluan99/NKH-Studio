@@ -25,7 +25,7 @@ class App : AdsMultiDexApplication() {
             adjustConfig = AdjustConfig(true, getString(R.string.adjust_token))
             facebookClientToken = getString(R.string.facebook_client_token)
             adjustTokenTiktok = getString(R.string.tiktok_token)
-            setIdAdResumeHighFloor(BuildConfig.ad_appopen_resume, BuildConfig.ad_appopen_resume)
+            setIdAdResume(BuildConfig.ad_appopen_resume_high, BuildConfig.ad_appopen_resume)
             isShowAdDebugDialog = false
         }
         mNkhAdConfig = config

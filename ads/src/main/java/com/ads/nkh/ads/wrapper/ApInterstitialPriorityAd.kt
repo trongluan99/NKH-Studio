@@ -64,4 +64,11 @@ class ApInterstitialPriorityAd(
             this.normalPriorityInterstitialAd = ApInterstitialAd()
         }
     }
+
+    fun isReady(): Boolean {
+        return (high1PriorityInterstitialAd != null && high1PriorityInterstitialAd!!.isReady())
+                || (high2PriorityInterstitialAd != null && high2PriorityInterstitialAd!!.isReady())
+                || (high3PriorityInterstitialAd != null && high3PriorityInterstitialAd!!.isReady())
+                || (normalPriorityInterstitialAd != null && normalPriorityInterstitialAd!!.isReady())
+    }
 }

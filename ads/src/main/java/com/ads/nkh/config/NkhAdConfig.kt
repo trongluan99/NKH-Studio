@@ -25,6 +25,11 @@ class NkhAdConfig {
         this.idAdResumeHigh = idHigh
         this.idAdResume = idNormal
     }
+
+    fun setIdAdResume(idAdResumeHigh: String?, idAdResume: String?) {
+        this.idAdResumeHigh = idAdResumeHigh
+        this.idAdResume = idAdResume
+    }
     private val _listDeviceTest: MutableList<String> = ArrayList()
     var listDeviceTest: List<String>
         get() = _listDeviceTest

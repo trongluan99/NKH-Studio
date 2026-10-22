@@ -37,6 +37,7 @@ class NkhAdsUnitTest {
         assertNotNull(priority2.normalPriorityInterstitialAd)
         assertFalse(priority2.highPriorityInterstitialAd!!.isReady())
         assertFalse(priority2.normalPriorityInterstitialAd!!.isReady())
+        assertFalse(priority2.isReady())
     }
 
     @Test
@@ -55,6 +56,7 @@ class NkhAdsUnitTest {
         assertNotNull(priority4.high2PriorityInterstitialAd)
         assertNotNull(priority4.high3PriorityInterstitialAd)
         assertNotNull(priority4.normalPriorityInterstitialAd)
+        assertFalse(priority4.isReady())
     }
 
     @Test
@@ -182,7 +184,12 @@ class NkhAdsUnitTest {
         config.setIdAdResumeHighFloor("ca-app-pub-test/open_high_only", null)
         assertTrue(config.isEnableAdResume)
 
-        config.setIdAdResumeHighFloor(null, null)
+        config.setIdAdResume(null, null)
         assertFalse(config.isEnableAdResume)
+
+        config.setIdAdResume("ca-app-pub-test/h2", "ca-app-pub-test/n2")
+        assertEquals("ca-app-pub-test/h2", config.idAdResumeHigh)
+        assertEquals("ca-app-pub-test/n2", config.idAdResume)
+        assertTrue(config.isEnableAdResume)
     }
 }

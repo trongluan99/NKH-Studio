@@ -584,83 +584,14 @@ class Admob private constructor() {
         timeDelay: Long,
         adListener: AdCallback?
     ) {
-        isTimeDelay = false
-        isTimeout = false
-        Log.i(
-            TAG,
-            "loadSplashInterstitialAds  start time loading:" + Calendar.getInstance().timeInMillis + "    ShowLoadingSplash:" + isShowLoadingSplash
+        loadSplashInterstitialAds(
+            context = context,
+            id = id,
+            timeOut = timeOut,
+            timeDelay = timeDelay,
+            showSplashIfReady = true,
+            adListener = adListener
         )
-
-        if (AppPurchase.getInstance().isPurchased(context)) {
-            adListener?.onNextAction()
-            return
-        }
-        Handler().postDelayed({
-            if (mInterstitialSplash != null) {
-                Log.i(TAG, "loadSplashInterstitialAds:show ad on delay ")
-                onShowSplash(context as AppCompatActivity, adListener)
-                return@postDelayed
-            }
-            Log.i(TAG, "loadSplashInterstitialAds: delay validate")
-            isTimeDelay = true
-        }, timeDelay)
-
-        if (timeOut > 0) {
-            handlerTimeout = Handler()
-            rdTimeout = Runnable {
-                Log.e(TAG, "loadSplashInterstitialAds: on timeout")
-                isTimeout = true
-                if (mInterstitialSplash != null) {
-                    Log.i(TAG, "loadSplashInterstitialAds:show ad on timeout ")
-                    onShowSplash(context as AppCompatActivity, adListener)
-                    return@Runnable
-                }
-                if (adListener != null) {
-                    adListener.onNextAction()
-                    isShowLoadingSplash = false
-                }
-            }
-            handlerTimeout?.postDelayed(rdTimeout!!, timeOut)
-        }
-
-        isShowLoadingSplash = true
-        getInterstitialAds(context, id, object : AdCallback() {
-            override fun onInterstitialLoad(interstitialAd: InterstitialAd?) {
-                super.onInterstitialLoad(interstitialAd)
-                Log.e(
-                    TAG,
-                    "loadSplashInterstitialAds  end time loading success:" + Calendar.getInstance().timeInMillis + "     time limit:" + isTimeout
-                )
-                if (isTimeout) return
-                if (interstitialAd != null) {
-                    mInterstitialSplash = interstitialAd
-                    if (isTimeDelay) {
-                        onShowSplash(context as AppCompatActivity, adListener)
-                        Log.i(TAG, "loadSplashInterstitialAds:show ad on loaded ")
-                    }
-                }
-            }
-
-            override fun onAdFailedToLoad(i: LoadAdError?) {
-                super.onAdFailedToLoad(i)
-                isShowLoadingSplash = false
-                Log.e(
-                    TAG,
-                    "loadSplashInterstitialAds  end time loading error:" + Calendar.getInstance().timeInMillis + "     time limit:" + isTimeout
-                )
-                if (isTimeout) return
-                if (adListener != null) {
-                    if (handlerTimeout != null && rdTimeout != null) {
-                        handlerTimeout?.removeCallbacks(rdTimeout!!)
-                    }
-                    if (i != null) {
-                        Log.e(TAG, "loadSplashInterstitialAds: load fail " + i.message)
-                    }
-                    adListener.onAdFailedToLoad(i)
-                    adListener.onNextAction()
-                }
-            }
-        })
     }
 
     private var splashLoadSessionId = 0
@@ -688,6 +619,43 @@ class Admob private constructor() {
         }
         splashNextActionDispatchedSessionId = sessionId
         adListener.onNextAction()
+    }
+
+    @JvmOverloads
+    fun loadInterSplashPrioritySequentially(
+        context: Context,
+        listId: List<String>?,
+        timeOut: Long,
+        timeDelay: Long = 0L,
+        adListener: AdCallback?
+    ) {
+        loadSplashInterstitialAdsHighFloor(
+            context = context,
+            listIdAds = listId ?: emptyList(),
+            timeOut = timeOut,
+            timeDelay = timeDelay,
+            showSplashIfReady = false,
+            adListener = adListener
+        )
+    }
+
+    @JvmOverloads
+    fun loadInterSplashPriority2Sequentially(
+        context: Context,
+        idHigh: String?,
+        idNormal: String?,
+        timeOut: Long,
+        timeDelay: Long = 0L,
+        adListener: AdCallback?
+    ) {
+        val list = ArrayList<String>(2)
+        if (!idHigh.isNullOrEmpty()) list.add(idHigh)
+        if (!idNormal.isNullOrEmpty()) list.add(idNormal)
+        loadInterSplashPrioritySequentially(context, list, timeOut, timeDelay, adListener)
+    }
+
+    fun onShowSplashPrioritySequentially(activity: AppCompatActivity, adListener: AdCallback?) {
+        onShowSplash(activity, adListener)
     }
 
     fun loadSplashInterstitialAds(
@@ -3224,6 +3192,27 @@ class Admob private constructor() {
 
     fun loadInterSplashPriority4SameTime(
         context: Context,
+        idAdsHigh: String,
+        idAdsNormal: String,
+        timeOut: Long,
+        timeDelay: Long,
+        adListener: AdCallback?
+    ) {
+        loadInterSplashPriority2SameTime(context, idAdsHigh, idAdsNormal, timeOut, timeDelay, adListener)
+    }
+
+    fun loadInterSplashPriority4SameTime(
+        context: Context,
+        idAdsHigh: String,
+        idAdsNormal: String,
+        timeOut: Long,
+        adListener: AdCallback?
+    ) {
+        loadInterSplashPriority2SameTime(context, idAdsHigh, idAdsNormal, timeOut, 0L, adListener)
+    }
+
+    fun loadInterSplashPriority4SameTime(
+        context: Context,
         idAdsHigh1: String,
         idAdsHigh2: String,
         idAdsHigh3: String,
@@ -4589,6 +4578,16 @@ class Admob private constructor() {
 
     // Load 2 Priority Ads
     private var isInterHighFailed = false
+
+    fun loadInterSplashPriority2SameTime(
+        context: Context,
+        idAdsHigh: String,
+        idAdsNormal: String,
+        timeOut: Long,
+        adListener: AdCallback?
+    ) {
+        loadInterSplashPriority2SameTime(context, idAdsHigh, idAdsNormal, timeOut, 0L, adListener)
+    }
 
     fun loadInterSplashPriority2SameTime(
         context: Context,

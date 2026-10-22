@@ -253,6 +253,10 @@ class NkhAd {
         AppOpenManager.getInstance().init(application, idHigh, idNormal)
     }
 
+    fun enableAdResume(application: Application, idHigh: String?, idNormal: String?) {
+        AppOpenManager.getInstance().init(application, idHigh, idNormal)
+    }
+
     fun setAppResumeHighFloor(idHigh: String?, idNormal: String?) {
         adConfig?.application?.let { AppOpenManager.getInstance().registerApplication(it) }
         AppOpenManager.getInstance().setAppResumeHighFloor(idHigh, idNormal)
@@ -1160,6 +1164,41 @@ class NkhAd {
         )
     }
 
+    fun loadInterSplashPriority4SameTime(
+        context: Context,
+        idAdsHigh: String,
+        idAdsNormal: String,
+        timeOut: Long,
+        timeDelay: Long,
+        adListener: AdCallback
+    ) {
+        Admob.getInstance().loadInterSplashPriority2SameTime(
+            context,
+            idAdsHigh,
+            idAdsNormal,
+            timeOut,
+            timeDelay,
+            adListener
+        )
+    }
+
+    fun loadInterSplashPriority4SameTime(
+        context: Context,
+        idAdsHigh: String,
+        idAdsNormal: String,
+        timeOut: Long,
+        adListener: AdCallback
+    ) {
+        Admob.getInstance().loadInterSplashPriority2SameTime(
+            context,
+            idAdsHigh,
+            idAdsNormal,
+            timeOut,
+            0L,
+            adListener
+        )
+    }
+
     fun onShowSplashPriority4(activity: AppCompatActivity, adListener: AdCallback) {
         Admob.getInstance().onShowSplashPriority4(activity, adListener)
     }
@@ -1190,6 +1229,23 @@ class NkhAd {
         )
     }
 
+    fun loadInterSplashPriority2SameTime(
+        context: Context,
+        idAdsHigh: String,
+        idAdsNormal: String,
+        timeOut: Long,
+        adListener: AdCallback
+    ) {
+        Admob.getInstance().loadInterSplashPriority2SameTime(
+            context,
+            idAdsHigh,
+            idAdsNormal,
+            timeOut,
+            0L,
+            adListener
+        )
+    }
+
     fun onShowSplashPriority2(activity: AppCompatActivity, adListener: AdCallback) {
         Admob.getInstance().onShowSplashPriority2(activity, adListener)
     }
@@ -1200,6 +1256,33 @@ class NkhAd {
         timeDelay: Int
     ) {
         Admob.getInstance().onCheckShowSplashPriority2WhenFail(activity, callback, timeDelay)
+    }
+
+    @JvmOverloads
+    fun loadInterSplashPrioritySequentially(
+        context: Context,
+        listId: List<String>?,
+        timeOut: Long,
+        timeDelay: Long = 0L,
+        adListener: AdCallback?
+    ) {
+        Admob.getInstance().loadInterSplashPrioritySequentially(context, listId, timeOut, timeDelay, adListener)
+    }
+
+    @JvmOverloads
+    fun loadInterSplashPriority2Sequentially(
+        context: Context,
+        idAdsHigh: String?,
+        idAdsNormal: String?,
+        timeOut: Long,
+        timeDelay: Long = 0L,
+        adListener: AdCallback?
+    ) {
+        Admob.getInstance().loadInterSplashPriority2Sequentially(context, idAdsHigh, idAdsNormal, timeOut, timeDelay, adListener)
+    }
+
+    fun onShowSplashPrioritySequentially(activity: AppCompatActivity, adListener: AdCallback?) {
+        Admob.getInstance().onShowSplashPrioritySequentially(activity, adListener)
     }
 
     private var isFinishLoadNativeAdHigh1 = false
