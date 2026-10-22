@@ -86,7 +86,7 @@
         android:paddingTop="6dp"
         android:paddingEnd="16dp"
         android:paddingBottom="6dp"
-        android:text="⚡ 2-Floor Priority Splash • App Open &amp; Inter"
+        android:text="⚡ Sequential Priority Splash • App Open Waterfall"
         android:textColor="@color/splash_light_badge_text"
         android:textSize="11sp"
         android:textStyle="bold"

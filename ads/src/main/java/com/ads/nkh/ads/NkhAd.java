@@ -50,6 +50,7 @@ import org.json.JSONException;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.List;
 
 public class NkhAd {
     public static final String TAG_ADJUST = "NkhAdjust";
@@ -1021,6 +1022,42 @@ public class NkhAd {
 
     public void onCheckShowSplashPriority2WhenFail(AppCompatActivity activity, AdCallback callback, int timeDelay) {
         Admob.getInstance().onCheckShowSplashPriority2WhenFail(activity, callback, timeDelay);
+    }
+
+    public void loadInterSplashPrioritySequentially(final Context context,
+                                                   List<String> listId,
+                                                   long timeOut,
+                                                   long timeDelay,
+                                                   AdCallback adListener) {
+        Admob.getInstance().loadInterSplashPrioritySequentially(context, listId, timeOut, timeDelay, adListener);
+    }
+
+    public void loadInterSplashPrioritySequentially(final Context context,
+                                                   List<String> listId,
+                                                   long timeOut,
+                                                   AdCallback adListener) {
+        Admob.getInstance().loadInterSplashPrioritySequentially(context, listId, timeOut, 0, adListener);
+    }
+
+    public void loadInterSplashPriority2Sequentially(final Context context,
+                                                    String idAdsHigh,
+                                                    String idAdsNormal,
+                                                    long timeOut,
+                                                    long timeDelay,
+                                                    AdCallback adListener) {
+        Admob.getInstance().loadInterSplashPriority2Sequentially(context, idAdsHigh, idAdsNormal, timeOut, timeDelay, adListener);
+    }
+
+    public void loadInterSplashPriority2Sequentially(final Context context,
+                                                    String idAdsHigh,
+                                                    String idAdsNormal,
+                                                    long timeOut,
+                                                    AdCallback adListener) {
+        Admob.getInstance().loadInterSplashPriority2Sequentially(context, idAdsHigh, idAdsNormal, timeOut, 0, adListener);
+    }
+
+    public void onShowSplashPrioritySequentially(AppCompatActivity activity, AdCallback adListener) {
+        Admob.getInstance().onShowSplashPrioritySequentially(activity, adListener);
     }
 
     private boolean isFinishLoadNativeAdHigh1 = false;

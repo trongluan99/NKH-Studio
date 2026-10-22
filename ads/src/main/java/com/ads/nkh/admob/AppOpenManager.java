@@ -13,6 +13,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -2208,6 +2209,237 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
             adListener.onNextAction();
             Log.d("LuanDev", "onAdFailedToShow: 2SameTime none");
         }
+    }
+
+    private AppOpenAd mOpenSplashSequential;
+    private Handler handlerTimeoutOpenSequential;
+    private Runnable rdTimeoutOpenSequential;
+    private boolean isTimeoutOpenSequential = false;
+
+    public void loadAndShowOpenSplash2Sequentially(Context context, String idOpenHigh, String idOpenNormal, long timeOut, AdCallback adCallback) {
+        List<String> list = new ArrayList<>();
+        if (idOpenHigh != null && !idOpenHigh.isEmpty()) list.add(idOpenHigh);
+        if (idOpenNormal != null && !idOpenNormal.isEmpty()) list.add(idOpenNormal);
+        loadAndShowOpenSplashSequentially(context, list, timeOut, adCallback);
+    }
+
+    public void loadAndShowOpenSplashSequentially(Context context, List<String> listIdOpen, long timeOut, AdCallback adCallback) {
+        mOpenSplashSequential = null;
+        mOpenSplashHigh1 = null;
+        isTimeoutOpenSequential = false;
+
+        if (!this.isNetworkConnected(context)) {
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                if (adCallback != null) {
+                    adCallback.onAdFailedToLoad(null);
+                    adCallback.onNextAction();
+                }
+            }, 3000L);
+            return;
+        }
+
+        if (AppPurchase.getInstance().isPurchased(context)) {
+            if (adCallback != null) {
+                adCallback.onNextAction();
+            }
+            return;
+        }
+
+        List<String> validIds = new ArrayList<>();
+        if (listIdOpen != null) {
+            for (String id : listIdOpen) {
+                if (id != null && !id.trim().isEmpty()) {
+                    validIds.add(id.trim());
+                }
+            }
+        }
+
+        if (validIds.isEmpty()) {
+            Log.e("AppOpenManager", "loadAndShowOpenSplashSequentially: listIdOpen is empty");
+            if (adCallback != null) {
+                adCallback.onNextAction();
+            }
+            return;
+        }
+
+        if (timeOut > 0) {
+            handlerTimeoutOpenSequential = new Handler(Looper.getMainLooper());
+            rdTimeoutOpenSequential = () -> {
+                Log.d("AppOpenManager", "loadAndShowOpenSplashSequentially time out");
+                isTimeoutOpenSequential = true;
+                if (mOpenSplashSequential != null) {
+                    if (adCallback != null) {
+                        adCallback.onAdSplashReady();
+                    }
+                    return;
+                }
+                if (adCallback != null) {
+                    adCallback.onNextAction();
+                }
+            };
+            handlerTimeoutOpenSequential.postDelayed(rdTimeoutOpenSequential, timeOut);
+        }
+
+        loadOpenSplashSequentialStep(context, validIds, 0, adCallback);
+    }
+
+    private void loadOpenSplashSequentialStep(Context context, List<String> ids, int index, AdCallback adCallback) {
+        if (isTimeoutOpenSequential) {
+            return;
+        }
+
+        if (index >= ids.size()) {
+            Log.e("AppOpenManager", "loadAndShowOpenSplashSequentially: All ads in list failed to load");
+            if (handlerTimeoutOpenSequential != null && rdTimeoutOpenSequential != null) {
+                handlerTimeoutOpenSequential.removeCallbacks(rdTimeoutOpenSequential);
+            }
+            if (adCallback != null) {
+                adCallback.onNextAction();
+            }
+            return;
+        }
+
+        String currentId = ids.get(index);
+        Log.i("AppOpenManager", "loadAndShowOpenSplashSequentially: Loading index " + index + " with ID: " + currentId);
+
+        AdRequest adRequest = this.getAdRequest();
+        AppOpenAd.load(context, currentId, adRequest, new AppOpenAd.AppOpenAdLoadCallback() {
+            @Override
+            public void onAdLoaded(@NonNull AppOpenAd appOpenAd) {
+                super.onAdLoaded(appOpenAd);
+                if (isTimeoutOpenSequential) {
+                    return;
+                }
+                Log.i("AppOpenManager", "loadAndShowOpenSplashSequentially: Loaded successfully at index " + index);
+                mOpenSplashSequential = appOpenAd;
+                mOpenSplashHigh1 = appOpenAd;
+
+                if (handlerTimeoutOpenSequential != null && rdTimeoutOpenSequential != null) {
+                    handlerTimeoutOpenSequential.removeCallbacks(rdTimeoutOpenSequential);
+                }
+
+                appOpenAd.setOnPaidEventListener((adValue) -> {
+                    Context appContext = myApplication != null ? myApplication.getApplicationContext() : context.getApplicationContext();
+                    NkhLogEventManager.logPaidAdImpression(appContext,
+                            adValue,
+                            appOpenAd.getAdUnitId(),
+                            appOpenAd.getResponseInfo() != null ? appOpenAd.getResponseInfo().getMediationAdapterClassName() : "");
+                    NkhLogEventManager.logPaidAdjustWithToken(adValue, appOpenAd.getAdUnitId(), NkhAdConfig.ADJUST_TOKEN_TIKTOK);
+                    if (adCallback != null) {
+                        adCallback.onAdLogRev(adValue,
+                                appOpenAd.getAdUnitId(),
+                                appOpenAd.getResponseInfo() != null ? appOpenAd.getResponseInfo().getMediationAdapterClassName() : "",
+                                AdType.APP_OPEN);
+                    }
+                });
+
+                if (adCallback != null) {
+                    if (index == 0) {
+                        adCallback.onAdSplashHigh1Ready();
+                    } else if (index == 1) {
+                        adCallback.onAdSplashNormalReady();
+                    }
+                    adCallback.onAdSplashReady();
+                }
+            }
+
+            @Override
+            public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                super.onAdFailedToLoad(loadAdError);
+                if (isTimeoutOpenSequential) {
+                    return;
+                }
+                Log.e("AppOpenManager", "loadAndShowOpenSplashSequentially: Failed at index " + index + ": " + loadAdError.getMessage() + " -> try next sequentially");
+                if (adCallback != null) {
+                    adCallback.onAdPriorityFailedToLoad(loadAdError);
+                }
+                loadOpenSplashSequentialStep(context, ids, index + 1, adCallback);
+            }
+        });
+    }
+
+    public void showOpenSplashSequentially(AppCompatActivity activity, AdCallback adListener) {
+        if (mOpenSplashSequential == null) {
+            Log.e("AppOpenManager", "showOpenSplashSequentially: mOpenSplashSequential is null");
+            if (adListener != null) {
+                adListener.onNextAction();
+            }
+            return;
+        }
+
+        if (handlerTimeoutOpenSequential != null && rdTimeoutOpenSequential != null) {
+            handlerTimeoutOpenSequential.removeCallbacks(rdTimeoutOpenSequential);
+        }
+
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (mOpenSplashSequential == null) {
+                if (adListener != null) {
+                    adListener.onNextAction();
+                }
+                return;
+            }
+
+            mOpenSplashSequential.setFullScreenContentCallback(new FullScreenContentCallback() {
+                @Override
+                public void onAdDismissedFullScreenContent() {
+                    mOpenSplashSequential = null;
+                    mOpenSplashHigh1 = null;
+                    if (adListener != null) {
+                        adListener.onAdClosed();
+                        adListener.onNextAction();
+                    }
+                    Log.d("AppOpenManager", "onAdDismissedFullScreenContent: sequential open splash");
+                }
+
+                @Override
+                public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
+                    mOpenSplashSequential = null;
+                    mOpenSplashHigh1 = null;
+                    if (adListener != null) {
+                        adListener.onAdFailedToShow(adError);
+                        adListener.onNextAction();
+                    }
+                }
+
+                @Override
+                public void onAdShowedFullScreenContent() {
+                    if (adListener != null) {
+                        adListener.onAdImpression();
+                    }
+                }
+
+                @Override
+                public void onAdClicked() {
+                    super.onAdClicked();
+                    if (mOpenSplashSequential != null) {
+                        NkhLogEventManager.logClickAdsEvent(activity, mOpenSplashSequential.getAdUnitId());
+                        if (adListener != null) {
+                            adListener.onAdClicked();
+                            adListener.onAdClicked(mOpenSplashSequential.getAdUnitId(),
+                                    mOpenSplashSequential.getResponseInfo() != null ? mOpenSplashSequential.getResponseInfo().getMediationAdapterClassName() : "",
+                                    AdType.APP_OPEN);
+                        }
+                    }
+                }
+
+                @Override
+                public void onAdImpression() {
+                    super.onAdImpression();
+                    if (adListener != null) {
+                        adListener.onAdImpression();
+                    }
+                }
+            });
+
+            Activity targetActivity = activity != null ? activity : currentActivity;
+            if (targetActivity != null && !targetActivity.isFinishing()) {
+                mOpenSplashSequential.show(targetActivity);
+            } else {
+                if (adListener != null) {
+                    adListener.onNextAction();
+                }
+            }
+        }, 800);
     }
 
     private AppOpenAd mOpenSplashHigh1;

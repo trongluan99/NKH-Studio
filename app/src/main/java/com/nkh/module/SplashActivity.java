@@ -10,6 +10,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.widget.TextView;
 import android.view.View;
 
+import java.util.Arrays;
+import java.util.List;
+
 import com.ads.nkh.admob.AppOpenManager;
 import com.ads.nkh.ads.NkhAd;
 import com.ads.nkh.funtion.AdCallback;
@@ -30,10 +33,16 @@ public class SplashActivity extends AppCompatActivity {
 
         Log.d(TAG, "onCreate: " + NkhAd.getInstance().getOrganic());
 
-        // Sử dụng Open App Splash 2 ID cùng lúc:
-        loadOpenAppSplash();
+        // Cách 1: Open App Splash tuần tự (Sequential Waterfall từ danh sách ID):
+        loadOpenAppSplashSequentially();
 
-        // Hoặc nếu muốn dùng Interstitial Splash 2 ID cùng lúc:
+        // Cách 2: Open App Splash 2 ID cùng lúc (Song song High & Normal):
+        // loadOpenAppSplash();
+
+        // Cách 3: Interstitial Splash tuần tự (Sequential Waterfall từ danh sách ID):
+        // loadInterSplashSequentially();
+
+        // Cách 4: Interstitial Splash 2 ID cùng lúc (Song song High & Normal):
         // loadInterSplash();
     }
 
@@ -136,6 +145,62 @@ public class SplashActivity extends AppCompatActivity {
     }
 
     /**
+     * Ví dụ 1b: Load Open App Splash tuần tự (Sequential) từ 1 danh sách ID
+     */
+    private void loadOpenAppSplashSequentially() {
+        updateStatus("Đang kiểm tra và tải Open App Splash tuần tự...");
+        List<String> listIdOpen = Arrays.asList(
+                BuildConfig.ads_open_app, // ID High
+                BuildConfig.ads_open_app  // ID Normal
+        );
+
+        AppOpenManager.getInstance().loadAndShowOpenSplashSequentially(
+                this,
+                listIdOpen,
+                25000,
+                new AdCallback() {
+                    @Override
+                    public void onAdSplashReady() {
+                        super.onAdSplashReady();
+                        updateStatus("Open App Splash sẵn sàng, đang hiển thị...");
+                        AppOpenManager.getInstance().showOpenSplashSequentially(SplashActivity.this, new AdCallback() {
+                            @Override
+                            public void onNextAction() {
+                                super.onNextAction();
+                                gotoMainActivity();
+                            }
+
+                            @Override
+                            public void onAdClosed() {
+                                super.onAdClosed();
+                                gotoMainActivity();
+                            }
+
+                            @Override
+                            public void onAdFailedToShow(@Nullable AdError adError) {
+                                super.onAdFailedToShow(adError);
+                                gotoMainActivity();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onAdPriorityFailedToLoad(@Nullable AdError adError) {
+                        super.onAdPriorityFailedToLoad(adError);
+                        updateStatus("1 ID Open App tải thất bại, đang thử ID kế tiếp...");
+                    }
+
+                    @Override
+                    public void onNextAction() {
+                        super.onNextAction();
+                        updateStatus("Tất cả ID thất bại hoặc timeout, mở trang chính...");
+                        gotoMainActivity();
+                    }
+                }
+        );
+    }
+
+    /**
      * Ví dụ 2: Load Interstitial Splash 2 ID cùng lúc (High và Normal)
      */
     private void loadInterSplash() {
@@ -183,8 +248,74 @@ public class SplashActivity extends AppCompatActivity {
         );
     }
 
+    /**
+     * Ví dụ 3: Load Interstitial Splash tuần tự (Sequential) từ 1 danh sách ID
+     * Load theo thứ tự từ trên xuống dưới, không load song song.
+     */
+    private void loadInterSplashSequentially() {
+        updateStatus("Đang tải Interstitial Splash tuần tự...");
+        List<String> listIdSplash = Arrays.asList(
+                BuildConfig.ad_interstitial_splash, // ID High
+                BuildConfig.ad_interstitial_splash  // ID Normal
+        );
+
+        NkhAd.getInstance().loadInterSplashPrioritySequentially(
+                this,
+                listIdSplash,
+                25000,
+                3000,
+                new AdCallback() {
+                    @Override
+                    public void onAdSplashReady() {
+                        super.onAdSplashReady();
+                        updateStatus("Interstitial Splash sẵn sàng, đang hiển thị...");
+                        NkhAd.getInstance().onShowSplashPrioritySequentially(SplashActivity.this, new AdCallback() {
+                            @Override
+                            public void onNextAction() {
+                                super.onNextAction();
+                                gotoMainActivity();
+                            }
+
+                            /*@Override
+                            public void onAdClosed() {
+                                super.onAdClosed();
+                                gotoMainActivity();
+                            }
+
+                            @Override
+                            public void onAdFailedToShow(@Nullable AdError adError) {
+                                super.onAdFailedToShow(adError);
+                                gotoMainActivity();
+                            }*/
+                        });
+                    }
+
+                    @Override
+                    public void onAdPriorityFailedToLoad(@Nullable AdError adError) {
+                        super.onAdPriorityFailedToLoad(adError);
+                        updateStatus("1 ID quảng cáo tải thất bại, đang thử ID kế tiếp...");
+                    }
+
+                    @Override
+                    public void onNextAction() {
+                        super.onNextAction();
+                        updateStatus("Tất cả ID thất bại hoặc timeout, mở trang chính...");
+                        gotoMainActivity();
+                    }
+                }
+        );
+    }
+
+    private boolean isNavigated = false;
+
     private void gotoMainActivity() {
-        startActivity(new Intent(SplashActivity.this, MainActivity.class));
-        finish();
+        if (isNavigated) {
+            return;
+        }
+        isNavigated = true;
+        runOnUiThread(() -> {
+            startActivity(new Intent(SplashActivity.this, MainActivity.class));
+            finish();
+        });
     }
 }
