@@ -613,11 +613,13 @@ class Admob private constructor() {
         adListener: AdCallback?
     ) {
         if (adListener == null) return
-        if (splashNextActionDispatchedSessionId == sessionId) {
+        if (sessionId != 0 && splashNextActionDispatchedSessionId == sessionId) {
             Log.w(TAG, "dispatchSplashNextAction: skipped duplicate onNextAction for sessionId=$sessionId")
             return
         }
-        splashNextActionDispatchedSessionId = sessionId
+        if (sessionId != 0) {
+            splashNextActionDispatchedSessionId = sessionId
+        }
         adListener.onNextAction()
     }
 
@@ -741,7 +743,7 @@ class Admob private constructor() {
             return
         }
 
-        val validIds = listIdAds.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        val validIds = listIdAds.map { it.trim() }.filter { it.isNotEmpty() }
         if (validIds.isEmpty()) {
             dispatchSplashNextAction(sessionId, adListener)
             return
@@ -1052,7 +1054,9 @@ class Admob private constructor() {
                 dialog = PrepareLoadingAdsDialog(activity)
                 try {
                     dialog?.show()
+                    AppOpenManager.getInstance().setInterstitialShowing(true)
                 } catch (e: Exception) {
+                    AppOpenManager.getInstance().setInterstitialShowing(false)
                     isShowLoadingSplash = false
                     dispatchSplashNextAction(currentSessionId, adListener)
                     return
@@ -1072,11 +1076,7 @@ class Admob private constructor() {
                         TAG,
                         "start show InterstitialAd " + activity.lifecycle.currentState.name + "/" + ProcessLifecycleOwner.get().lifecycle.currentState.name
                     )
-                    val splashAdToShow = mInterstitialSplash
-                    mInterstitialSplash = null
-                    splashAdToShow?.show(activity)
                     if (openActivityAfterShowInterAds) {
-                        dispatchSplashNextAction(currentSessionId, adListener)
                         Handler(Looper.getMainLooper()).postDelayed({
                             try {
                                 if (dialog != null && dialog!!.isShowing && !activity.isDestroyed) {
@@ -1085,12 +1085,18 @@ class Admob private constructor() {
                             } catch (_: Exception) {
                             }
                         }, 1500)
+                        dispatchSplashNextAction(currentSessionId, adListener)
                     }
+                    mInterstitialSplash?.show(activity)
+                    isShowLoadingSplash = false
                 } else {
                     try {
-                        dialog?.dismiss()
+                        if (dialog != null && dialog!!.isShowing && !activity.isDestroyed) {
+                            dialog?.dismiss()
+                        }
                     } catch (_: Exception) {
                     }
+                    AppOpenManager.getInstance().setInterstitialShowing(false)
                     isShowLoadingSplash = false
                     if (mInterstitialSplash == null || activity.isDestroyed || activity.isFinishing) {
                         dispatchSplashNextAction(currentSessionId, adListener)

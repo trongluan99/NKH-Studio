@@ -319,7 +319,7 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
 
     private fun getResumeFloorIdList(): List<String> {
         if (appResumeAdIdFloors.isNotEmpty()) {
-            return appResumeAdIdFloors.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+            return appResumeAdIdFloors.map { it.trim() }.filter { it.isNotEmpty() }
         }
         val list = ArrayList<String>(2)
         val high = appResumeAdIdHigh?.trim()
@@ -330,7 +330,7 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
         if (!normal.isNullOrEmpty()) {
             list.add(normal)
         }
-        return list.distinct()
+        return list
     }
 
     fun fetchAd(isSplash: Boolean) {
@@ -1939,7 +1939,7 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
             dispatchOpenSplashNextAction(sessionId, adCallback)
             return
         }
-        val validIds = listIdResumeSplash.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        val validIds = listIdResumeSplash.map { it.trim() }.filter { it.isNotEmpty() }
         if (validIds.isEmpty()) {
             dispatchOpenSplashNextAction(sessionId, adCallback)
             return
@@ -2040,10 +2040,12 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
                         adCallback.onAdLoaded()
                         if (isHighFloor) {
                             this@AppOpenManager.splashAdHigh = appOpenAd
+                            this@AppOpenManager.mOpenSplashHigh1 = appOpenAd
                             adCallback.onAdLoadedHigh()
                             adCallback.onAdSplashHigh1Ready()
                         } else {
                             this@AppOpenManager.splashAdAll = appOpenAd
+                            this@AppOpenManager.mOpenSplashNormal = appOpenAd
                             adCallback.onAdLoadedAll()
                             adCallback.onAdSplashNormalReady()
                         }
