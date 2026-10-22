@@ -198,7 +198,11 @@ public class NkhAd {
 
         Admob.getInstance().init(context, adConfig.getListDeviceTest(), adConfig.getAdjustTokenTiktok());
         if (adConfig.isEnableAdResume()) {
-            AppOpenManager.getInstance().init(adConfig.getApplication(), adConfig.getIdAdResume());
+            if (adConfig.getIdAdResumeHigh() != null && !adConfig.getIdAdResumeHigh().isEmpty()) {
+                AppOpenManager.getInstance().init(adConfig.getApplication(), adConfig.getIdAdResumeHigh(), adConfig.getIdAdResume());
+            } else {
+                AppOpenManager.getInstance().init(adConfig.getApplication(), adConfig.getIdAdResume());
+            }
         }
 
         initAdSuccess = true;
@@ -236,6 +240,10 @@ public class NkhAd {
 
     public void enableAdResume(Application application, String id) {
         AppOpenManager.getInstance().init(application, id);
+    }
+
+    public void enableAdResume(Application application, String idHigh, String idNormal) {
+        AppOpenManager.getInstance().init(application, idHigh, idNormal);
     }
 
     public void setInitCallback(NkhInitCallback initCallback) {

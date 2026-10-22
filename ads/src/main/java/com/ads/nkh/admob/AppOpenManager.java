@@ -66,6 +66,8 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
     private FullScreenContentCallback fullScreenContentCallback;
 
     private String appResumeAdId;
+    private String appResumeAdIdHigh;
+    private boolean isLoadingResume = false;
     private String splashAdId;
 
     private Activity currentActivity;
@@ -142,12 +144,17 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
      * @param application
      */
     public void init(Application application, String appOpenAdId) {
+        init(application, null, appOpenAdId);
+    }
+
+    public void init(Application application, String appResumeAdIdHigh, String appResumeAdId) {
         isInitialized = true;
         disableAdResumeByClickAction = false;
         this.myApplication = application;
         this.myApplication.registerActivityLifecycleCallbacks(this);
         ProcessLifecycleOwner.get().getLifecycle().addObserver(this);
-        this.appResumeAdId = appOpenAdId;
+        this.appResumeAdIdHigh = appResumeAdIdHigh;
+        this.appResumeAdId = appResumeAdId;
     }
 
     public boolean isInitialized() {
@@ -215,6 +222,23 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
         this.appResumeAdId = appResumeAdId;
     }
 
+    public void setAppResumeAdId(String appResumeAdIdHigh, String appResumeAdId) {
+        this.appResumeAdIdHigh = appResumeAdIdHigh;
+        this.appResumeAdId = appResumeAdId;
+    }
+
+    public void setAppResumeAdIdHigh(String appResumeAdIdHigh) {
+        this.appResumeAdIdHigh = appResumeAdIdHigh;
+    }
+
+    public String getAppResumeAdId() {
+        return appResumeAdId;
+    }
+
+    public String getAppResumeAdIdHigh() {
+        return appResumeAdIdHigh;
+    }
+
     public void setFullScreenContentCallback(FullScreenContentCallback callback) {
         this.fullScreenContentCallback = callback;
     }
@@ -229,28 +253,23 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
             return;
         }
 
-        loadCallback =
-                new AppOpenAd.AppOpenAdLoadCallback() {
-                    @Override
-                    public void onAdLoaded(AppOpenAd ad) {
-                        Log.d(TAG, "onAppOpenAdLoaded: isSplash = " + isSplash);
-                        if (!isSplash) {
-                            AppOpenManager.this.appResumeAd = ad;
-                            AppOpenManager.this.appResumeAd.setOnPaidEventListener(adValue -> {
-                                NkhLogEventManager.logPaidAdImpression(myApplication.getApplicationContext(),
-                                        adValue,
-                                        ad.getAdUnitId(),
-                                        ad.getResponseInfo().getMediationAdapterClassName());
-                                NkhLogEventManager.logPaidAdjustWithToken(adValue, ad.getAdUnitId(), NkhAdConfig.ADJUST_TOKEN_TIKTOK);
-                            });
-                            AppOpenManager.this.appResumeLoadTime = (new Date()).getTime();
+        if (currentActivity != null && AppPurchase.getInstance().isPurchased(currentActivity)) {
+            return;
+        }
 
-                        } else {
+        if (isSplash) {
+            if (currentActivity != null) {
+                if (Arrays.asList(currentActivity.getResources().getStringArray(R.array.list_id_test)).contains(splashAdId)) {
+                    showTestIdAlert(currentActivity, true, splashAdId);
+                }
+            }
+            loadCallback =
+                    new AppOpenAd.AppOpenAdLoadCallback() {
+                        @Override
+                        public void onAdLoaded(@NonNull AppOpenAd ad) {
+                            Log.d(TAG, "onAppOpenAdLoaded: isSplash = true");
                             AppOpenManager.this.splashAd = ad;
-
-                            // Luan
                             AppOpenManager.this.setSplashAd(ad);
-
                             AppOpenManager.this.splashAd.setOnPaidEventListener(adValue -> {
                                 NkhLogEventManager.logPaidAdImpression(myApplication.getApplicationContext(),
                                         adValue,
@@ -260,27 +279,95 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
                             AppOpenManager.this.splashLoadTime = (new Date()).getTime();
                         }
 
+                        @Override
+                        public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                            Log.d(TAG, "onAppOpenAdFailedToLoad: isSplash = true message " + loadAdError.getMessage());
+                        }
+                    };
+            AdRequest request = getAdRequest();
+            AppOpenAd.load(myApplication, splashAdId, request, loadCallback);
+            return;
+        }
 
-                    }
+        if (isLoadingResume) {
+            Log.d(TAG, "fetchAd: app resume is already loading");
+            return;
+        }
 
-                    @Override
-                    public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
-                        Log.d(TAG, "onAppOpenAdFailedToLoad: isSplash" + isSplash + " message " + loadAdError.getMessage());
-                    }
+        if (appResumeAdIdHigh != null && !appResumeAdIdHigh.trim().isEmpty()) {
+            fetchAdResumeHighFloor();
+        } else if (appResumeAdId != null && !appResumeAdId.trim().isEmpty()) {
+            fetchAdResumeNormal();
+        }
+    }
 
-
-                };
+    private void fetchAdResumeHighFloor() {
         if (currentActivity != null) {
-            if (AppPurchase.getInstance().isPurchased(currentActivity))
-                return;
-            if (Arrays.asList(currentActivity.getResources().getStringArray(R.array.list_id_test)).contains(isSplash ? splashAdId : appResumeAdId)) {
-                showTestIdAlert(currentActivity, isSplash, isSplash ? splashAdId : appResumeAdId);
+            if (Arrays.asList(currentActivity.getResources().getStringArray(R.array.list_id_test)).contains(appResumeAdIdHigh)) {
+                showTestIdAlert(currentActivity, false, appResumeAdIdHigh);
+            }
+        }
+        isLoadingResume = true;
+        Log.d(TAG, "fetchAdResumeHighFloor: loading " + appResumeAdIdHigh);
+        AdRequest request = getAdRequest();
+        AppOpenAd.load(myApplication, appResumeAdIdHigh, request, new AppOpenAd.AppOpenAdLoadCallback() {
+            @Override
+            public void onAdLoaded(@NonNull AppOpenAd ad) {
+                Log.d(TAG, "onAppOpenAdLoaded: appResumeHigh loaded");
+                isLoadingResume = false;
+                AppOpenManager.this.appResumeAd = ad;
+                AppOpenManager.this.appResumeAd.setOnPaidEventListener(adValue -> {
+                    NkhLogEventManager.logPaidAdImpression(myApplication.getApplicationContext(),
+                            adValue,
+                            ad.getAdUnitId(),
+                            ad.getResponseInfo().getMediationAdapterClassName());
+                    NkhLogEventManager.logPaidAdjustWithToken(adValue, ad.getAdUnitId(), NkhAdConfig.ADJUST_TOKEN_TIKTOK);
+                });
+                AppOpenManager.this.appResumeLoadTime = (new Date()).getTime();
             }
 
+            @Override
+            public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                Log.d(TAG, "onAppOpenAdFailedToLoad: appResumeHigh failed: " + loadAdError.getMessage() + ", fallback to normal");
+                isLoadingResume = false;
+                if (appResumeAdId != null && !appResumeAdId.trim().isEmpty()) {
+                    fetchAdResumeNormal();
+                }
+            }
+        });
+    }
+
+    private void fetchAdResumeNormal() {
+        if (currentActivity != null) {
+            if (Arrays.asList(currentActivity.getResources().getStringArray(R.array.list_id_test)).contains(appResumeAdId)) {
+                showTestIdAlert(currentActivity, false, appResumeAdId);
+            }
         }
+        isLoadingResume = true;
+        Log.d(TAG, "fetchAdResumeNormal: loading " + appResumeAdId);
         AdRequest request = getAdRequest();
-        AppOpenAd.load(
-                myApplication, isSplash ? splashAdId : appResumeAdId, request, loadCallback);
+        AppOpenAd.load(myApplication, appResumeAdId, request, new AppOpenAd.AppOpenAdLoadCallback() {
+            @Override
+            public void onAdLoaded(@NonNull AppOpenAd ad) {
+                Log.d(TAG, "onAppOpenAdLoaded: appResumeNormal loaded");
+                isLoadingResume = false;
+                AppOpenManager.this.appResumeAd = ad;
+                AppOpenManager.this.appResumeAd.setOnPaidEventListener(adValue -> {
+                    NkhLogEventManager.logPaidAdImpression(myApplication.getApplicationContext(),
+                            adValue,
+                            ad.getAdUnitId(),
+                            ad.getResponseInfo().getMediationAdapterClassName());
+                    NkhLogEventManager.logPaidAdjustWithToken(adValue, ad.getAdUnitId(), NkhAdConfig.ADJUST_TOKEN_TIKTOK);
+                });
+                AppOpenManager.this.appResumeLoadTime = (new Date()).getTime();
+            }
+
+            @Override
+            public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                Log.d(TAG, "onAppOpenAdFailedToLoad: appResumeNormal failed: " + loadAdError.getMessage());
+                isLoadingResume = false;
+            }
+        });
     }
 
     @SuppressLint("MissingPermission")
@@ -494,6 +581,7 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
                 e.printStackTrace();
             }
             if (appResumeAd != null) {
+                final String resumeUnitId = appResumeAd.getAdUnitId();
                 appResumeAd.setFullScreenContentCallback(new FullScreenContentCallback() {
                     @Override
                     public void onAdDismissedFullScreenContent() {
@@ -540,7 +628,7 @@ public class AppOpenManager implements Application.ActivityLifecycleCallbacks, L
                     public void onAdClicked() {
                         super.onAdClicked();
                         if (currentActivity != null) {
-                            NkhLogEventManager.logClickAdsEvent(currentActivity, appResumeAdId);
+                            NkhLogEventManager.logClickAdsEvent(currentActivity, resumeUnitId != null ? resumeUnitId : appResumeAdId);
                             if (fullScreenContentCallback != null) {
                                 fullScreenContentCallback.onAdClicked();
                             }

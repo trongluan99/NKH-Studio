@@ -14,6 +14,7 @@ public class NkhAdConfig {
     private AdjustConfig adjustConfig;
     private String eventNamePurchase = "";
     private String idAdResume;
+    private String idAdResumeHigh;
     private List<String> listDeviceTest = new ArrayList();
     private Application application;
     private boolean enableAdResume = false;
@@ -96,6 +97,14 @@ public class NkhAdConfig {
         return idAdResume;
     }
 
+    public String getIdAdResumeHigh() {
+        return idAdResumeHigh;
+    }
+
+    public void setIdAdResumeHigh(String idAdResumeHigh) {
+        this.idAdResumeHigh = idAdResumeHigh;
+    }
+
     public List<String> getListDeviceTest() {
         return listDeviceTest;
     }
@@ -106,6 +115,12 @@ public class NkhAdConfig {
 
 
     public void setIdAdResume(String idAdResume) {
+        this.idAdResume = idAdResume;
+        enableAdResume = true;
+    }
+
+    public void setIdAdResume(String idAdResumeHigh, String idAdResume) {
+        this.idAdResumeHigh = idAdResumeHigh;
         this.idAdResume = idAdResume;
         enableAdResume = true;
     }

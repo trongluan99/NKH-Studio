@@ -23,12 +23,12 @@ public class App extends AdsMultiDexApplication {
         String environment = BuildConfig.DEBUG ? NkhAdConfig.ENVIRONMENT_DEVELOP : NkhAdConfig.ENVIRONMENT_PRODUCTION;
         mNkhAdConfig = new NkhAdConfig(this, environment);
 
-        AdjustConfig adjustConfig = new AdjustConfig(true,getString(R.string.adjust_token));
+        AdjustConfig adjustConfig = new AdjustConfig(true, getString(R.string.adjust_token));
         mNkhAdConfig.setAdjustConfig(adjustConfig);
         mNkhAdConfig.setFacebookClientToken(getString(R.string.facebook_client_token));
         mNkhAdConfig.setAdjustTokenTiktok(getString(R.string.tiktok_token));
 
-        mNkhAdConfig.setIdAdResume("");
+        mNkhAdConfig.setIdAdResume(BuildConfig.ad_appopen_resume, BuildConfig.ad_appopen_resume);
         mNkhAdConfig.setShowAdDebugDialog(BuildConfig.DEBUG);
 
         NkhAd.getInstance().init(this, mNkhAdConfig);
@@ -37,7 +37,7 @@ public class App extends AdsMultiDexApplication {
         AppOpenManager.getInstance().disableAppResumeWithActivity(MainActivity.class);
     }
 
-    private void initBilling(){
+    private void initBilling() {
         List<String> listIAP = new ArrayList<>();
         listIAP.add("android.test.purchased");
         List<String> listSub = new ArrayList<>();
