@@ -282,17 +282,21 @@ NkhAd.getInstance().loadInterSplashPrioritySequentially(
                         gotoMainActivity();
                     }
 
+                    /*
+                    // Không cần thiết nếu đã cấu hình Admob.getInstance().setOpenActivityAfterShowInterAds(true);
+                    // vì SDK sẽ tự động nhảy vào onNextAction() khi đóng ad hoặc show thất bại.
                     @Override
                     public void onAdClosed() {
                         super.onAdClosed();
-                        // Được gọi khi user bấm nút đóng (X) quảng cáo
+                        gotoMainActivity();
                     }
 
                     @Override
                     public void onAdFailedToShow(@Nullable AdError adError) {
                         super.onAdFailedToShow(adError);
-                        // Được gọi khi show quảng cáo bị lỗi
+                        gotoMainActivity();
                     }
+                    */
                 });
             }
 
@@ -312,10 +316,10 @@ NkhAd.getInstance().loadInterSplashPrioritySequentially(
 );
 ```
 
-> **Ý nghĩa các Callback quan trọng trong Splash:**
-> - `onNextAction()`: Được SDK tự động gọi trong mọi kịch bản kết thúc (khi tắt ad, lỗi load, timeout, hoặc show thất bại). **Đặt logic `gotoMainActivity()` tại đây là an toàn và chuẩn nhất.**
-> - `onAdClosed()`: Gọi riêng biệt khi user click nút đóng quảng cáo `(X)`.
-> - `onAdFailedToShow(AdError)`: Gọi khi quảng cáo đã load thành công nhưng không thể render lên màn hình.
+> **Lưu ý quan trọng về Callback Splash:**
+> - Khi đã bật `Admob.getInstance().setOpenActivityAfterShowInterAds(true)` trong `App.java`, SDK sẽ tự động gọi **`onNextAction()`** trong mọi trường hợp (khi tắt ad, lỗi load, timeout, hoặc show thất bại). Do đó chỉ cần xử lý `gotoMainActivity()` ở **duy nhất** `onNextAction()`, tránh gọi lặp lại màn hình.
+> - Nếu bạn tắt cờ này (`setOpenActivityAfterShowInterAds(false)`), bạn mới cần mở comment `onAdClosed()` và `onAdFailedToShow()` để tự điều hướng thủ công.
+
 
 
 ### Cách 4: Interstitial Splash 2 ID song song (Same Time)
