@@ -15,10 +15,7 @@ android {
     }
 
     publishing {
-        singleVariant("release") {
-            withSourcesJar()
-            withJavadocJar()
-        }
+        singleVariant("release")
     }
 
     buildTypes {
@@ -119,13 +116,43 @@ dependencies {
 }
 
 afterEvaluate {
+    def localProps = new Properties()
+    def localPropsFile = rootProject.file("local.properties")
+    if (localPropsFile.exists()) {
+        localPropsFile.withInputStream { localProps.load(it) }
+    }
+    def getConfig = { String key, String defaultVal ->
+        return localProps.getProperty(key) ?: project.findProperty(key)?.toString() ?: System.getenv(key) ?: defaultVal
+    }
+
     publishing {
         publications {
             create("release", MavenPublication) {
                 from(components["release"])
-                groupId = "com.github.trongluan99"
-                artifactId = "NKH-Studio"
-                version = "7.0.0"
+                groupId = getConfig("MAVEN_GROUP_ID", "com.github.trongluan99")
+                artifactId = getConfig("MAVEN_ARTIFACT_ID", "NKH-Studio")
+                version = getConfig("MAVEN_VERSION", "7.0.0")
+            }
+        }
+        repositories {
+            maven {
+                name = "GitHubPackages"
+                def ghRepo = getConfig("GITHUB_REPO", "trongluan99/NKH-Studio")
+                url = uri("https://maven.pkg.github.com/${ghRepo}")
+                credentials {
+                    username = getConfig("GITHUB_USERNAME", "")
+                    password = getConfig("GITHUB_TOKEN", "")
+                }
+            }
+            maven {
+                name = "repsy"
+                def repsyUser = getConfig("REPSY_USERNAME", "")
+                def repsyRepo = getConfig("REPSY_REPO", "nkh-studio")
+                url = uri(getConfig("REPSY_URL", "https://repo.repsy.io/mvn/${repsyUser}/${repsyRepo}"))
+                credentials {
+                    username = repsyUser
+                    password = getConfig("REPSY_PASSWORD", "")
+                }
             }
         }
     }

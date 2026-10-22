@@ -10,11 +10,21 @@ class NkhAdConfig {
     var adjustConfig: AdjustConfig = AdjustConfig(false)
     var eventNamePurchase: String = ""
         private set
+    var idAdResumeHigh: String? = null
+        set(value) {
+            field = value
+            isEnableAdResume = !value.isNullOrEmpty() || !idAdResume.isNullOrEmpty()
+        }
     var idAdResume: String? = null
         set(value) {
             field = value
-            isEnableAdResume = !value.isNullOrEmpty()
+            isEnableAdResume = !value.isNullOrEmpty() || !idAdResumeHigh.isNullOrEmpty()
         }
+
+    fun setIdAdResumeHighFloor(idHigh: String?, idNormal: String?) {
+        this.idAdResumeHigh = idHigh
+        this.idAdResume = idNormal
+    }
     private val _listDeviceTest: MutableList<String> = ArrayList()
     var listDeviceTest: List<String>
         get() = _listDeviceTest
@@ -37,6 +47,12 @@ class NkhAdConfig {
     @get:JvmName("_isShowAdDebugDialog_prop")
     @set:JvmName("_setShowAdDebugDialog_prop")
     var isShowAdDebugDialog: Boolean = false
+    @get:JvmName("_isEnableDebugMode_prop")
+    @set:JvmName("_setEnableDebugMode_prop")
+    var isEnableDebugMode: Boolean = false
+    @get:JvmName("_isShowFloatingDebugButton_prop")
+    @set:JvmName("_setShowFloatingDebugButton_prop")
+    var isShowFloatingDebugButton: Boolean = true
     var prepareLoadingAdsDialogLayout: Int = -1
     var resumeLoadingDialogLayout: Int = -1
 
@@ -46,16 +62,19 @@ class NkhAdConfig {
 
     constructor(application: Application, environment: String) {
         this.isVariantDev = environment == ENVIRONMENT_DEVELOP
+        this.isEnableDebugMode = this.isVariantDev
         this.application = application
     }
 
     @Deprecated("Use setEnvironment instead")
     fun setVariant(isVariantDev: Boolean) {
         this.isVariantDev = isVariantDev
+        this.isEnableDebugMode = isVariantDev
     }
 
     fun setEnvironment(environment: String) {
         this.isVariantDev = environment == ENVIRONMENT_DEVELOP
+        this.isEnableDebugMode = this.isVariantDev
     }
 
     fun addDeviceTest(deviceId: String) {
@@ -70,6 +89,18 @@ class NkhAdConfig {
 
     fun setShowAdDebugDialog(showAdDebugDialog: Boolean) {
         this.isShowAdDebugDialog = showAdDebugDialog
+    }
+
+    fun isEnableDebugMode(): Boolean = isEnableDebugMode
+
+    fun setEnableDebugMode(enableDebugMode: Boolean) {
+        this.isEnableDebugMode = enableDebugMode
+    }
+
+    fun isShowFloatingDebugButton(): Boolean = isShowFloatingDebugButton
+
+    fun setShowFloatingDebugButton(showFloatingDebugButton: Boolean) {
+        this.isShowFloatingDebugButton = showFloatingDebugButton
     }
 
     @get:JvmName("_isEnableAdjust_prop")

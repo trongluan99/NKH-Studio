@@ -42,6 +42,7 @@ import com.ads.nkh.ads.wrapper.ApPipAd
 import com.ads.nkh.ads.wrapper.ApSwipeableAd
 import com.ads.nkh.billing.AppPurchase
 import com.ads.nkh.config.NkhAdConfig
+import com.ads.nkh.debug.NkhAdDebugManager
 import com.ads.nkh.dialog.PrepareLoadingAdsDialog
 import com.ads.nkh.event.NkhLogEventManager
 import com.ads.nkh.funtion.AdCallback
@@ -320,7 +321,7 @@ class Admob private constructor() {
             }
         }
         if (runImmediate) {
-            action.run()
+            bgExecutor.execute(action)
         }
     }
 
@@ -335,10 +336,32 @@ class Admob private constructor() {
             pendingAdActions.clear()
         }
         for (pending in actionsToRun) {
+            bgExecutor.execute {
+                try {
+                    pending.run()
+                } catch (t: Throwable) {
+                    Log.e(TAG, "Error running pending ad action: ${t.message}", t)
+                }
+            }
+        }
+    }
+
+    private fun preWarmAdEngineAsync() {
+        bgExecutor.execute {
             try {
-                pending.run()
-            } catch (t: Throwable) {
-                Log.e(TAG, "Error running pending ad action: ${t.message}", t)
+                // 1. Pre-warm OS DNS cache for AdMob ad delivery endpoints in parallel with Splash/RemoteConfig
+                java.net.InetAddress.getAllByName("googleads.g.doubleclick.net")
+                java.net.InetAddress.getAllByName("pagead2.googlesyndication.com")
+            } catch (_: Throwable) {
+            }
+            try {
+                // 2. Pre-load GMA Next-Gen request & loader classes in ART on background thread
+                AdRequest.Builder("ca-app-pub-3940256099942544/1033173712").build()
+                NativeAdRequest.Builder(
+                    "ca-app-pub-3940256099942544/2247696110",
+                    listOf(NativeAd.NativeAdType.NATIVE)
+                ).build()
+            } catch (_: Throwable) {
             }
         }
     }
@@ -353,6 +376,9 @@ class Admob private constructor() {
             isSdkInitStarted = true
         }
 
+        // Warm up DNS & GMA Next-Gen request classes on background worker immediately
+        preWarmAdEngineAsync()
+
         // Google GMA Next-Gen SDK initializes its internal DI container and multi-threaded
         // background coroutines (GMA(BG)) directly inside MobileAds.initialize() on a dedicated
         // high-priority background thread for fast native Android startup.
@@ -366,11 +392,19 @@ class Admob private constructor() {
                         RequestConfiguration.Builder().setTestDeviceIds(deviceListCopy).build()
                     )
                 }
-                // Safety fallback: if a 3rd-party adapter delays the callback beyond 3000ms,
-                // unblock pending ad requests so app flow is never stuck.
-                handlerTimeout?.postDelayed({
+                // Smart Bidding Readiness Window (2500ms):
+                // GMA Core (~550ms) & active RTB adapters (e.g. AppLovin ~1000ms, ironSource, Mintegral)
+                // initialize within ~500-2000ms even on midrange/low-end devices.
+                // If all adapters finish earlier, OnInitializationCompleteListener drains immediately.
+                // If any unconfigured/blocked 3rd-party adapter (e.g. Vungle test appid) hangs
+                // up to Google's 30,000ms adapter timeout, unblock pending ad requests at 2500ms
+                // so Splash ads never get stuck for 30s.
+                Handler(Looper.getMainLooper()).postDelayed({
+                    if (lastInitLatencyMs <= 0L) {
+                        lastInitLatencyMs = (System.currentTimeMillis() - initStartMs).coerceAtLeast(1L)
+                    }
                     completeSdkInitAndDrainPendingAds()
-                }, 3000L)
+                }, 2500L)
 
                 MobileAds.initialize(appContext, initConfigBuilder.build()) { initializationStatus ->
                     val totalLatency = System.currentTimeMillis() - initStartMs
@@ -445,6 +479,13 @@ class Admob private constructor() {
         showCallback: AdCallback?
     ) {
         val adapterName = ad.getResponseInfo().adapterClassName
+        NkhAdDebugManager.onAdPaid(
+            "INTERSTITIAL",
+            ad.adUnitId,
+            adValue.valueMicros,
+            adValue.currencyCode,
+            adapterName
+        )
         if (logCtx != null) {
             NkhLogEventManager.logPaidAdImpression(
                 logCtx,
@@ -483,6 +524,13 @@ class Admob private constructor() {
         adValue: AdValue,
         showCallback: Any?
     ) {
+        NkhAdDebugManager.onAdPaid(
+            "REWARDED",
+            adUnitId,
+            adValue.valueMicros,
+            adValue.currencyCode,
+            adapterName
+        )
         NkhLogEventManager.logPaidAdImpression(
             logCtx,
             adValue,
@@ -615,6 +663,33 @@ class Admob private constructor() {
         })
     }
 
+    private var splashLoadSessionId = 0
+    private var splashNextActionDispatchedSessionId = -1
+    private var handlerSplashDelay: Handler? = null
+    private var rdSplashDelay: Runnable? = null
+
+    private fun cancelSplashTimers() {
+        if (handlerTimeout != null && rdTimeout != null) {
+            handlerTimeout?.removeCallbacks(rdTimeout!!)
+        }
+        if (handlerSplashDelay != null && rdSplashDelay != null) {
+            handlerSplashDelay?.removeCallbacks(rdSplashDelay!!)
+        }
+    }
+
+    private fun dispatchSplashNextAction(
+        sessionId: Int = splashLoadSessionId,
+        adListener: AdCallback?
+    ) {
+        if (adListener == null) return
+        if (splashNextActionDispatchedSessionId == sessionId) {
+            Log.w(TAG, "dispatchSplashNextAction: skipped duplicate onNextAction for sessionId=$sessionId")
+            return
+        }
+        splashNextActionDispatchedSessionId = sessionId
+        adListener.onNextAction()
+    }
+
     fun loadSplashInterstitialAds(
         context: Context,
         id: String,
@@ -623,119 +698,294 @@ class Admob private constructor() {
         showSplashIfReady: Boolean,
         adListener: AdCallback?
     ) {
+        loadSplashInterstitialAdsHighFloor(
+            context = context,
+            listIdAds = listOf(id),
+            timeOut = timeOut,
+            timeDelay = timeDelay,
+            showSplashIfReady = showSplashIfReady,
+            adListener = adListener
+        )
+    }
+
+    @JvmOverloads
+    fun loadSplashInterstitialAdsHighFloor(
+        context: Context,
+        idAdsHigh: String,
+        idAdsNormal: String,
+        timeOut: Long,
+        timeDelay: Long,
+        showSplashIfReady: Boolean = true,
+        adListener: AdCallback?
+    ) {
+        loadSplashInterstitialAdsHighFloor(
+            context,
+            listOf(idAdsHigh, idAdsNormal),
+            timeOut,
+            timeDelay,
+            showSplashIfReady,
+            adListener
+        )
+    }
+
+    @JvmOverloads
+    fun loadSplashInterstitialAdsHighFloor(
+        context: Context,
+        idAdsHigh1: String,
+        idAdsHigh2: String,
+        idAdsNormal: String,
+        timeOut: Long,
+        timeDelay: Long,
+        showSplashIfReady: Boolean = true,
+        adListener: AdCallback?
+    ) {
+        loadSplashInterstitialAdsHighFloor(
+            context,
+            listOf(idAdsHigh1, idAdsHigh2, idAdsNormal),
+            timeOut,
+            timeDelay,
+            showSplashIfReady,
+            adListener
+        )
+    }
+
+    @JvmOverloads
+    fun loadSplashInterstitialAdsHighFloor(
+        context: Context,
+        listIdAds: List<String>,
+        timeOut: Long,
+        timeDelay: Long,
+        showSplashIfReady: Boolean = true,
+        adListener: AdCallback?
+    ) {
+        val sessionId = ++splashLoadSessionId
         isTimeDelay = false
         isTimeout = false
-        Log.i(
-            TAG,
-            "loadSplashInterstitialAds  start time loading:" + Calendar.getInstance().timeInMillis + "    ShowLoadingSplash:" + isShowLoadingSplash
-        )
+        mInterstitialSplash = null
+        mInterSplashHigh1 = null
+        mInterSplashHigh2 = null
+        mInterSplashHigh3 = null
+        mInterSplashNormal = null
+        cancelSplashTimers()
 
         if (AppPurchase.getInstance().isPurchased(context)) {
-            adListener?.onNextAction()
+            dispatchSplashNextAction(sessionId, adListener)
             return
         }
-        Handler().postDelayed({
-            if (mInterstitialSplash != null) {
-                Log.i(TAG, "loadSplashInterstitialAds:show ad on delay ")
-                if (showSplashIfReady) {
-                    onShowSplash(context as AppCompatActivity, adListener)
-                } else {
-                    adListener?.onAdSplashReady()
-                }
-                return@postDelayed
-            }
-            Log.i(TAG, "loadSplashInterstitialAds: delay validate")
-            isTimeDelay = true
-        }, timeDelay)
 
-        if (timeOut > 0) {
-            handlerTimeout = Handler()
-            rdTimeout = Runnable {
-                Log.e(TAG, "loadSplashInterstitialAds: on timeout")
-                isTimeout = true
+        val validIds = listIdAds.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        if (validIds.isEmpty()) {
+            dispatchSplashNextAction(sessionId, adListener)
+            return
+        }
+
+        Log.i(
+            TAG,
+            "loadSplashInterstitialAdsHighFloor (Sequential) start: floors=${validIds.size}, timeOut=$timeOut, timeDelay=$timeDelay"
+        )
+
+        val delayMs = timeDelay.coerceAtLeast(0L)
+        if (delayMs == 0L) {
+            isTimeDelay = true
+        } else {
+            handlerSplashDelay = Handler(Looper.getMainLooper())
+            rdSplashDelay = Runnable {
+                if (sessionId != splashLoadSessionId || isTimeout) return@Runnable
                 if (mInterstitialSplash != null) {
-                    Log.i(TAG, "loadSplashInterstitialAds:show ad on timeout ")
-                    if (showSplashIfReady) {
-                        onShowSplash(context as AppCompatActivity, adListener)
+                    Log.i(TAG, "loadSplashInterstitialAdsHighFloor: show ad on delay")
+                    if (showSplashIfReady && context is AppCompatActivity) {
+                        onShowSplash(context, adListener)
                     } else {
+                        isShowLoadingSplash = false
                         adListener?.onAdSplashReady()
                     }
                     return@Runnable
                 }
-                if (adListener != null) {
-                    adListener.onNextAction()
-                    isShowLoadingSplash = false
+                Log.i(TAG, "loadSplashInterstitialAdsHighFloor: delay validated")
+                isTimeDelay = true
+            }
+            handlerSplashDelay?.postDelayed(rdSplashDelay!!, delayMs)
+        }
+
+        if (timeOut > 0) {
+            handlerTimeout = Handler(Looper.getMainLooper())
+            rdTimeout = Runnable {
+                if (sessionId != splashLoadSessionId) return@Runnable
+                Log.e(TAG, "loadSplashInterstitialAdsHighFloor: on timeout")
+                isTimeout = true
+                if (handlerSplashDelay != null && rdSplashDelay != null) {
+                    handlerSplashDelay?.removeCallbacks(rdSplashDelay!!)
                 }
+                if (mInterstitialSplash != null) {
+                    Log.i(TAG, "loadSplashInterstitialAdsHighFloor: show ad on timeout")
+                    if (showSplashIfReady && context is AppCompatActivity) {
+                        onShowSplash(context, adListener)
+                    } else {
+                        isShowLoadingSplash = false
+                        adListener?.onAdSplashReady()
+                    }
+                    return@Runnable
+                }
+                isShowLoadingSplash = false
+                dispatchSplashNextAction(sessionId, adListener)
             }
             handlerTimeout?.postDelayed(rdTimeout!!, timeOut)
         }
 
         isShowLoadingSplash = true
-        getInterstitialAds(context, id, object : AdCallback() {
+        loadSplashInterSequentialStep(
+            context = context,
+            validIds = validIds,
+            index = 0,
+            sessionId = sessionId,
+            showSplashIfReady = showSplashIfReady,
+            adListener = adListener
+        )
+    }
+
+    private fun loadSplashInterSequentialStep(
+        context: Context,
+        validIds: List<String>,
+        index: Int,
+        sessionId: Int,
+        showSplashIfReady: Boolean,
+        adListener: AdCallback?
+    ) {
+        if (sessionId != splashLoadSessionId || isTimeout) return
+        if (index >= validIds.size) {
+            isShowLoadingSplash = false
+            cancelSplashTimers()
+            dispatchSplashNextAction(sessionId, adListener)
+            return
+        }
+
+        val currentId = validIds[index]
+        val isLastStep = index == validIds.lastIndex
+        val isHighFloor = validIds.size > 1 && !isLastStep
+        Log.i(
+            TAG,
+            "loadSplashInterSequentialStep: step ${index + 1}/${validIds.size} (${if (isHighFloor) "HIGH_FLOOR" else "NORMAL"}) id=$currentId"
+        )
+
+        getInterstitialAds(context, currentId, object : AdCallback() {
             override fun onInterstitialLoad(interstitialAd: InterstitialAd?) {
                 super.onInterstitialLoad(interstitialAd)
-                Log.e(
-                    TAG,
-                    "loadSplashInterstitialAds  end time loading success:" + Calendar.getInstance().timeInMillis + "     time limit:" + isTimeout
-                )
-                if (isTimeout) return
+                if (sessionId != splashLoadSessionId || isTimeout) return
                 if (interstitialAd != null) {
+                    if (handlerTimeout != null && rdTimeout != null) {
+                        handlerTimeout?.removeCallbacks(rdTimeout!!)
+                    }
+                    Log.i(
+                        TAG,
+                        "loadSplashInterSequentialStep: loaded step ${index + 1}/${validIds.size} (${if (isHighFloor) "HIGH_FLOOR" else "NORMAL"}) id=$currentId"
+                    )
                     mInterstitialSplash = interstitialAd
+                    adListener?.onAdLoaded()
+                    adListener?.onInterstitialLoad(interstitialAd)
+                    if (isHighFloor) {
+                        when (index) {
+                            0 -> {
+                                mInterSplashHigh1 = interstitialAd
+                                adListener?.onAdLoadedHigh()
+                                adListener?.onAdSplashHigh1Ready()
+                            }
+                            1 -> {
+                                mInterSplashHigh2 = interstitialAd
+                                adListener?.onAdLoadedHigh()
+                                adListener?.onAdSplashHigh2Ready()
+                            }
+                            else -> {
+                                mInterSplashHigh3 = interstitialAd
+                                adListener?.onAdLoadedHigh()
+                                adListener?.onAdSplashHigh3Ready()
+                            }
+                        }
+                    } else {
+                        mInterSplashNormal = interstitialAd
+                        adListener?.onAdLoadedAll()
+                        adListener?.onAdSplashNormalReady()
+                    }
+
                     if (isTimeDelay) {
-                        if (showSplashIfReady) {
-                            onShowSplash(context as AppCompatActivity, adListener)
+                        if (showSplashIfReady && context is AppCompatActivity) {
+                            onShowSplash(context, adListener)
                         } else {
+                            isShowLoadingSplash = false
                             adListener?.onAdSplashReady()
                         }
-                        Log.i(TAG, "loadSplashInterstitialAds:show ad on loaded ")
+                    }
+                } else {
+                    if (!isLastStep) {
+                        loadSplashInterSequentialStep(
+                            context,
+                            validIds,
+                            index + 1,
+                            sessionId,
+                            showSplashIfReady,
+                            adListener
+                        )
+                    } else {
+                        isShowLoadingSplash = false
+                        cancelSplashTimers()
+                        dispatchSplashNextAction(sessionId, adListener)
                     }
                 }
             }
 
             override fun onAdFailedToLoad(i: LoadAdError?) {
                 super.onAdFailedToLoad(i)
-                Log.e(
-                    TAG,
-                    "loadSplashInterstitialAds  end time loading error:" + Calendar.getInstance().timeInMillis + "     time limit:" + isTimeout
-                )
-                if (isTimeout) return
-                if (adListener != null) {
-                    adListener.onNextAction()
-                    if (handlerTimeout != null && rdTimeout != null) {
-                        handlerTimeout?.removeCallbacks(rdTimeout!!)
-                    }
-                    if (i != null) {
-                        Log.e(TAG, "loadSplashInterstitialAds: load fail " + i.message)
-                    }
-                    adListener.onAdFailedToLoad(i)
+                if (sessionId != splashLoadSessionId || isTimeout) return
+                if (!isLastStep) {
+                    Log.w(
+                        TAG,
+                        "loadSplashInterSequentialStep: HighFloor step ${index + 1} ($currentId) failed (${i?.message}) -> loading next floor sequentially"
+                    )
+                    adListener?.onAdHighFailedToLoad()
+                    adListener?.onAdPriorityFailedToLoad(i)
+                    loadSplashInterSequentialStep(
+                        context,
+                        validIds,
+                        index + 1,
+                        sessionId,
+                        showSplashIfReady,
+                        adListener
+                    )
+                } else {
+                    isShowLoadingSplash = false
+                    cancelSplashTimers()
+                    Log.e(
+                        TAG,
+                        "loadSplashInterSequentialStep: all ${validIds.size} floors failed. Last error: ${i?.message}"
+                    )
+                    adListener?.onAdFailedToLoad(i)
+                    dispatchSplashNextAction(sessionId, adListener)
                 }
             }
 
-            override fun onAdFailedToShow(adError: FullScreenContentError?) {
-                super.onAdFailedToShow(adError)
-                if (adListener != null) {
-                    adListener.onAdFailedToShow(adError)
-                    adListener.onNextAction()
-                }
+            override fun onAdLogRev(
+                adValue: AdValue?,
+                adUnitId: String?,
+                mediationAdapterClassName: String?,
+                adType: AdType?
+            ) {
+                super.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType)
+                adListener?.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType)
             }
         })
     }
 
     fun onShowSplash(activity: AppCompatActivity, adListener: AdCallback?) {
+        val currentSessionId = splashLoadSessionId
         Log.e("onShowSplash", "onShowSplash: 1")
         isShowLoadingSplash = true
 
         if (mInterstitialSplash == null) {
-            adListener?.onNextAction()
+            isShowLoadingSplash = false
+            dispatchSplashNextAction(currentSessionId, adListener)
             return
         }
 
-        if (handlerTimeout != null && rdTimeout != null) {
-            handlerTimeout?.removeCallbacks(rdTimeout!!)
-        }
-
-        adListener?.onAdLoaded()
-        adListener?.onInterstitialShow()
+        cancelSplashTimers()
 
         val ad = mInterstitialSplash!!
         ad.adEventCallback = object : InterstitialAdEventCallback {
@@ -750,7 +1000,9 @@ class Admob private constructor() {
                 runOnUiThread {
                     Log.d(TAG, "onAdShowedFullScreenContent ")
                     AppOpenManager.getInstance().setInterstitialShowing(true)
-                    isShowLoadingSplash = false
+                    mInterstitialSplash = null
+                    adListener?.onInterstitialShow()
+                    SharePreferenceUtils.setLastImpressionInterstitialTime(activity)
                     if (!openActivityAfterShowInterAds) {
                         Handler(Looper.getMainLooper()).postDelayed({
                             try {
@@ -767,23 +1019,25 @@ class Admob private constructor() {
                     Log.d(TAG, "onAdDismissedFullScreenContent ")
                     AppOpenManager.getInstance().setInterstitialShowing(false)
                     mInterstitialSplash = null
+                    SharePreferenceUtils.setLastImpressionInterstitialTime(activity)
                     try {
                         dialog?.dismiss()
                     } catch (_: Exception) {
                     }
+                    isShowLoadingSplash = false
                     if (adListener != null) {
                         if (!openActivityAfterShowInterAds) {
-                            adListener.onNextAction()
+                            dispatchSplashNextAction(currentSessionId, adListener)
                         }
                         adListener.onAdClosed()
                     }
-                    isShowLoadingSplash = false
                 }
             }
 
             override fun onAdFailedToShowFullScreenContent(adError: FullScreenContentError) {
                 runOnUiThread {
                     Log.e(TAG, "onAdFailedToShowFullScreenContent : " + adError.message)
+                    AppOpenManager.getInstance().setInterstitialShowing(false)
                     mInterstitialSplash = null
                     isShowLoadingSplash = false
                     try {
@@ -792,9 +1046,7 @@ class Admob private constructor() {
                     }
                     if (adListener != null) {
                         adListener.onAdFailedToShow(adError)
-                        if (!openActivityAfterShowInterAds) {
-                            adListener.onNextAction()
-                        }
+                        dispatchSplashNextAction(currentSessionId, adListener)
                     }
                 }
             }
@@ -821,7 +1073,10 @@ class Admob private constructor() {
             }
         }
 
-        if (ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+        if (ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) &&
+            !activity.isDestroyed &&
+            !activity.isFinishing
+        ) {
             try {
                 if (dialog != null && dialog!!.isShowing) {
                     dialog?.dismiss()
@@ -830,46 +1085,54 @@ class Admob private constructor() {
                 try {
                     dialog?.show()
                 } catch (e: Exception) {
-                    adListener?.onNextAction()
+                    isShowLoadingSplash = false
+                    dispatchSplashNextAction(currentSessionId, adListener)
                     return
                 }
             } catch (e: Exception) {
                 dialog = null
                 e.printStackTrace()
             }
-            Handler().postDelayed({
-                if (activity.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) &&
-                    openActivityAfterShowInterAds &&
-                    adListener != null
-                ) {
-                    adListener.onNextAction()
-                    Handler().postDelayed({
-                        if (dialog != null && dialog!!.isShowing && !activity.isDestroyed) {
-                            dialog?.dismiss()
-                        }
-                    }, 1500)
-                }
-                if (mInterstitialSplash != null &&
-                    dialog != null &&
+            Handler(Looper.getMainLooper()).postDelayed({
+                val canShowNow = mInterstitialSplash != null &&
                     !activity.isDestroyed &&
-                    !activity.isFinishing
-                ) {
+                    !activity.isFinishing &&
+                    activity.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
+
+                if (canShowNow) {
                     Log.i(
                         TAG,
                         "start show InterstitialAd " + activity.lifecycle.currentState.name + "/" + ProcessLifecycleOwner.get().lifecycle.currentState.name
                     )
-                    mInterstitialSplash?.show(activity)
-                    isShowLoadingSplash = false
-                } else if (mInterstitialSplash == null) {
-                    if (dialog != null) {
-                        dialog?.dismiss()
+                    val splashAdToShow = mInterstitialSplash
+                    mInterstitialSplash = null
+                    splashAdToShow?.show(activity)
+                    if (openActivityAfterShowInterAds) {
+                        dispatchSplashNextAction(currentSessionId, adListener)
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            try {
+                                if (dialog != null && dialog!!.isShowing && !activity.isDestroyed) {
+                                    dialog?.dismiss()
+                                }
+                            } catch (_: Exception) {
+                            }
+                        }, 1500)
                     }
-                    adListener?.onNextAction()
+                } else {
+                    try {
+                        dialog?.dismiss()
+                    } catch (_: Exception) {
+                    }
                     isShowLoadingSplash = false
+                    if (mInterstitialSplash == null || activity.isDestroyed || activity.isFinishing) {
+                        dispatchSplashNextAction(currentSessionId, adListener)
+                    } else {
+                        Log.w(TAG, "onShowSplash: activity paused during 800ms dialog delay, deferring to onCheckShowSplashWhenFail")
+                    }
                 }
             }, 800)
         } else {
-            Log.e(TAG, "onShowSplash:   show fail in background after show loading ad")
+            Log.e(TAG, "onShowSplash: show fail in background after show loading ad")
             isShowLoadingSplash = false
         }
     }
@@ -881,7 +1144,12 @@ class Admob private constructor() {
 
     fun onCheckShowSplashWhenFail(activity: AppCompatActivity, callback: AdCallback?, timeDelay: Int) {
         Handler(activity.mainLooper).postDelayed({
-            if (mInterstitialSplash != null && !isShowLoadingSplash()) {
+            if (mInterstitialSplash != null &&
+                !isShowLoadingSplash() &&
+                !activity.isDestroyed &&
+                !activity.isFinishing &&
+                activity.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
+            ) {
                 Log.i(TAG, "show ad splash when show fail in background")
                 getInstance().onShowSplash(activity, callback)
             }
@@ -889,7 +1157,8 @@ class Admob private constructor() {
     }
 
     fun getInterstitialAds(context: Context, id: String, adCallback: AdCallback?) {
-        if (Arrays.asList(*context.resources.getStringArray(R.array.list_id_test)).contains(id)) {
+        val isTest = isTestAdId(context, id)
+        if (isTest) {
             showTestIdAlert(context, INTERS_ADS, id)
         }
         if (AppPurchase.getInstance().isPurchased(context) ||
@@ -899,12 +1168,18 @@ class Admob private constructor() {
             return
         }
 
+        NkhAdDebugManager.onAdRequestStarted("INTERSTITIAL", id, isTest)
         runWhenSdkInitialized(Runnable {
             InterstitialAd.load(
                 getAdRequest(id),
                 object : AdLoadCallback<InterstitialAd> {
                     override fun onAdLoaded(interstitialAd: InterstitialAd) {
                         runOnUiThread {
+                            NkhAdDebugManager.onAdLoaded(
+                                "INTERSTITIAL",
+                                id,
+                                interstitialAd.getResponseInfo().adapterClassName
+                            )
                             registerInterstitialPaidListener(interstitialAd, context, adCallback)
                             adCallback?.onInterstitialLoad(interstitialAd)
                             Log.i(TAG, "InterstitialAds onAdLoaded")
@@ -913,6 +1188,12 @@ class Admob private constructor() {
 
                     override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                         runOnUiThread {
+                            NkhAdDebugManager.onAdFailed(
+                                "INTERSTITIAL",
+                                id,
+                                loadAdError.code.ordinal,
+                                loadAdError.message
+                            )
                             Log.i(TAG, loadAdError.message)
                             adCallback?.onAdFailedToLoad(loadAdError)
                         }
@@ -1257,7 +1538,8 @@ class Admob private constructor() {
         gravity: String? = null,
         useCollapsible: Boolean = false
     ) {
-        if (Arrays.asList(*mActivity.resources.getStringArray(R.array.list_id_test)).contains(id)) {
+        val isTest = isTestAdId(mActivity, id)
+        if (isTest) {
             showTestIdAlert(mActivity, BANNER_ADS, id)
         }
         if (AppPurchase.getInstance().isPurchased(mActivity)) {
@@ -1265,6 +1547,12 @@ class Admob private constructor() {
             return
         }
 
+        val bannerFormat = when {
+            useCollapsible -> "COLLAPSIBLE_BANNER"
+            useInlineAdaptive -> "INLINE_BANNER"
+            else -> "BANNER"
+        }
+        NkhAdDebugManager.onAdRequestStarted(bannerFormat, id, isTest)
         containerShimmer?.visibility = View.VISIBLE
         containerShimmer?.startShimmer()
         runWhenSdkInitialized(Runnable {
@@ -1294,12 +1582,24 @@ class Admob private constructor() {
                         object : AdLoadCallback<BannerAd> {
                             override fun onAdLoaded(bannerAd: BannerAd) {
                                 runOnUiThread {
+                                    NkhAdDebugManager.onAdLoaded(
+                                        bannerFormat,
+                                        id,
+                                        bannerAd.getResponseInfo().adapterClassName
+                                    )
                                     containerShimmer?.stopShimmer()
                                     containerShimmer?.visibility = View.GONE
                                     adContainer?.visibility = View.VISIBLE
                                     bannerAd.adEventCallback = object : BannerAdEventCallback {
                                         override fun onAdPaid(adValue: AdValue) {
                                             runOnUiThread {
+                                                NkhAdDebugManager.onAdPaid(
+                                                    bannerFormat,
+                                                    bannerAd.adUnitId,
+                                                    adValue.valueMicros,
+                                                    adValue.currencyCode,
+                                                    bannerAd.getResponseInfo().adapterClassName
+                                                )
                                                 NkhLogEventManager.logPaidAdImpression(
                                                     mActivity,
                                                     adValue,
@@ -1322,6 +1622,11 @@ class Admob private constructor() {
 
                                         override fun onAdClicked() {
                                             runOnUiThread {
+                                                NkhAdDebugManager.onAdClicked(
+                                                    bannerFormat,
+                                                    bannerAd.adUnitId,
+                                                    bannerAd.getResponseInfo().adapterClassName
+                                                )
                                                 if (disableAdResumeWhenClickAds) {
                                                     AppOpenManager.getInstance().disableAdResumeByClickAction()
                                                 }
@@ -1343,6 +1648,11 @@ class Admob private constructor() {
 
                                         override fun onAdImpression() {
                                             runOnUiThread {
+                                                NkhAdDebugManager.onAdShown(
+                                                    bannerFormat,
+                                                    bannerAd.adUnitId,
+                                                    bannerAd.getResponseInfo().adapterClassName
+                                                )
                                                 callback?.onAdImpression()
                                             }
                                         }
@@ -1353,6 +1663,12 @@ class Admob private constructor() {
 
                             override fun onAdFailedToLoad(adError: LoadAdError) {
                                 runOnUiThread {
+                                    NkhAdDebugManager.onAdFailed(
+                                        bannerFormat,
+                                        id,
+                                        adError.code.ordinal,
+                                        adError.message
+                                    )
                                     containerShimmer?.stopShimmer()
                                     adContainer?.visibility = View.GONE
                                     containerShimmer?.visibility = View.GONE
@@ -1596,7 +1912,8 @@ class Admob private constructor() {
         radiusCTA: Int,
         callback: AdCallback?
     ) {
-        if (Arrays.asList(*context.resources.getStringArray(R.array.list_id_test)).contains(id)) {
+        val isTest = isTestAdId(context, id)
+        if (isTest) {
             showTestIdAlert(context, NATIVE_ADS, id)
         }
         if (AppPurchase.getInstance().isPurchased(context)) {
@@ -1608,6 +1925,7 @@ class Admob private constructor() {
         containerShimmer?.visibility = View.VISIBLE
         containerShimmer?.startShimmer()
 
+        NkhAdDebugManager.onAdRequestStarted("NATIVE", id, isTest)
         runWhenSdkInitialized(Runnable {
             val request = NativeAdRequest.Builder(id, listOf(NativeAd.NativeAdType.NATIVE)).build()
             NativeAdLoader.load(
@@ -1615,6 +1933,11 @@ class Admob private constructor() {
                 object : NativeAdLoaderCallback {
                     override fun onNativeAdLoaded(nativeAd: NativeAd) {
                         runOnUiThread {
+                            NkhAdDebugManager.onAdLoaded(
+                                "NATIVE",
+                                id,
+                                nativeAd.getResponseInfo().adapterClassName
+                            )
                             containerShimmer?.stopShimmer()
                             containerShimmer?.visibility = View.GONE
                             nativeAd.adEventCallback = createNativeAdEventCallback(context, nativeAd, id, callback)
@@ -1630,6 +1953,12 @@ class Admob private constructor() {
 
                     override fun onAdFailedToLoad(adError: LoadAdError) {
                         runOnUiThread {
+                            NkhAdDebugManager.onAdFailed(
+                                "NATIVE",
+                                id,
+                                adError.code.ordinal,
+                                adError.message
+                            )
                             Log.e(TAG, "onAdFailedToLoad: " + adError.message)
                             containerShimmer?.stopShimmer()
                             containerShimmer?.visibility = View.GONE
@@ -1643,12 +1972,14 @@ class Admob private constructor() {
     }
 
     fun loadNativeAd(context: Context, id: String, callback: AdCallback?) {
-        if (Arrays.asList(*context.resources.getStringArray(R.array.list_id_test)).contains(id)) {
+        val isTest = isTestAdId(context, id)
+        if (isTest) {
             showTestIdAlert(context, NATIVE_ADS, id)
         }
         if (AppPurchase.getInstance().isPurchased(context)) {
             return
         }
+        NkhAdDebugManager.onAdRequestStarted("NATIVE", id, isTest)
         runWhenSdkInitialized(Runnable {
             val request = NativeAdRequest.Builder(id, listOf(NativeAd.NativeAdType.NATIVE)).build()
             NativeAdLoader.load(
@@ -1656,6 +1987,11 @@ class Admob private constructor() {
                 object : NativeAdLoaderCallback {
                     override fun onNativeAdLoaded(nativeAd: NativeAd) {
                         runOnUiThread {
+                            NkhAdDebugManager.onAdLoaded(
+                                "NATIVE",
+                                id,
+                                nativeAd.getResponseInfo().adapterClassName
+                            )
                             nativeAd.adEventCallback = createNativeAdEventCallback(context, nativeAd, id, callback)
                             callback?.onUnifiedNativeAdLoaded(nativeAd)
                         }
@@ -1663,6 +1999,12 @@ class Admob private constructor() {
 
                     override fun onAdFailedToLoad(adError: LoadAdError) {
                         runOnUiThread {
+                            NkhAdDebugManager.onAdFailed(
+                                "NATIVE",
+                                id,
+                                adError.code.ordinal,
+                                adError.message
+                            )
                             Log.e(TAG, "onAdFailedToLoad: " + adError.message)
                             callback?.onAdFailedToLoad(adError)
                         }
@@ -1673,13 +2015,15 @@ class Admob private constructor() {
     }
 
     fun loadNativeAds(context: Context, id: String, callback: AdCallback?, countAd: Int) {
-        if (Arrays.asList(*context.resources.getStringArray(R.array.list_id_test)).contains(id)) {
+        val isTest = isTestAdId(context, id)
+        if (isTest) {
             showTestIdAlert(context, NATIVE_ADS, id)
         }
         if (AppPurchase.getInstance().isPurchased(context)) {
             callback?.onAdClosed()
             return
         }
+        NkhAdDebugManager.onAdRequestStarted("NATIVE", id, isTest)
         runWhenSdkInitialized(Runnable {
             val request = NativeAdRequest.Builder(id, listOf(NativeAd.NativeAdType.NATIVE)).build()
             NativeAdLoader.load(
@@ -1687,6 +2031,11 @@ class Admob private constructor() {
                 object : NativeAdLoaderCallback {
                     override fun onNativeAdLoaded(nativeAd: NativeAd) {
                         runOnUiThread {
+                            NkhAdDebugManager.onAdLoaded(
+                                "NATIVE",
+                                id,
+                                nativeAd.getResponseInfo().adapterClassName
+                            )
                             nativeAd.adEventCallback = createNativeAdEventCallback(context, nativeAd, id, callback)
                             callback?.onUnifiedNativeAdLoaded(nativeAd)
                         }
@@ -1694,6 +2043,12 @@ class Admob private constructor() {
 
                     override fun onAdFailedToLoad(adError: LoadAdError) {
                         runOnUiThread {
+                            NkhAdDebugManager.onAdFailed(
+                                "NATIVE",
+                                id,
+                                adError.code.ordinal,
+                                adError.message
+                            )
                             Log.e(TAG, "onAdFailedToLoad: " + adError.message)
                             callback?.onAdFailedToLoad(adError)
                         }
@@ -1711,7 +2066,8 @@ class Admob private constructor() {
         layout: Int,
         callback: AdCallback?
     ) {
-        if (Arrays.asList(*context.resources.getStringArray(R.array.list_id_test)).contains(id)) {
+        val isTest = isTestAdId(context, id)
+        if (isTest) {
             showTestIdAlert(context, NATIVE_ADS, id)
         }
         if (AppPurchase.getInstance().isPurchased(context)) {
@@ -1723,6 +2079,7 @@ class Admob private constructor() {
         containerShimmer?.visibility = View.VISIBLE
         containerShimmer?.startShimmer()
 
+        NkhAdDebugManager.onAdRequestStarted("NATIVE", id, isTest)
         runWhenSdkInitialized(Runnable {
             val request = NativeAdRequest.Builder(id, listOf(NativeAd.NativeAdType.NATIVE)).build()
             NativeAdLoader.load(
@@ -1730,6 +2087,11 @@ class Admob private constructor() {
                 object : NativeAdLoaderCallback {
                     override fun onNativeAdLoaded(nativeAd: NativeAd) {
                         runOnUiThread {
+                            NkhAdDebugManager.onAdLoaded(
+                                "NATIVE",
+                                id,
+                                nativeAd.getResponseInfo().adapterClassName
+                            )
                             containerShimmer?.stopShimmer()
                             containerShimmer?.visibility = View.GONE
                             nativeAd.adEventCallback = createNativeAdEventCallback(context, nativeAd, id, callback)
@@ -1745,6 +2107,12 @@ class Admob private constructor() {
 
                     override fun onAdFailedToLoad(adError: LoadAdError) {
                         runOnUiThread {
+                            NkhAdDebugManager.onAdFailed(
+                                "NATIVE",
+                                id,
+                                adError.code.ordinal,
+                                adError.message
+                            )
                             Log.e(TAG, "onAdFailedToLoad: " + adError.message)
                             containerShimmer?.stopShimmer()
                             containerShimmer?.visibility = View.GONE
@@ -1766,7 +2134,8 @@ class Admob private constructor() {
         config: NativeAdConfig,
         callback: AdCallback?
     ) {
-        if (Arrays.asList(*context.resources.getStringArray(R.array.list_id_test)).contains(id)) {
+        val isTest = isTestAdId(context, id)
+        if (isTest) {
             showTestIdAlert(context, NATIVE_ADS, id)
         }
         if (AppPurchase.getInstance().isPurchased(context)) {
@@ -1778,6 +2147,7 @@ class Admob private constructor() {
         containerShimmer?.visibility = View.VISIBLE
         containerShimmer?.startShimmer()
 
+        NkhAdDebugManager.onAdRequestStarted("NATIVE", id, isTest)
         runWhenSdkInitialized(Runnable {
             val request = NativeAdRequest.Builder(id, listOf(NativeAd.NativeAdType.NATIVE)).build()
             NativeAdLoader.load(
@@ -1785,6 +2155,11 @@ class Admob private constructor() {
                 object : NativeAdLoaderCallback {
                     override fun onNativeAdLoaded(nativeAd: NativeAd) {
                         runOnUiThread {
+                            NkhAdDebugManager.onAdLoaded(
+                                "NATIVE",
+                                id,
+                                nativeAd.getResponseInfo().adapterClassName
+                            )
                             containerShimmer?.stopShimmer()
                             containerShimmer?.visibility = View.GONE
                             nativeAd.adEventCallback = createNativeAdEventCallback(context, nativeAd, id, callback)
@@ -1800,6 +2175,12 @@ class Admob private constructor() {
 
                     override fun onAdFailedToLoad(adError: LoadAdError) {
                         runOnUiThread {
+                            NkhAdDebugManager.onAdFailed(
+                                "NATIVE",
+                                id,
+                                adError.code.ordinal,
+                                adError.message
+                            )
                             Log.e(TAG, "onAdFailedToLoad: " + adError.message)
                             containerShimmer?.stopShimmer()
                             containerShimmer?.visibility = View.GONE
@@ -1821,11 +2202,19 @@ class Admob private constructor() {
         return object : NativeAdEventCallback {
             override fun onAdPaid(adValue: AdValue) {
                 runOnUiThread {
+                    val adapterCls = nativeAd.getResponseInfo().adapterClassName
+                    NkhAdDebugManager.onAdPaid(
+                        "NATIVE",
+                        id,
+                        adValue.valueMicros,
+                        adValue.currencyCode,
+                        adapterCls
+                    )
                     NkhLogEventManager.logPaidAdImpression(
                         context,
                         adValue,
                         id,
-                        nativeAd.getResponseInfo().adapterClassName
+                        adapterCls
                     )
                     NkhLogEventManager.logPaidAdjustWithToken(
                         adValue,
@@ -1835,7 +2224,7 @@ class Admob private constructor() {
                     callback?.onAdLogRev(
                         adValue,
                         id,
-                        nativeAd.getResponseInfo().adapterClassName,
+                        adapterCls,
                         AdType.NATIVE
                     )
                 }
@@ -1843,12 +2232,14 @@ class Admob private constructor() {
 
             override fun onAdClicked() {
                 runOnUiThread {
+                    val adapterCls = nativeAd.getResponseInfo().adapterClassName
+                    NkhAdDebugManager.onAdClicked("NATIVE", id, adapterCls)
                     if (disableAdResumeWhenClickAds) {
                         AppOpenManager.getInstance().disableAdResumeByClickAction()
                     }
                     if (callback != null) {
                         callback.onAdClicked()
-                        callback.onAdClicked(id, nativeAd.getResponseInfo().adapterClassName, AdType.NATIVE)
+                        callback.onAdClicked(id, adapterCls, AdType.NATIVE)
                     }
                     NkhLogEventManager.logClickAdsEvent(context, id)
                 }
@@ -1856,6 +2247,11 @@ class Admob private constructor() {
 
             override fun onAdImpression() {
                 runOnUiThread {
+                    NkhAdDebugManager.onAdShown(
+                        "NATIVE",
+                        id,
+                        nativeAd.getResponseInfo().adapterClassName
+                    )
                     callback?.onAdImpression()
                 }
             }
@@ -2272,8 +2668,20 @@ class Admob private constructor() {
     }
 
     private fun showNativeDebugDialog(nativeAd: NativeAd, adView: NativeAdView) {
+        val cfg = com.ads.nkh.ads.NkhAd.getInstance().adConfig
+        if (cfg != null && !cfg.isShowAdDebugDialog) {
+            return
+        }
         adView.post {
             val extra = StringBuilder()
+            val adapterCls = try {
+                nativeAd.getResponseInfo().adapterClassName?.substringAfterLast('.') ?: ""
+            } catch (_: Throwable) {
+                ""
+            }
+            if (adapterCls.isNotBlank()) {
+                extra.append("Adapter: $adapterCls\n")
+            }
             val density = adView.context.resources.displayMetrics.density
             var isMediaValid = true
             var isCtaValid = true
@@ -2755,34 +3163,57 @@ class Admob private constructor() {
         return ""
     }
 
+    @Volatile
+    private var cachedTestIds: Set<String>? = null
+    @Volatile
+    private var warningChannelCreated = false
+
+    fun isTestAdId(context: Context, id: String?): Boolean {
+        if (id.isNullOrEmpty()) return false
+        val set = cachedTestIds ?: synchronized(this) {
+            cachedTestIds ?: try {
+                context.resources.getStringArray(R.array.list_id_test).toHashSet()
+            } catch (_: Throwable) {
+                emptySet()
+            }.also { cachedTestIds = it }
+        }
+        return set.contains(id)
+    }
+
     @SuppressLint("MissingPermission")
     private fun showTestIdAlert(context: Context, typeAds: Int, id: String?) {
-        val content = when (typeAds) {
-            BANNER_ADS -> "Banner Ads: "
-            INTERS_ADS -> "Interstitial Ads: "
-            REWARD_ADS -> "Rewarded Ads: "
-            NATIVE_ADS -> "Native Ads: "
-            PIP_ADS -> "PiP Ads: "
-            SWIPEABLE_ADS -> "Swipeable Ads: "
-            else -> "App Open Ads: "
-        } + id
-        val notification = NotificationCompat.Builder(context, "warning_ads")
-            .setContentTitle("Found test ad id")
-            .setContentText(content)
-            .setSmallIcon(R.drawable.ic_warning)
-            .build()
-
-        val notificationManager = NotificationManagerCompat.from(context)
-        notification.flags = notification.flags or Notification.FLAG_AUTO_CANCEL
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                "warning_ads",
-                "Warning Ads",
-                NotificationManager.IMPORTANCE_LOW
-            )
-            notificationManager.createNotificationChannel(channel)
+        val appCtx = context.applicationContext ?: context
+        bgExecutor.execute {
+            try {
+                val content = when (typeAds) {
+                    BANNER_ADS -> "Banner Ads: "
+                    INTERS_ADS -> "Interstitial Ads: "
+                    REWARD_ADS -> "Rewarded Ads: "
+                    NATIVE_ADS -> "Native Ads: "
+                    PIP_ADS -> "PiP Ads: "
+                    SWIPEABLE_ADS -> "Swipeable Ads: "
+                    else -> "App Open Ads: "
+                } + id
+                val notificationManager = NotificationManagerCompat.from(appCtx)
+                if (!warningChannelCreated && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val channel = NotificationChannel(
+                        "warning_ads",
+                        "Warning Ads",
+                        NotificationManager.IMPORTANCE_LOW
+                    )
+                    notificationManager.createNotificationChannel(channel)
+                    warningChannelCreated = true
+                }
+                val notification = NotificationCompat.Builder(appCtx, "warning_ads")
+                    .setContentTitle("Found test ad id")
+                    .setContentText(content)
+                    .setSmallIcon(R.drawable.ic_warning)
+                    .build()
+                notification.flags = notification.flags or Notification.FLAG_AUTO_CANCEL
+                notificationManager.notify(typeAds, notification)
+            } catch (_: Throwable) {
+            }
         }
-        notificationManager.notify(typeAds, notification)
     }
 
     // Load Priority Inter Splash (4 same time & 2 same time)
@@ -5129,6 +5560,7 @@ class Admob private constructor() {
 
     companion object {
         private const val TAG = "NkhModuleAds"
+        @Volatile
         private var instance: Admob? = null
 
         const val BANNER_INLINE_SMALL_STYLE = "BANNER_INLINE_SMALL_STYLE"
@@ -5145,11 +5577,9 @@ class Admob private constructor() {
         private const val SWIPEABLE_ADS = 7
 
         @JvmStatic
+        @Synchronized
         fun getInstance(): Admob {
-            if (instance == null) {
-                instance = Admob()
-            }
-            return instance!!
+            return instance ?: Admob().also { instance = it }
         }
 
         private fun runOnUiThread(runnable: Runnable) {

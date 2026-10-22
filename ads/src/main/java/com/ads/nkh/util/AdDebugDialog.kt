@@ -1,5 +1,6 @@
 package com.ads.nkh.util
 
+import android.app.Activity
 import android.app.Dialog
 import android.content.Context
 import android.content.pm.ApplicationInfo
@@ -14,6 +15,7 @@ import android.view.WindowManager
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.ads.nkh.ads.NkhAd
+import com.ads.nkh.debug.NkhAdDebugManager
 
 object AdDebugDialog {
 
@@ -136,6 +138,21 @@ object AdDebugDialog {
         buttonContainer.orientation = LinearLayout.HORIZONTAL
         buttonContainer.gravity = Gravity.END
         buttonContainer.setPadding(0, dp(context, 4), 0, 0)
+
+        if (context is Activity) {
+            val inspectorBtn = TextView(context)
+            inspectorBtn.text = "🐞 Inspector"
+            inspectorBtn.isAllCaps = false
+            inspectorBtn.setTextColor(Color.parseColor("#059669"))
+            inspectorBtn.textSize = 12f
+            inspectorBtn.setTypeface(null, Typeface.BOLD)
+            inspectorBtn.setPadding(dp(context, 10), dp(context, 4), dp(context, 10), dp(context, 4))
+            inspectorBtn.setOnClickListener {
+                dialog.dismiss()
+                NkhAdDebugManager.showDebugInspectorDialog(context)
+            }
+            buttonContainer.addView(inspectorBtn)
+        }
 
         // Secondary Button (Dismiss)
         val secondaryBtn = TextView(context)

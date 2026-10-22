@@ -91,7 +91,7 @@ object AdmobHelper {
     }
 
     private fun isFirstOpenApp(context: Context): Boolean {
-        return context.getSharedPreferences(FILE_SETTING, Context.MODE_PRIVATE)
+        return !context.getSharedPreferences(FILE_SETTING, Context.MODE_PRIVATE)
             .getBoolean(IS_FIRST_OPEN, false)
     }
 }

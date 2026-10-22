@@ -58,7 +58,12 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
     private var loadCallbackOpen: AdLoadCallback<AppOpenAd>? = null
     private var fullScreenContentCallback: AppOpenAdEventCallback? = null
 
+    private var appResumeAdIdHigh: String? = null
     private var appResumeAdId: String? = null
+    private val appResumeAdIdFloors: MutableList<String> = ArrayList()
+    private var isLoadingResumeAd: Boolean = false
+    private var resumeLoadSessionId: Int = 0
+    private var isLifecycleRegistered: Boolean = false
     private var splashAdId: String? = null
 
     private var currentActivity: Activity? = null
@@ -120,17 +125,38 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
     private var timeoutHandler: Handler? = null
 
     /**
-     * Init AppOpenManager
+     * Register Application lifecycle callbacks once without requiring an immediate ad unit ID.
+     */
+    fun registerApplication(application: Application) {
+        this.myApplication = application
+        if (!isLifecycleRegistered) {
+            isLifecycleRegistered = true
+            this.myApplication?.registerActivityLifecycleCallbacks(this)
+            ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+        }
+    }
+
+    /**
+     * Init AppOpenManager with single Resume Ad ID
      *
      * @param application
      */
     fun init(application: Application, appOpenAdId: String?) {
         isInitialized = true
         disableAdResumeByClickAction = false
-        this.myApplication = application
-        this.myApplication?.registerActivityLifecycleCallbacks(this)
-        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+        registerApplication(application)
         this.appResumeAdId = appOpenAdId
+    }
+
+    /**
+     * Init AppOpenManager with HighFloor + Normal Resume Ad IDs (loaded sequentially: HighFloor -> Normal)
+     */
+    fun init(application: Application, appOpenAdIdHigh: String?, appOpenAdIdNormal: String?) {
+        isInitialized = true
+        disableAdResumeByClickAction = false
+        registerApplication(application)
+        this.appResumeAdIdHigh = appOpenAdIdHigh
+        this.appResumeAdId = appOpenAdIdNormal
     }
 
     fun isInitialized(): Boolean = isInitialized
@@ -177,6 +203,10 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
 
     fun enableAppResume() {
         isAppResumeEnabled = true
+        isInitialized = true
+        if (!isAdAvailable(false) && !isLoadingResumeAd) {
+            fetchAd(false)
+        }
     }
 
     fun setSplashActivity(splashActivity: Class<*>?, adId: String?, timeoutInMillis: Int) {
@@ -186,7 +216,54 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
     }
 
     fun setAppResumeAdId(appResumeAdId: String?) {
-        this.appResumeAdId = appResumeAdId
+        if (this.appResumeAdId != appResumeAdId) {
+            this.appResumeAdId = appResumeAdId
+            isLoadingResumeAd = false
+            resumeLoadSessionId++
+        }
+    }
+
+    fun setAppResumeAdIdHigh(appResumeAdIdHigh: String?) {
+        if (this.appResumeAdIdHigh != appResumeAdIdHigh) {
+            this.appResumeAdIdHigh = appResumeAdIdHigh
+            isLoadingResumeAd = false
+            resumeLoadSessionId++
+        }
+    }
+
+    fun getAppResumeAdIdHigh(): String? = appResumeAdIdHigh
+
+    fun getAppResumeAdId(): String? = appResumeAdId
+
+    /**
+     * Configure AppOpen Resume with HighFloor + Normal Ad Unit IDs (Sequential loading: HighFloor -> Normal).
+     */
+    fun setAppResumeHighFloor(appResumeAdIdHigh: String?, appResumeAdIdNormal: String?) {
+        val cleanHigh = appResumeAdIdHigh?.trim()
+        val cleanNormal = appResumeAdIdNormal?.trim()
+        if (this.appResumeAdIdHigh != cleanHigh || this.appResumeAdId != cleanNormal || this.appResumeAdIdFloors.isNotEmpty()) {
+            this.appResumeAdIdHigh = cleanHigh
+            this.appResumeAdId = cleanNormal
+            this.appResumeAdIdFloors.clear()
+            isLoadingResumeAd = false
+            resumeLoadSessionId++
+        }
+    }
+
+    /**
+     * Configure AppOpen Resume with an ordered list of Ad Unit IDs from highest floor to normal floor (Sequential loading).
+     */
+    fun setAppResumeHighFloor(listIdResume: List<String>) {
+        this.appResumeAdIdFloors.clear()
+        this.appResumeAdIdFloors.addAll(listIdResume.map { it.trim() }.filter { it.isNotEmpty() })
+        this.appResumeAdIdHigh = this.appResumeAdIdFloors.firstOrNull()
+        this.appResumeAdId = if (this.appResumeAdIdFloors.size >= 2) {
+            this.appResumeAdIdFloors.last()
+        } else {
+            this.appResumeAdIdFloors.firstOrNull()
+        }
+        isLoadingResumeAd = false
+        resumeLoadSessionId++
     }
 
     fun setFullScreenContentCallback(callback: AppOpenAdEventCallback?) {
@@ -199,6 +276,13 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
 
     private fun logAppOpenAdPaid(adValue: AdValue, ad: AppOpenAd, adCallback: AdCallback?) {
         val adapterName = ad.getResponseInfo().adapterClassName
+        com.ads.nkh.debug.NkhAdDebugManager.onAdPaid(
+            "APP_OPEN",
+            ad.adUnitId,
+            adValue.valueMicros,
+            adValue.currencyCode,
+            adapterName
+        )
         myApplication?.applicationContext?.let { context ->
             NkhLogEventManager.logPaidAdImpression(
                 context,
@@ -229,62 +313,204 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
         }
     }
 
+    private fun getResumeFloorIdList(): List<String> {
+        if (appResumeAdIdFloors.isNotEmpty()) {
+            return appResumeAdIdFloors.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        }
+        val list = ArrayList<String>(2)
+        val high = appResumeAdIdHigh?.trim()
+        val normal = appResumeAdId?.trim()
+        if (!high.isNullOrEmpty()) {
+            list.add(high)
+        }
+        if (!normal.isNullOrEmpty()) {
+            list.add(normal)
+        }
+        return list.distinct()
+    }
+
     fun fetchAd(isSplash: Boolean) {
         Log.d(TAG, "fetchAd: isSplash = $isSplash")
         if (isAdAvailable(isSplash)) {
             return
         }
 
+        if (!isSplash) {
+            fetchResumeAdSequential()
+            return
+        }
+
         val callback = object : AdLoadCallback<AppOpenAd> {
             override fun onAdLoaded(ad: AppOpenAd) {
                 runOnUiThread {
-                    Log.d(TAG, "onAppOpenAdLoaded: isSplash = $isSplash")
-                    if (!isSplash) {
-                        this@AppOpenManager.appResumeAd = ad
-                        ad.adEventCallback = object : AppOpenAdEventCallback {
-                            override fun onAdPaid(adValue: AdValue) {
-                                runOnUiThread {
-                                    logAppOpenAdPaid(adValue, ad, null)
-                                }
+                    Log.d(TAG, "onAppOpenAdLoaded: isSplash = true")
+                    this@AppOpenManager.splashAd = ad
+                    ad.adEventCallback = object : AppOpenAdEventCallback {
+                        override fun onAdPaid(adValue: AdValue) {
+                            runOnUiThread {
+                                logAppOpenAdPaid(adValue, ad, null)
                             }
                         }
-                        this@AppOpenManager.appResumeLoadTime = Date().time
-                    } else {
-                        this@AppOpenManager.splashAd = ad
-                        ad.adEventCallback = object : AppOpenAdEventCallback {
-                            override fun onAdPaid(adValue: AdValue) {
-                                runOnUiThread {
-                                    logAppOpenAdPaid(adValue, ad, null)
-                                }
-                            }
-                        }
-                        this@AppOpenManager.splashLoadTime = Date().time
                     }
+                    this@AppOpenManager.splashLoadTime = Date().time
                 }
             }
 
             override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                 runOnUiThread {
-                    Log.d(TAG, "onAppOpenAdFailedToLoad: isSplash$isSplash message ${loadAdError.message}")
+                    Log.d(TAG, "onAppOpenAdFailedToLoad: isSplash=true message ${loadAdError.message}")
                 }
             }
         }
         loadCallback = callback
 
         val activity = currentActivity
-        val targetAdId = if (isSplash) splashAdId else appResumeAdId
+        val targetAdId = splashAdId
+        val formatLabel = "APP_OPEN_SPLASH"
+        var isTest = false
         if (activity != null) {
             if (AppPurchase.getInstance().isPurchased(activity)) {
                 return
             }
-            if (listOf(*activity.resources.getStringArray(R.array.list_id_test)).contains(targetAdId)) {
-                showTestIdAlert(activity, isSplash, targetAdId)
+            isTest = Admob.getInstance().isTestAdId(activity, targetAdId)
+            if (isTest) {
+                showTestIdAlert(activity, true, targetAdId)
             }
         }
         if (!targetAdId.isNullOrEmpty()) {
+            com.ads.nkh.debug.NkhAdDebugManager.onAdRequestStarted(formatLabel, targetAdId, isTest)
+            val wrappedCallback = object : AdLoadCallback<AppOpenAd> {
+                override fun onAdLoaded(ad: AppOpenAd) {
+                    com.ads.nkh.debug.NkhAdDebugManager.onAdLoaded(
+                        formatLabel,
+                        targetAdId,
+                        ad.getResponseInfo().adapterClassName
+                    )
+                    callback.onAdLoaded(ad)
+                }
+
+                override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                    com.ads.nkh.debug.NkhAdDebugManager.onAdFailed(
+                        formatLabel,
+                        targetAdId,
+                        loadAdError.code.ordinal,
+                        loadAdError.message
+                    )
+                    callback.onAdFailedToLoad(loadAdError)
+                }
+            }
             val request = getAdRequest(targetAdId)
-            loadAppOpenAd(request, callback)
+            loadAppOpenAd(request, wrappedCallback)
         }
+    }
+
+    /**
+     * Sequentially loads AppOpen Resume ads from HighFloor -> Normal (never in parallel).
+     */
+    private fun fetchResumeAdSequential() {
+        if (isAdAvailable(false) || isLoadingResumeAd) {
+            return
+        }
+        val activity = currentActivity
+        val checkCtx = activity ?: myApplication
+        if (checkCtx != null && AppPurchase.getInstance().isPurchased(checkCtx)) {
+            return
+        }
+        val floorIds = getResumeFloorIdList()
+        if (floorIds.isEmpty()) {
+            return
+        }
+        isLoadingResumeAd = true
+        val sessionId = ++resumeLoadSessionId
+        fetchResumeAdStep(floorIds, 0, sessionId)
+    }
+
+    private fun fetchResumeAdStep(floorIds: List<String>, index: Int, sessionId: Int) {
+        if (sessionId != resumeLoadSessionId) {
+            return
+        }
+        if (index >= floorIds.size) {
+            isLoadingResumeAd = false
+            return
+        }
+        val checkCtx = currentActivity ?: myApplication
+        if (checkCtx != null && AppPurchase.getInstance().isPurchased(checkCtx)) {
+            isLoadingResumeAd = false
+            return
+        }
+
+        val targetAdId = floorIds[index]
+        val isLastStep = index == floorIds.lastIndex
+        val isHighFloor = floorIds.size > 1 && !isLastStep
+        val formatLabel = if (isHighFloor) "APP_OPEN_RESUME_HIGH" else "APP_OPEN_RESUME"
+
+        var isTest = false
+        if (checkCtx != null) {
+            isTest = Admob.getInstance().isTestAdId(checkCtx, targetAdId)
+            if (isTest) {
+                showTestIdAlert(checkCtx, false, targetAdId)
+            }
+        }
+
+        Log.d(
+            TAG,
+            "fetchResumeAdStep (Sequential): step ${index + 1}/${floorIds.size} ($formatLabel) id=$targetAdId"
+        )
+        com.ads.nkh.debug.NkhAdDebugManager.onAdRequestStarted(formatLabel, targetAdId, isTest)
+
+        val stepCallback = object : AdLoadCallback<AppOpenAd> {
+            override fun onAdLoaded(ad: AppOpenAd) {
+                com.ads.nkh.debug.NkhAdDebugManager.onAdLoaded(
+                    formatLabel,
+                    targetAdId,
+                    ad.getResponseInfo().adapterClassName
+                )
+                runOnUiThread {
+                    if (sessionId != resumeLoadSessionId) return@runOnUiThread
+                    isLoadingResumeAd = false
+                    Log.d(
+                        TAG,
+                        "onAppOpenAdLoaded: Resume step ${index + 1}/${floorIds.size} ($formatLabel) id=$targetAdId"
+                    )
+                    this@AppOpenManager.appResumeAd = ad
+                    ad.adEventCallback = object : AppOpenAdEventCallback {
+                        override fun onAdPaid(adValue: AdValue) {
+                            runOnUiThread {
+                                logAppOpenAdPaid(adValue, ad, null)
+                            }
+                        }
+                    }
+                    this@AppOpenManager.appResumeLoadTime = Date().time
+                }
+            }
+
+            override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                com.ads.nkh.debug.NkhAdDebugManager.onAdFailed(
+                    formatLabel,
+                    targetAdId,
+                    loadAdError.code.ordinal,
+                    loadAdError.message
+                )
+                runOnUiThread {
+                    if (sessionId != resumeLoadSessionId) return@runOnUiThread
+                    if (!isLastStep) {
+                        Log.w(
+                            TAG,
+                            "onAppOpenAdFailedToLoad: Resume HighFloor step ${index + 1} ($targetAdId) failed (${loadAdError.message}) -> loading next floor sequentially"
+                        )
+                        fetchResumeAdStep(floorIds, index + 1, sessionId)
+                    } else {
+                        isLoadingResumeAd = false
+                        Log.d(
+                            TAG,
+                            "onAppOpenAdFailedToLoad: All ${floorIds.size} Resume floors failed. Last error: ${loadAdError.message}"
+                        )
+                    }
+                }
+            }
+        }
+        loadCallback = stepCallback
+        loadAppOpenAd(getAdRequest(targetAdId), stepCallback)
     }
 
     private fun loadAppOpenAd(request: AdRequest, callback: AdLoadCallback<AppOpenAd>) {
@@ -295,23 +521,29 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
 
     @SuppressLint("MissingPermission")
     private fun showTestIdAlert(context: Context, isSplash: Boolean, id: String?) {
-        val notification = NotificationCompat.Builder(context, "warning_ads")
-            .setContentTitle("Found test ad id")
-            .setContentText(if (isSplash) "Splash Ads: " else "AppResume Ads: $id")
-            .setSmallIcon(R.drawable.ic_warning)
-            .build()
+        val appCtx = context.applicationContext ?: context
+        Admob.getInstance().runOnBackgroundThread(Runnable {
+            try {
+                val notification = NotificationCompat.Builder(appCtx, "warning_ads")
+                    .setContentTitle("Found test ad id")
+                    .setContentText(if (isSplash) "Splash Ads: " else "AppResume Ads: $id")
+                    .setSmallIcon(R.drawable.ic_warning)
+                    .build()
 
-        val notificationManager = NotificationManagerCompat.from(context)
-        notification.flags = notification.flags or Notification.FLAG_AUTO_CANCEL
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                "warning_ads",
-                "Warning Ads",
-                NotificationManager.IMPORTANCE_LOW
-            )
-            notificationManager.createNotificationChannel(channel)
-        }
-        notificationManager.notify(if (isSplash) Admob.SPLASH_ADS else Admob.RESUME_ADS, notification)
+                val notificationManager = NotificationManagerCompat.from(appCtx)
+                notification.flags = notification.flags or Notification.FLAG_AUTO_CANCEL
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val channel = NotificationChannel(
+                        "warning_ads",
+                        "Warning Ads",
+                        NotificationManager.IMPORTANCE_LOW
+                    )
+                    notificationManager.createNotificationChannel(channel)
+                }
+                notificationManager.notify(if (isSplash) Admob.SPLASH_ADS else Admob.RESUME_ADS, notification)
+            } catch (_: Throwable) {
+            }
+        })
     }
 
     private fun getAdRequest(adUnitId: String): AdRequest {
@@ -575,8 +807,14 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
                     override fun onAdClicked() {
                         runOnUiThread {
                             val act = currentActivity
+                            val actualAdUnitId = ad.adUnitId.ifEmpty { appResumeAdId ?: "" }
+                            com.ads.nkh.debug.NkhAdDebugManager.onAdClicked(
+                                "APP_OPEN_RESUME",
+                                actualAdUnitId,
+                                ad.getResponseInfo().adapterClassName
+                            )
                             if (act != null) {
-                                NkhLogEventManager.logClickAdsEvent(act, appResumeAdId ?: ad.adUnitId)
+                                NkhLogEventManager.logClickAdsEvent(act, actualAdUnitId)
                                 fullScreenContentCallback?.onAdClicked()
                             }
                         }
@@ -584,6 +822,12 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
 
                     override fun onAdImpression() {
                         runOnUiThread {
+                            val actualAdUnitId = ad.adUnitId.ifEmpty { appResumeAdId ?: "" }
+                            com.ads.nkh.debug.NkhAdDebugManager.onAdShown(
+                                "APP_OPEN_RESUME",
+                                actualAdUnitId,
+                                ad.getResponseInfo().adapterClassName
+                            )
                             if (currentActivity != null) {
                                 fullScreenContentCallback?.onAdImpression()
                             }
@@ -1448,24 +1692,38 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
                 adCallback?.onNextAction()
                 return@postDelayed
             }
+            val targetActivity = currentActivity ?: (context as? Activity)
+            if (targetActivity == null || targetActivity.isFinishing || targetActivity.isDestroyed) {
+                splashAd = null
+                isShowingAd = false
+                adCallback?.onNextAction()
+                return@postDelayed
+            }
             ad.adEventCallback = object : AppOpenAdEventCallback {
                 override fun onAdDismissedFullScreenContent() {
                     runOnUiThread {
-                        adCallback?.onNextAction()
+                        splashAd = null
+                        isShowingAd = false
                         isAppOpenShowed = false
+                        adCallback?.onNextAction()
                         Log.d("AppOpenSplash Failed", "onAdDismissedFullScreenContent: vao 1")
                     }
                 }
 
                 override fun onAdFailedToShowFullScreenContent(adError: FullScreenContentError) {
                     runOnUiThread {
-                        adCallback?.onAdFailedToShow(adError)
+                        splashAd = null
+                        isShowingAd = false
                         isAppOpenShowed = false
+                        adCallback?.onAdFailedToShow(adError)
+                        adCallback?.onNextAction()
                     }
                 }
 
                 override fun onAdShowedFullScreenContent() {
                     runOnUiThread {
+                        splashAd = null
+                        isShowingAd = true
                         adCallback?.onAdImpression()
                         isAppOpenShowed = true
                     }
@@ -1497,7 +1755,7 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
                     }
                 }
             }
-            currentActivity?.let { ad.show(it) }
+            ad.show(targetActivity)
         }, 800)
     }
 
@@ -1626,6 +1884,206 @@ class AppOpenManager private constructor() : Application.ActivityLifecycleCallba
             }
             loadAppOpenAd(adRequest, appOpenAdLoadCallback)
         }
+    }
+
+    private var openSplashFloorSessionId = 0
+    private var openSplashNextActionDispatchedSessionId = 0
+
+    private fun dispatchOpenSplashNextAction(sessionId: Int, adCallback: AdCallback?) {
+        if (sessionId != 0) {
+            if (openSplashNextActionDispatchedSessionId == sessionId) {
+                Log.d(TAG, "dispatchOpenSplashNextAction: skipped duplicate onNextAction for sessionId=$sessionId")
+                return
+            }
+            openSplashNextActionDispatchedSessionId = sessionId
+        }
+        adCallback?.onNextAction()
+    }
+
+    @JvmOverloads
+    fun loadOpenAppAdSplashHighFloor(
+        context: Context,
+        idResumeSplashHigh: String,
+        idResumeSplashNormal: String,
+        timeDelay: Long,
+        timeOut: Long,
+        isShowAdIfReady: Boolean = true,
+        adCallback: AdCallback
+    ) {
+        loadOpenAppAdSplashHighFloor(
+            context,
+            listOf(idResumeSplashHigh, idResumeSplashNormal),
+            timeDelay,
+            timeOut,
+            isShowAdIfReady,
+            adCallback
+        )
+    }
+
+    @JvmOverloads
+    fun loadOpenAppAdSplashHighFloor(
+        context: Context,
+        listIdResumeSplash: List<String>,
+        timeDelay: Long,
+        timeOut: Long,
+        isShowAdIfReady: Boolean = true,
+        adCallback: AdCallback
+    ) {
+        val sessionId = ++openSplashFloorSessionId
+        if (AppPurchase.getInstance().isPurchased(context)) {
+            dispatchOpenSplashNextAction(sessionId, adCallback)
+            return
+        }
+        val validIds = listIdResumeSplash.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        if (validIds.isEmpty()) {
+            dispatchOpenSplashNextAction(sessionId, adCallback)
+            return
+        }
+        this.splashAdId = validIds.first()
+        if (!isNetworkConnected(context)) {
+            Handler(Looper.getMainLooper()).postDelayed({
+                if (sessionId != openSplashFloorSessionId) return@postDelayed
+                adCallback.onAdFailedToLoad(null)
+                dispatchOpenSplashNextAction(sessionId, adCallback)
+            }, timeDelay)
+            return
+        }
+
+        val startTimeMillis = System.currentTimeMillis()
+        var isTimedOut = false
+        val handler = Handler(Looper.getMainLooper())
+        val timeOutRunnable = Runnable {
+            if (sessionId != openSplashFloorSessionId) return@Runnable
+            Log.d(TAG, "loadOpenAppAdSplashHighFloor: time out")
+            isTimedOut = true
+            isShowingAd = false
+            dispatchOpenSplashNextAction(sessionId, adCallback)
+        }
+        if (timeOut > 0) {
+            handler.postDelayed(timeOutRunnable, timeOut)
+        }
+
+        val guardedShowCallback = object : AdCallback() {
+            override fun onNextAction() {
+                dispatchOpenSplashNextAction(sessionId, adCallback)
+            }
+
+            override fun onAdFailedToShow(adError: FullScreenContentError?) {
+                adCallback.onAdFailedToShow(adError)
+            }
+
+            override fun onAdImpression() {
+                adCallback.onAdImpression()
+            }
+
+            override fun onAdClicked() {
+                adCallback.onAdClicked()
+            }
+
+            override fun onAdClicked(adUnitId: String?, mediationAdapterClassName: String?, adType: AdType?) {
+                adCallback.onAdClicked(adUnitId, mediationAdapterClassName, adType)
+            }
+
+            override fun onAdLogRev(
+                adValue: AdValue?,
+                adUnitId: String?,
+                mediationAdapterClassName: String?,
+                adType: AdType?
+            ) {
+                adCallback.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType)
+            }
+        }
+
+        fun loadStep(index: Int) {
+            if (sessionId != openSplashFloorSessionId || isTimedOut) return
+            if (index >= validIds.size) {
+                handler.removeCallbacks(timeOutRunnable)
+                dispatchOpenSplashNextAction(sessionId, adCallback)
+                return
+            }
+            val currentId = validIds[index]
+            val isLastStep = index == validIds.lastIndex
+            val isHighFloor = validIds.size > 1 && !isLastStep
+            val formatLabel = if (isHighFloor) "APP_OPEN_SPLASH_HIGH" else "APP_OPEN_SPLASH"
+            val isTest = Admob.getInstance().isTestAdId(context, currentId)
+            if (isTest) {
+                showTestIdAlert(context, true, currentId)
+            }
+            this.splashAdId = currentId
+            com.ads.nkh.debug.NkhAdDebugManager.onAdRequestStarted(formatLabel, currentId, isTest)
+
+            val stepCallback = object : AdLoadCallback<AppOpenAd> {
+                override fun onAdLoaded(appOpenAd: AppOpenAd) {
+                    com.ads.nkh.debug.NkhAdDebugManager.onAdLoaded(
+                        formatLabel,
+                        currentId,
+                        appOpenAd.getResponseInfo().adapterClassName
+                    )
+                    runOnUiThread {
+                        if (sessionId != openSplashFloorSessionId || isTimedOut) return@runOnUiThread
+                        handler.removeCallbacks(timeOutRunnable)
+                        this@AppOpenManager.splashAd = appOpenAd
+                        this@AppOpenManager.splashLoadTime = Date().time
+                        appOpenLoadCallbacks[appOpenAd] = adCallback
+                        appOpenAd.adEventCallback = object : AppOpenAdEventCallback {
+                            override fun onAdPaid(adValue: AdValue) {
+                                runOnUiThread {
+                                    logAppOpenAdPaid(adValue, appOpenAd, adCallback)
+                                }
+                            }
+                        }
+                        adCallback.onAdLoaded()
+                        if (isHighFloor) {
+                            this@AppOpenManager.splashAdHigh = appOpenAd
+                            adCallback.onAdLoadedHigh()
+                            adCallback.onAdSplashHigh1Ready()
+                        } else {
+                            this@AppOpenManager.splashAdAll = appOpenAd
+                            adCallback.onAdLoadedAll()
+                            adCallback.onAdSplashNormalReady()
+                        }
+                        if (isShowAdIfReady) {
+                            val elapsed = System.currentTimeMillis() - startTimeMillis
+                            val remainingDelay = (timeDelay - elapsed).coerceAtLeast(0L)
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                if (sessionId != openSplashFloorSessionId || isTimedOut) return@postDelayed
+                                this@AppOpenManager.showAppOpenSplash(context, guardedShowCallback)
+                            }, remainingDelay)
+                        } else {
+                            adCallback.onAdSplashReady()
+                        }
+                    }
+                }
+
+                override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                    com.ads.nkh.debug.NkhAdDebugManager.onAdFailed(
+                        formatLabel,
+                        currentId,
+                        loadAdError.code.ordinal,
+                        loadAdError.message
+                    )
+                    runOnUiThread {
+                        if (sessionId != openSplashFloorSessionId || isTimedOut) return@runOnUiThread
+                        if (!isLastStep) {
+                            Log.w(
+                                TAG,
+                                "loadOpenAppAdSplashHighFloor: step ${index + 1} ($currentId) failed (${loadAdError.message}) -> loading next floor sequentially"
+                            )
+                            adCallback.onAdHighFailedToLoad()
+                            adCallback.onAdPriorityFailedToLoad(loadAdError)
+                            loadStep(index + 1)
+                        } else {
+                            handler.removeCallbacks(timeOutRunnable)
+                            adCallback.onAdFailedToLoad(loadAdError)
+                            dispatchOpenSplashNextAction(sessionId, adCallback)
+                        }
+                    }
+                }
+            }
+            loadAppOpenAd(getAdRequest(currentId), stepCallback)
+        }
+
+        loadStep(0)
     }
 
     fun loadOpenAppAdSplashFloor(

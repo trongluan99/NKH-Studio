@@ -297,16 +297,22 @@ class AppPurchase private constructor() {
         this.listSubscriptionId = listIdToListProduct(listSubsId, BillingClient.ProductType.SUBS)
         this.listINAPId = listIdToListProduct(mutableInapList, BillingClient.ProductType.INAPP)
 
-        billingClient = BillingClient.newBuilder(application)
-            .setListener(purchasesUpdatedListener)
-            .enablePendingPurchases(
-                PendingPurchasesParams.newBuilder()
-                    .enableOneTimeProducts()
+        com.ads.nkh.admob.Admob.getInstance().runOnBackgroundThread(Runnable {
+            try {
+                billingClient = BillingClient.newBuilder(application)
+                    .setListener(purchasesUpdatedListener)
+                    .enablePendingPurchases(
+                        PendingPurchasesParams.newBuilder()
+                            .enableOneTimeProducts()
+                            .build()
+                    )
                     .build()
-            )
-            .build()
 
-        billingClient?.startConnection(purchaseClientStateListener)
+                billingClient?.startConnection(purchaseClientStateListener)
+            } catch (e: Exception) {
+                Log.e(TAG, "initBilling background error: ${e.message}")
+            }
+        })
     }
 
     private fun addSkuSubsToMap(skuList: List<ProductDetails>) {

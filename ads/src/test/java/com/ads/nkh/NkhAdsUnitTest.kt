@@ -168,4 +168,21 @@ class NkhAdsUnitTest {
         assertEquals(1, result.getPurchaseState())
         assertTrue(result.isAutoRenewing())
     }
+
+    @Test
+    fun testNkhAdConfigHighFloorResume() {
+        val config = com.ads.nkh.config.NkhAdConfig(android.app.Application())
+        assertFalse(config.isEnableAdResume)
+
+        config.setIdAdResumeHighFloor("ca-app-pub-test/open_high", "ca-app-pub-test/open_normal")
+        assertEquals("ca-app-pub-test/open_high", config.idAdResumeHigh)
+        assertEquals("ca-app-pub-test/open_normal", config.idAdResume)
+        assertTrue(config.isEnableAdResume)
+
+        config.setIdAdResumeHighFloor("ca-app-pub-test/open_high_only", null)
+        assertTrue(config.isEnableAdResume)
+
+        config.setIdAdResumeHighFloor(null, null)
+        assertFalse(config.isEnableAdResume)
+    }
 }

@@ -28,6 +28,7 @@ import com.ads.nkh.ads.wrapper.ApPipAd
 import com.ads.nkh.ads.wrapper.ApSwipeableAd
 import com.ads.nkh.ads.wrapper.StatusAd
 import com.ads.nkh.config.NkhAdConfig
+import com.ads.nkh.debug.NkhAdDebugManager
 import com.ads.nkh.dialog.FullScreenNativeAdDialog
 import com.ads.nkh.dialog.SwipeableInterstitialFeedDialog
 import com.ads.nkh.event.NkhAdjust
@@ -157,36 +158,66 @@ class NkhAd {
         }
         this.adConfig = adConfig
         AppUtil.VARIANT_DEV = adConfig.isVariantDev
+        if (adConfig.isEnableDebugMode) {
+            NkhAdDebugManager.registerLifecycleIfNeeded(context)
+        }
         if (adConfig.isEnableAdjust) {
             NkhAdjust.enableAdjust = true
             setupAdjust(adConfig.isVariantDev, adConfig.adjustConfig.adjustToken)
         }
 
         val appContext = context.applicationContext ?: context
-        val fbToken = adConfig.facebookClientToken
-        if (!fbToken.isNullOrBlank()) {
-            try {
-                FacebookSdk.setClientToken(fbToken)
-            } catch (e: Exception) {
-                Log.w(TAG, "FacebookSdk setClientToken skipped: ${e.message}")
-            }
+        val fbToken = adConfig.facebookClientToken?.trim()
+        val hasValidFbToken = !fbToken.isNullOrEmpty() &&
+            fbToken != NkhAdConfig.DEFAULT_TOKEN_FACEBOOK_SDK &&
+            !fbToken.startsWith("XXXX", ignoreCase = true)
+        if (hasValidFbToken) {
+            Admob.getInstance().runOnBackgroundThread(Runnable {
+                try {
+                    FacebookSdk.setClientToken(fbToken!!)
+                    @Suppress("DEPRECATION")
+                    FacebookSdk.sdkInitialize(appContext)
+                } catch (e: Exception) {
+                    Log.w(TAG, "FacebookSdk background init skipped: ${e.message}")
+                }
+            })
+        } else {
+            Admob.getInstance().runOnBackgroundThread(Runnable {
+                try {
+                    FacebookSdk.setAutoInitEnabled(false)
+                    FacebookSdk.setAutoLogAppEventsEnabled(false)
+                    FacebookSdk.setAdvertiserIDCollectionEnabled(false)
+                } catch (_: Throwable) {
+                }
+            })
         }
-        Admob.getInstance().runOnBackgroundThread(Runnable {
-            try {
-                @Suppress("DEPRECATION")
-                FacebookSdk.sdkInitialize(appContext)
-            } catch (e: Exception) {
-                Log.w(TAG, "FacebookSdk background init skipped: ${e.message}")
-            }
-        })
 
         Admob.getInstance().init(context, adConfig.listDeviceTest, adConfig.adjustTokenTiktok)
+        AppOpenManager.getInstance().registerApplication(adConfig.application)
         if (adConfig.isEnableAdResume) {
-            AppOpenManager.getInstance().init(adConfig.application, adConfig.idAdResume)
+            AppOpenManager.getInstance().init(
+                adConfig.application,
+                adConfig.idAdResumeHigh,
+                adConfig.idAdResume
+            )
         }
 
         initAdSuccess = true
         initCallback?.initAdSuccess()
+    }
+
+    fun openDebugInspector(activity: Activity) {
+        NkhAdDebugManager.showDebugInspectorDialog(activity)
+    }
+
+    fun setEnableDebugMode(enable: Boolean, showFloatingButton: Boolean = true) {
+        adConfig?.let { cfg ->
+            cfg.isEnableDebugMode = enable
+            cfg.isShowFloatingDebugButton = showFloatingButton
+            if (enable) {
+                NkhAdDebugManager.registerLifecycleIfNeeded(cfg.application)
+            }
+        }
     }
 
     fun loadNativeConfigFromAssets(context: Context, remoteFile: String): NativeAdConfig {
@@ -216,6 +247,20 @@ class NkhAd {
 
     fun enableAdResume(application: Application, id: String) {
         AppOpenManager.getInstance().init(application, id)
+    }
+
+    fun enableAdResumeHighFloor(application: Application, idHigh: String?, idNormal: String?) {
+        AppOpenManager.getInstance().init(application, idHigh, idNormal)
+    }
+
+    fun setAppResumeHighFloor(idHigh: String?, idNormal: String?) {
+        adConfig?.application?.let { AppOpenManager.getInstance().registerApplication(it) }
+        AppOpenManager.getInstance().setAppResumeHighFloor(idHigh, idNormal)
+    }
+
+    fun setAppResumeHighFloor(listIdResume: List<String>) {
+        adConfig?.application?.let { AppOpenManager.getInstance().registerApplication(it) }
+        AppOpenManager.getInstance().setAppResumeHighFloor(listIdResume)
     }
 
     fun setInitCallback(initCallback: NkhInitCallback?) {
@@ -321,6 +366,139 @@ class NkhAd {
         adListener: AdCallback
     ) {
         Admob.getInstance().loadSplashInterstitialAds(context, id, timeOut, timeDelay, true, adListener)
+    }
+
+    /**
+     * Load Interstitial Splash với HighFloor tuần tự (Sequential):
+     * Request [idAdsHigh] trước -> nếu fail mới request [idAdsNormal].
+     * (Không bắn đồng thời như SameTime).
+     */
+    @JvmOverloads
+    fun loadSplashInterstitialAdsHighFloor(
+        context: Context,
+        idAdsHigh: String,
+        idAdsNormal: String,
+        timeOut: Long,
+        timeDelay: Long,
+        showSplashIfReady: Boolean = true,
+        adListener: AdCallback
+    ) {
+        Admob.getInstance().loadSplashInterstitialAdsHighFloor(
+            context,
+            idAdsHigh,
+            idAdsNormal,
+            timeOut,
+            timeDelay,
+            showSplashIfReady,
+            adListener
+        )
+    }
+
+    @JvmOverloads
+    fun loadSplashInterstitialAdsHighFloor(
+        context: Context,
+        idAdsHigh1: String,
+        idAdsHigh2: String,
+        idAdsNormal: String,
+        timeOut: Long,
+        timeDelay: Long,
+        showSplashIfReady: Boolean = true,
+        adListener: AdCallback
+    ) {
+        Admob.getInstance().loadSplashInterstitialAdsHighFloor(
+            context,
+            idAdsHigh1,
+            idAdsHigh2,
+            idAdsNormal,
+            timeOut,
+            timeDelay,
+            showSplashIfReady,
+            adListener
+        )
+    }
+
+    @JvmOverloads
+    fun loadSplashInterstitialAdsHighFloor(
+        context: Context,
+        listIdAds: List<String>,
+        timeOut: Long,
+        timeDelay: Long,
+        showSplashIfReady: Boolean = true,
+        adListener: AdCallback
+    ) {
+        Admob.getInstance().loadSplashInterstitialAdsHighFloor(
+            context,
+            listIdAds,
+            timeOut,
+            timeDelay,
+            showSplashIfReady,
+            adListener
+        )
+    }
+
+    @JvmOverloads
+    fun loadSplashHighFloor(
+        context: Context,
+        idAdsHigh: String,
+        idAdsNormal: String,
+        timeOut: Long,
+        timeDelay: Long,
+        showSplashIfReady: Boolean = true,
+        adListener: AdCallback
+    ) {
+        loadSplashInterstitialAdsHighFloor(
+            context,
+            idAdsHigh,
+            idAdsNormal,
+            timeOut,
+            timeDelay,
+            showSplashIfReady,
+            adListener
+        )
+    }
+
+    /**
+     * Load App Open Splash với HighFloor tuần tự (Sequential):
+     * Request [idResumeSplashHigh] trước -> nếu fail mới request [idResumeSplashNormal].
+     */
+    @JvmOverloads
+    fun loadOpenAppAdSplashHighFloor(
+        context: Context,
+        idResumeSplashHigh: String,
+        idResumeSplashNormal: String,
+        timeDelay: Long,
+        timeOut: Long,
+        isShowAdIfReady: Boolean = true,
+        adCallback: AdCallback
+    ) {
+        AppOpenManager.getInstance().loadOpenAppAdSplashHighFloor(
+            context,
+            idResumeSplashHigh,
+            idResumeSplashNormal,
+            timeDelay,
+            timeOut,
+            isShowAdIfReady,
+            adCallback
+        )
+    }
+
+    @JvmOverloads
+    fun loadOpenAppAdSplashHighFloor(
+        context: Context,
+        listIdResumeSplash: List<String>,
+        timeDelay: Long,
+        timeOut: Long,
+        isShowAdIfReady: Boolean = true,
+        adCallback: AdCallback
+    ) {
+        AppOpenManager.getInstance().loadOpenAppAdSplashHighFloor(
+            context,
+            listIdResumeSplash,
+            timeDelay,
+            timeOut,
+            isShowAdIfReady,
+            adCallback
+        )
     }
 
     fun onCheckShowSplashWhenFail(activity: AppCompatActivity, callback: AdCallback, timeDelay: Int) {

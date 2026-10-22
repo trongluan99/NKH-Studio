@@ -62,28 +62,27 @@ class SplashActivity : AppCompatActivity() {
 
     private fun loadSplashAds() {
         if (isNavigated || isFinishing || isDestroyed) return
-        NkhAd.getInstance().loadInterSplashPriority2SameTime(
+        NkhAd.getInstance().loadSplashInterstitialAdsHighFloor(
             this,
             BuildConfig.ad_interstitial_splash,
             BuildConfig.ad_interstitial_splash,
-            15000,
-            500,
+            30000,
+            2000,
+            true,
             object : AdCallback() {
-                override fun onAdSplashHigh1Ready() {
-                    super.onAdSplashHigh1Ready()
-                    Log.d(TAG, "onAdSplashHigh1Ready -> showing splash priority 2")
-                    showSplashAndNavigate()
-                }
-
-                override fun onAdSplashNormalReady() {
-                    super.onAdSplashNormalReady()
-                    Log.d(TAG, "onAdSplashNormalReady -> showing splash priority 2")
-                    showSplashAndNavigate()
+                override fun onAdLoaded() {
+                    super.onAdLoaded()
+                    Log.d(TAG, "Splash onAdLoaded (sequential HighFloor -> Normal)")
                 }
 
                 override fun onAdFailedToLoad(i: LoadAdError?) {
                     super.onAdFailedToLoad(i)
                     Log.e(TAG, "Splash onAdFailedToLoad: ${i?.message}")
+                }
+
+                override fun onAdFailedToShow(adError: FullScreenContentError?) {
+                    super.onAdFailedToShow(adError)
+                    Log.e(TAG, "Splash onAdFailedToShow: ${adError?.message}")
                 }
 
                 override fun onNextAction() {
