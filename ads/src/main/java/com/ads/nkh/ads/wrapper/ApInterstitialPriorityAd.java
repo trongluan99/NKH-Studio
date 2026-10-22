@@ -88,4 +88,11 @@ public class ApInterstitialPriorityAd {
     public ApInterstitialAd getNormalPriorityInterstitialAd() {
         return normalPriorityInterstitialAd;
     }
+
+    public boolean isReady() {
+        return (high1PriorityInterstitialAd != null && high1PriorityInterstitialAd.isReady())
+                || (high2PriorityInterstitialAd != null && high2PriorityInterstitialAd.isReady())
+                || (high3PriorityInterstitialAd != null && high3PriorityInterstitialAd.isReady())
+                || (normalPriorityInterstitialAd != null && normalPriorityInterstitialAd.isReady());
+    }
 }

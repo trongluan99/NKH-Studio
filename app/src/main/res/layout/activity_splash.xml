@@ -1,17 +1,144 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_splash_gradient"
+    android:keepScreenOn="true">
 
-    <TextView
-        android:id="@+id/textView2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Ads Splash Loading..."
-        android:textColor="@color/black"
-        app:layout_constraintBottom_toBottomOf="parent"
+    <!-- Ambient circular soft shadow/glow behind logo -->
+    <View
+        android:id="@+id/viewGlow"
+        android:layout_width="220dp"
+        android:layout_height="220dp"
+        android:background="@drawable/bg_splash_glow_light"
+        app:layout_constraintBottom_toBottomOf="@+id/cardSplashLogo"
+        app:layout_constraintEnd_toEndOf="@+id/cardSplashLogo"
+        app:layout_constraintStart_toStartOf="@+id/cardSplashLogo"
+        app:layout_constraintTop_toTopOf="@+id/cardSplashLogo" />
+
+    <!-- Center Logo Container Card -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardSplashLogo"
+        android:layout_width="104dp"
+        android:layout_height="104dp"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="26dp"
+        app:cardElevation="10dp"
+        app:strokeColor="#1F6366F1"
+        app:strokeWidth="1.5dp"
+        app:layout_constraintBottom_toTopOf="@+id/tvSplashTitle"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed">
+
+        <ImageView
+            android:id="@+id/imgSplashLogo"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/app_name"
+            android:padding="16dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_splash_logo" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- App Title -->
+    <TextView
+        android:id="@+id/tvSplashTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:letterSpacing="0.06"
+        android:text="NKH STUDIO"
+        android:textColor="@color/splash_light_title"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/tvSplashSubtitle"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/cardSplashLogo" />
+
+    <!-- App Subtitle -->
+    <TextView
+        android:id="@+id/tvSplashSubtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:letterSpacing="0.03"
+        android:text="Ad Mediation &amp; Priority Ads SDK"
+        android:textColor="@color/splash_light_subtitle"
+        android:textSize="13sp"
+        app:layout_constraintBottom_toTopOf="@+id/tvSplashBadge"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvSplashTitle" />
+
+    <!-- Feature Tag / Badge -->
+    <TextView
+        android:id="@+id/tvSplashBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:background="@drawable/bg_splash_badge"
+        android:paddingStart="16dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="6dp"
+        android:text="⚡ 2-Floor Priority Splash • App Open &amp; Inter"
+        android:textColor="@color/splash_light_badge_text"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/guidelineBottom"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvSplashSubtitle" />
+
+    <!-- Guideline for Bottom Section -->
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineBottom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.78" />
+
+    <!-- Loading Indicator -->
+    <ProgressBar
+        android:id="@+id/progressBarSplash"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:indeterminateTint="@color/splash_light_progress"
+        android:indeterminateTintMode="src_in"
+        app:layout_constraintBottom_toTopOf="@+id/tvSplashStatus"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Status Message -->
+    <TextView
+        android:id="@+id/tvSplashStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="16dp"
+        android:text="Đang tải và tối ưu quảng cáo..."
+        android:textColor="@color/splash_light_subtitle"
+        android:textSize="13sp"
+        app:layout_constraintBottom_toTopOf="@+id/tvSplashVersion"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Footer Version / Info -->
+    <TextView
+        android:id="@+id/tvSplashVersion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:text="NKH Studio • All rights reserved"
+        android:textColor="@color/splash_light_footer"
+        android:textSize="11sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

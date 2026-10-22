@@ -28,13 +28,12 @@ public class App extends AdsMultiDexApplication {
         mNkhAdConfig.setFacebookClientToken(getString(R.string.facebook_client_token));
         mNkhAdConfig.setAdjustTokenTiktok(getString(R.string.tiktok_token));
 
-        mNkhAdConfig.setIdAdResume(BuildConfig.ad_appopen_resume, BuildConfig.ad_appopen_resume);
+        mNkhAdConfig.setIdAdResume(BuildConfig.ad_appopen_resume_high, BuildConfig.ad_appopen_resume);
         mNkhAdConfig.setShowAdDebugDialog(BuildConfig.DEBUG);
 
         NkhAd.getInstance().init(this, mNkhAdConfig);
         Admob.getInstance().setDisableAdResumeWhenClickAds(true);
         Admob.getInstance().setOpenActivityAfterShowInterAds(true);
-        AppOpenManager.getInstance().disableAppResumeWithActivity(MainActivity.class);
     }
 
     private void initBilling() {

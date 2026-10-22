@@ -973,6 +973,23 @@ public class NkhAd {
         Admob.getInstance().loadInterSplashPriority4SameTime(context, idAdsHigh1, idAdsHigh2, idAdsHigh3, idAdsNormal, timeOut, timeDelay, adListener);
     }
 
+    public void loadInterSplashPriority4SameTime(final Context context,
+                                                 String idAdsHigh,
+                                                 String idAdsNormal,
+                                                 long timeOut,
+                                                 long timeDelay,
+                                                 AdCallback adListener) {
+        Admob.getInstance().loadInterSplashPriority2SameTime(context, idAdsHigh, idAdsNormal, timeOut, timeDelay, adListener);
+    }
+
+    public void loadInterSplashPriority4SameTime(final Context context,
+                                                 String idAdsHigh,
+                                                 String idAdsNormal,
+                                                 long timeOut,
+                                                 AdCallback adListener) {
+        Admob.getInstance().loadInterSplashPriority2SameTime(context, idAdsHigh, idAdsNormal, timeOut, 0, adListener);
+    }
+
     public void onShowSplashPriority4(AppCompatActivity activity, AdCallback adListener) {
         Admob.getInstance().onShowSplashPriority4(activity, adListener);
     }
@@ -988,6 +1005,14 @@ public class NkhAd {
                                                  long timeDelay,
                                                  AdCallback adListener) {
         Admob.getInstance().loadInterSplashPriority2SameTime(context, idAdsHigh, idAdsNormal, timeOut, timeDelay, adListener);
+    }
+
+    public void loadInterSplashPriority2SameTime(final Context context,
+                                                 String idAdsHigh,
+                                                 String idAdsNormal,
+                                                 long timeOut,
+                                                 AdCallback adListener) {
+        Admob.getInstance().loadInterSplashPriority2SameTime(context, idAdsHigh, idAdsNormal, timeOut, 0, adListener);
     }
 
     public void onShowSplashPriority2(AppCompatActivity activity, AdCallback adListener) {

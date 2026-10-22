@@ -2603,6 +2603,23 @@ public class Admob {
     private boolean isInterNormalLoaded = false;
 
     public void loadInterSplashPriority4SameTime(final Context context,
+                                                 String idAdsHigh,
+                                                 String idAdsNormal,
+                                                 long timeOut,
+                                                 long timeDelay,
+                                                 AdCallback adListener) {
+        loadInterSplashPriority2SameTime(context, idAdsHigh, idAdsNormal, timeOut, timeDelay, adListener);
+    }
+
+    public void loadInterSplashPriority4SameTime(final Context context,
+                                                 String idAdsHigh,
+                                                 String idAdsNormal,
+                                                 long timeOut,
+                                                 AdCallback adListener) {
+        loadInterSplashPriority2SameTime(context, idAdsHigh, idAdsNormal, timeOut, 0, adListener);
+    }
+
+    public void loadInterSplashPriority4SameTime(final Context context,
                                                  String idAdsHigh1,
                                                  String idAdsHigh2,
                                                  String idAdsHigh3,
@@ -4153,6 +4170,14 @@ public class Admob {
 
     private boolean isInterPriority2High1Failed = false;
     private boolean isInterPriority2NormalLoaded = false;
+
+    public void loadInterSplashPriority2SameTime(final Context context,
+                                                 String idAdsHigh,
+                                                 String idAdsNormal,
+                                                 long timeOut,
+                                                 AdCallback adListener) {
+        loadInterSplashPriority2SameTime(context, idAdsHigh, idAdsNormal, timeOut, 0, adListener);
+    }
 
     public void loadInterSplashPriority2SameTime(final Context context,
                                                  String idAdsHigh,

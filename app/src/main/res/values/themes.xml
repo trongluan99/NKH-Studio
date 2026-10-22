@@ -13,13 +13,13 @@
         <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
         <!-- Customize your theme here. -->
     </style>
-<!--    <style name="Theme.App.Starting" parent="Theme.SplashScreen">-->
-<!--        // Set the splash screen background, animated icon, and animation duration.-->
-<!--        <item name="windowSplashScreenBackground">@color/purple_200</item>-->
 
-<!--        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_round</item>-->
-<!--        <item name="windowSplashScreenAnimationDuration">100</item>-->
-
-<!--        <item name="postSplashScreenTheme">@style/Theme.AndModuleAds</item>-->
-<!--    </style>-->
+    <style name="Theme.Splash" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/purple_700</item>
+        <item name="colorPrimaryVariant">@color/splash_light_bg_top</item>
+        <item name="android:statusBarColor">@color/splash_light_bg_top</item>
+        <item name="android:navigationBarColor">@color/splash_light_bg_bottom</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
+    </style>
 </resources>

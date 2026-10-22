@@ -2,74 +2,529 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white">
-    <FrameLayout
-        android:id="@+id/fr_ads"
+    android:background="#F0F2F5">
+
+    <!-- Top TabLayout -->
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:descendantFocusability="blocksDescendants"
-        app:layout_constraintTop_toTopOf="parent">
+        android:background="@color/white"
+        android:elevation="4dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tabGravity="fill"
+        app:tabIndicatorColor="@color/purple_700"
+        app:tabIndicatorHeight="3dp"
+        app:tabMode="scrollable"
+        app:tabSelectedTextColor="@color/purple_700"
+        app:tabTextColor="@color/color_gray_text" />
 
-        <include layout="@layout/shimmer_native_large" />
-    </FrameLayout>
-    <androidx.core.widget.NestedScrollView
-        android:id="@+id/scrollButtons"
+    <!-- Center Content: Tab Containers -->
+    <FrameLayout
+        android:id="@+id/tabContentContainer"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:fillViewport="true"
-        app:layout_constraintBottom_toTopOf="@+id/frBanner"
+        app:layout_constraintBottom_toTopOf="@+id/cardLiveLog"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/fr_ads">
+        app:layout_constraintTop_toBottomOf="@+id/tabLayout">
+
+        <!-- 1. TAB BANNER -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/tabBannerContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_card_ads"
+                    android:padding="12dp"
+                    android:text="📌 Test Banner Ads: Banner chuẩn adaptive hoặc Collapsible Banner có thể thu gọn khi scroll (Top / Bottom)."
+                    android:textColor="@color/black"
+                    android:textSize="13sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLoadBanner"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Load Standard Banner" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLoadCollapsibleBanner"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Load Collapsible Banner (Bottom)" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLoadCollapsibleTop"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Load Collapsible Banner (Top)" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Khu vực hiển thị Banner:"
+                    android:textColor="@color/color_gray_text"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="0dp">
+
+                    <FrameLayout
+                        android:id="@+id/frBanner"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:descendantFocusability="blocksDescendants"
+                        android:minHeight="50dp">
+
+                        <include
+                            layout="@layout/layout_banner_control"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content" />
+                    </FrameLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+        <!-- 2. TAB NATIVE -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/tabNativeContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_card_ads"
+                    android:padding="12dp"
+                    android:text="📌 Test Native Ads: Hỗ trợ load &amp; show trực tiếp, custom style nút CTA (màu sắc/radius), hoặc preload trước rồi populate sau."
+                    android:textColor="@color/black"
+                    android:textSize="13sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLoadNativeDirect"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Load &amp; Show Native Trực Tiếp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLoadNativeCustomCta"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Load Native Custom CTA (Xanh lá / Bo tròn)" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPreloadNative"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:text="1. Preload Native" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnShowPreloadNative"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:text="2. Populate Preload" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Khu vực hiển thị Native Ad:"
+                    android:textColor="@color/color_gray_text"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="1dp"
+                    app:strokeColor="#E2E8F0"
+                    app:strokeWidth="1dp">
+
+                    <FrameLayout
+                        android:id="@+id/fr_ads"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:descendantFocusability="blocksDescendants">
+
+                        <include layout="@layout/shimmer_native_large" />
+                    </FrameLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+        <!-- 3. TAB INTERSTITIAL -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/tabInterstitialContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_card_ads"
+                    android:padding="12dp"
+                    android:text="📌 Test Interstitial Ads: Hỗ trợ cơ chế 2-Floor (High Priority &amp; Normal Fallback) hoặc gọi 1 hàm duy nhất có timeout an toàn."
+                    android:textColor="@color/black"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/tvInterStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@color/color_gray_bg"
+                    android:padding="10dp"
+                    android:text="Trạng thái Inter Priority 2: Chưa load"
+                    android:textColor="@color/black"
+                    android:textSize="13sp"
+                    android:textStyle="italic" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLoadInterPriority"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="1. Load Inter Priority 2 (High &amp; Normal)" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnShowInterPriority"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="2. Show Inter Priority 2" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLoadAndShowInter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Load &amp; Show Inter (1-Call Timeout 15s)" />
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+        <!-- 4. TAB REWARDED -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/tabRewardContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_card_ads"
+                    android:padding="12dp"
+                    android:text="📌 Test Rewarded Ads: Gồm Rewarded Video truyền thống và Rewarded Interstitial (xen kẽ nhận thưởng) có callback trả thưởng onUserEarnedReward."
+                    android:textColor="@color/black"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/tvRewardStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@color/color_gray_bg"
+                    android:padding="10dp"
+                    android:text="🪙 Phần thưởng tích luỹ: 0 điểm"
+                    android:textColor="@color/color_green"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="A. Rewarded Video Ads:"
+                    android:textColor="@color/purple_700"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLoadReward"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:text="Load Reward" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnShowReward"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:text="Show Reward" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="B. Rewarded Interstitial Ads:"
+                    android:textColor="@color/purple_700"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLoadRewardInter"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:text="Load Rewarded Inter" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnShowRewardInter"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:text="Show Rewarded Inter" />
+                </LinearLayout>
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+        <!-- 5. TAB APP OPEN ADS -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/tabAppOpenContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_card_ads"
+                    android:padding="12dp"
+                    android:text="📌 Test App Open Ads: Bao gồm Open Splash 2 ID (High Floor ưu tiên &amp; Normal Fallback) và Resume Ads khi user thoát ứng dụng rồi quay lại."
+                    android:textColor="@color/black"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/tvResumeStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@color/color_gray_bg"
+                    android:padding="10dp"
+                    android:text="🟢 App Resume Ads: ĐANG BẬT"
+                    android:textColor="@color/color_green"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnTestSplashOpen"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Mở lại SplashActivity (Test Open Splash 2 ID)" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnToggleResume"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Bật / Tắt Resume Ads" />
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+        <!-- 6. TAB IAP (IN-APP PURCHASE) -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/tabIapContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_card_ads"
+                    android:padding="12dp"
+                    android:text="📌 Test In-App Purchase: Tích hợp Google Play Billing Library. Tự động tắt quảng cáo khi đã mua gói Remove Ads."
+                    android:textColor="@color/black"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/tvIapStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@color/color_gray_bg"
+                    android:padding="10dp"
+                    android:text="Trạng thái IAP: Chưa mua"
+                    android:textColor="@color/black"
+                    android:textSize="13sp"
+                    android:textStyle="italic" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnIap"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Mua gói IAP (android.test.purchased)" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCheckIap"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Kiểm tra trạng thái sở hữu IAP" />
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+    </FrameLayout>
+
+    <!-- Bottom: Live Log Console -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardLiveLog"
+        android:layout_width="0dp"
+        android:layout_height="170dp"
+        android:backgroundTint="@color/bg_console"
+        app:cardCornerRadius="0dp"
+        app:cardElevation="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:paddingVertical="16dp">
+            android:layout_height="match_parent"
+            android:orientation="vertical">
 
-            <Button
-                android:id="@+id/btnLoad"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Load Inter" />
+            <!-- Console Header -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="32dp"
+                android:background="#2E2E3E"
+                android:paddingHorizontal="10dp">
 
-            <Button
-                android:id="@+id/btnShow"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Show Inter" />
+                <TextView
+                    android:id="@+id/tvConsoleTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:text="🖥️ REAL-TIME AD LOGS"
+                    android:textColor="@color/white"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
 
-            <Button
-                android:id="@+id/btnIap"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="IAP" />
+                <TextView
+                    android:id="@+id/btnClearLog"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:background="?selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="4dp"
+                    android:text="CLEAR"
+                    android:textColor="#FFB74D"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </RelativeLayout>
 
-            <Button
-                android:id="@+id/btnLoadReward"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Load Reward" />
+            <!-- Console Output Area -->
+            <androidx.core.widget.NestedScrollView
+                android:id="@+id/scrollLiveLog"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fillViewport="true"
+                android:padding="8dp">
 
-            <Button
-                android:id="@+id/btnShowReward"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Show Reward" />
+                <TextView
+                    android:id="@+id/tvLiveLog"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:text="[Ready] Sẵn sàng lắng nghe sự kiện Ads...\n"
+                    android:textColor="@color/text_console"
+                    android:textSize="11sp" />
+            </androidx.core.widget.NestedScrollView>
         </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
-    <FrameLayout
-        android:id="@+id/frBanner"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:descendantFocusability="blocksDescendants"
-        app:layout_constraintBottom_toBottomOf="parent">
+    </com.google.android.material.card.MaterialCardView>
 
-        <include
-            layout="@layout/layout_banner_control"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-    </FrameLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

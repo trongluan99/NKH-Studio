@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <!-- Outer Shield / Hexagon Gradient -->
+    <path
+        android:pathData="M48,6 C68,6 86,22 86,44 C86,68 56,88 48,90 C40,88 10,68 10,44 C10,22 28,6 48,6 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:angle="135"
+                android:startColor="#4F46E5"
+                android:endColor="#7C3AED"
+                android:type="linear" />
+        </aapt:attr>
+    </path>
+    <!-- Inner Core White Background -->
+    <path
+        android:pathData="M48,14 C64,14 78,27 78,44 C78,63 54,80 48,82 C42,80 18,63 18,44 C18,27 32,14 48,14 Z"
+        android:fillColor="#F8FAFC" />
+    <!-- Stylized "N" Letter with Gradient -->
+    <path
+        android:pathData="M33,28 L40,28 L40,68 L33,68 Z"
+        android:fillColor="#4F46E5" />
+    <path
+        android:pathData="M37,29 L59,67 L65,67 L43,29 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:angle="90"
+                android:startColor="#4F46E5"
+                android:endColor="#9333EA"
+                android:type="linear" />
+        </aapt:attr>
+    </path>
+    <path
+        android:pathData="M56,28 L63,28 L63,68 L56,68 Z"
+        android:fillColor="#9333EA" />
+    <!-- Sparkle Star Accent -->
+    <path
+        android:pathData="M68,20 L70,24 L74,26 L70,28 L68,32 L66,28 L62,26 L66,24 Z"
+        android:fillColor="#F59E0B" />
+</vector>

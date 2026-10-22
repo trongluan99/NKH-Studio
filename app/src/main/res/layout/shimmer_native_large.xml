@@ -4,141 +4,105 @@
     android:id="@+id/shimmer_native"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/bg_card_ads"
     app:shimmer_auto_start="true"
-    app:shimmer_base_color="#ccc">
+    app:shimmer_base_color="#E2E8F0"
+    app:shimmer_colored="false"
+    app:shimmer_duration="1200"
+    app:shimmer_highlight_color="#F8FAFC">
 
-    <RelativeLayout
-        android:layout_width="fill_parent"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="5dip">
+        android:background="@drawable/bg_native_card_light"
+        android:padding="12dp">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingTop="5dip"
-            android:paddingBottom="5.0dip">
+        <!-- Shimmer Icon Placeholder -->
+        <View
+            android:id="@+id/shimmer_icon"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_shimmer_item"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-            <RelativeLayout
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="5dip"
-                android:clickable="false"
-                android:orientation="horizontal"
-                android:paddingLeft="10dip"
-                android:paddingRight="10dip">
+        <!-- Shimmer "Ad" Badge Placeholder -->
+        <View
+            android:id="@+id/shimmer_badge"
+            android:layout_width="22dp"
+            android:layout_height="14dp"
+            android:layout_marginStart="10dp"
+            android:background="@drawable/bg_shimmer_item"
+            app:layout_constraintStart_toEndOf="@id/shimmer_icon"
+            app:layout_constraintTop_toTopOf="@id/shimmer_icon" />
 
+        <!-- Shimmer Headline Placeholder -->
+        <View
+            android:id="@+id/shimmer_headline"
+            android:layout_width="160dp"
+            android:layout_height="14dp"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/bg_shimmer_item"
+            app:layout_constraintBottom_toBottomOf="@id/shimmer_badge"
+            app:layout_constraintStart_toEndOf="@id/shimmer_badge"
+            app:layout_constraintTop_toTopOf="@id/shimmer_badge" />
 
-                <ImageView
-                    android:id="@+id/native_ad_icon_load"
-                    android:layout_width="35.0dip"
-                    android:layout_height="35.0dip"
-                    android:background="@color/lightTransparent"
-                    android:clickable="false" />
+        <!-- Shimmer Advertiser Placeholder -->
+        <View
+            android:id="@+id/shimmer_advertiser"
+            android:layout_width="100dp"
+            android:layout_height="12dp"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_shimmer_item"
+            app:layout_constraintStart_toEndOf="@id/shimmer_icon"
+            app:layout_constraintTop_toBottomOf="@id/shimmer_badge" />
 
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="10dip"
-                    android:layout_toLeftOf="@+id/ad_choices_container_load"
-                    android:layout_toRightOf="@+id/native_ad_icon_load"
-                    android:background="@color/lightTransparent"
-                    android:clickable="false"
-                    android:orientation="vertical"
-                    android:paddingLeft="5.0dip">
+        <!-- Shimmer Body Text Line 1 -->
+        <View
+            android:id="@+id/shimmer_body_1"
+            android:layout_width="0dp"
+            android:layout_height="12dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_shimmer_item"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/shimmer_icon" />
 
-                    <TextView
-                        android:id="@+id/native_ad_title"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:clickable="false"
-                        android:ellipsize="end"
-                        android:lines="1"
-                        android:textColor="@android:color/black"
-                        android:textSize="15.0sp" />
+        <!-- Shimmer Body Text Line 2 -->
+        <View
+            android:id="@+id/shimmer_body_2"
+            android:layout_width="0dp"
+            android:layout_height="12dp"
+            android:layout_marginTop="5dp"
+            android:layout_marginEnd="60dp"
+            android:background="@drawable/bg_shimmer_item"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/shimmer_body_1" />
 
-                    <TextView
-                        android:id="@+id/native_ad_sponsored_label_load"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:clickable="false"
-                        android:ellipsize="end"
-                        android:lines="1"
-                        android:textColor="@android:color/darker_gray"
-                        android:textSize="12.0sp" />
-                </LinearLayout>
+        <!-- Shimmer MediaView Placeholder (Exact 160dp) -->
+        <View
+            android:id="@+id/shimmer_media"
+            android:layout_width="0dp"
+            android:layout_height="160dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_shimmer_item"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/shimmer_body_2" />
 
-                <LinearLayout
-                    android:id="@+id/ad_choices_container_load"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentRight="true"
-                    android:gravity="end"
-                    android:orientation="horizontal" />
+        <!-- Shimmer CTA Button Placeholder (Exact 44dp) -->
+        <View
+            android:id="@+id/shimmer_cta"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_shimmer_item"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/shimmer_media" />
 
-            </RelativeLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-
-            <RelativeLayout
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="5.0dip"
-                android:paddingLeft="10dip"
-                android:paddingRight="10dip">
-
-                <LinearLayout
-                    android:layout_width="fill_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@color/lightTransparent"
-                    android:clickable="false"
-                    android:orientation="vertical">
-
-                    <TextView
-
-                        android:layout_width="fill_parent"
-                        android:layout_height="wrap_content"
-                        android:clickable="false"
-                        android:ellipsize="end"
-                        android:gravity="center_vertical"
-                        android:maxLines="3"
-                        android:textColor="@android:color/black"
-                        android:textSize="12.0sp" />
-
-                    <TextView
-                        android:layout_width="fill_parent"
-                        android:layout_height="wrap_content"
-                        android:clickable="false"
-                        android:ellipsize="end"
-                        android:lines="1"
-                        android:textColor="@android:color/darker_gray"
-                        android:textSize="12.0sp" />
-                </LinearLayout>
-
-
-            </RelativeLayout>
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="40dip"
-                android:layout_alignParentRight="true"
-                android:layout_gravity="center_vertical"
-                android:layout_marginLeft="10dip"
-                android:layout_marginRight="10dip"
-                android:background="@color/lightTransparent"
-                android:paddingLeft="3.0dip"
-                android:paddingRight="3.0dip"
-                android:textAllCaps="true"
-                android:textColor="@android:color/white"
-                android:textSize="13.0sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <TextView
-            style="@style/AppTheme.Ads"
-            android:layout_alignParentLeft="true"
-            android:layout_alignParentTop="true" />
-
-    </RelativeLayout>
 </com.facebook.shimmer.ShimmerFrameLayout>

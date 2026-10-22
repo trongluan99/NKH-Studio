@@ -7,4 +7,28 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="bg_console">#1E1E2E</color>
+    <color name="text_console">#A6E3A1</color>
+    <color name="bg_card">#F8F9FA</color>
+    <color name="color_gray_bg">#EDEDED</color>
+    <color name="color_gray_text">#616161</color>
+    <color name="color_green">#2E7D32</color>
+    <color name="color_red">#C62828</color>
+    <color name="splash_bg_top">#22134F</color>
+    <color name="splash_bg_bottom">#0C091A</color>
+    <color name="splash_accent">#00E5FF</color>
+    <color name="splash_badge_bg">#25FFFFFF</color>
+    <color name="splash_badge_border">#40FFFFFF</color>
+
+    <!-- Splash Light Mode Colors -->
+    <color name="splash_light_bg_top">#FFFFFF</color>
+    <color name="splash_light_bg_mid">#F8FAFC</color>
+    <color name="splash_light_bg_bottom">#EDF2F7</color>
+    <color name="splash_light_title">#0F172A</color>
+    <color name="splash_light_subtitle">#64748B</color>
+    <color name="splash_light_badge_bg">#EEF2FF</color>
+    <color name="splash_light_badge_border">#C7D2FE</color>
+    <color name="splash_light_badge_text">#4338CA</color>
+    <color name="splash_light_progress">#4F46E5</color>
+    <color name="splash_light_footer">#94A3B8</color>
 </resources>
