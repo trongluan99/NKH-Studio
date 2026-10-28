@@ -4,20 +4,19 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import android.widget.TextView;
-import android.view.View;
-
-import java.util.Arrays;
-import java.util.List;
 
 import com.ads.nkh.admob.AppOpenManager;
 import com.ads.nkh.ads.NkhAd;
 import com.ads.nkh.funtion.AdCallback;
 import com.google.android.gms.ads.AdError;
-import com.google.android.gms.ads.LoadAdError;
+
+import java.util.Arrays;
+import java.util.List;
 
 @SuppressLint("CustomSplashScreen")
 public class SplashActivity extends AppCompatActivity {
@@ -317,5 +316,18 @@ public class SplashActivity extends AppCompatActivity {
             startActivity(new Intent(SplashActivity.this, MainActivity.class));
             finish();
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        AppOpenManager.getInstance().onCheckShowOpenSplashSequentiallyWhenFail(this, new AdCallback() {
+            @Override
+            public void onNextAction() {
+                super.onNextAction();
+                startActivity(new Intent(SplashActivity.this, MainActivity.class));
+                finish();
+            }
+        }, 1000);
     }
 }

@@ -1060,6 +1060,10 @@ public class NkhAd {
         Admob.getInstance().onShowSplashPrioritySequentially(activity, adListener);
     }
 
+    public void onCheckShowSplashPrioritySequentiallyWhenFail(AppCompatActivity activity, AdCallback callback, int timeDelay) {
+        Admob.getInstance().onCheckShowSplashPrioritySequentiallyWhenFail(activity, callback, timeDelay);
+    }
+
     private boolean isFinishLoadNativeAdHigh1 = false;
     private boolean isFinishLoadNativeAdHigh2 = false;
     private boolean isFinishLoadNativeAdHigh3 = false;
