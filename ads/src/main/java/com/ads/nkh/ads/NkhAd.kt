@@ -1138,6 +1138,10 @@ class NkhAd {
         Admob.getInstance().showRewardAds(context, adCallback)
     }
 
+    fun loadAndShowRewardAds(activity: Activity, id: String, adCallback: RewardCallback) {
+        Admob.getInstance().loadAndShowRewardAds(activity, id, adCallback)
+    }
+
     fun showRewardAds(context: Activity, rewardedAd: RewardedAd?, adCallback: RewardCallback) {
         Admob.getInstance().showRewardAds(context, rewardedAd, adCallback)
     }

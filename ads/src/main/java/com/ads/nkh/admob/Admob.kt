@@ -2876,6 +2876,40 @@ class Admob private constructor() {
 
     fun getRewardedAd(): RewardedAd? = this.rewardedAd
 
+    fun loadAndShowRewardAds(activity: Activity, id: String, adCallback: RewardCallback?) {
+        if (Arrays.asList(*activity.resources.getStringArray(R.array.list_id_test)).contains(id)) {
+            showTestIdAlert(activity, REWARD_ADS, id)
+        }
+        if (AppPurchase.getInstance().isPurchased(activity)) {
+            adCallback?.onUserEarnedReward(null)
+            return
+        }
+        this.nativeId = id
+        this.rewardedAd = null
+        runWhenSdkInitialized(Runnable {
+            RewardedAd.load(
+                getAdRequest(id),
+                object : AdLoadCallback<RewardedAd> {
+                    override fun onAdLoaded(rewardedAd: RewardedAd) {
+                        runOnUiThread {
+                            this@Admob.rewardedAd = rewardedAd
+                            showRewardAds(activity, rewardedAd, adCallback)
+                            Log.i(TAG, "RewardedAd onAdLoaded -> auto show")
+                        }
+                    }
+
+                    override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                        runOnUiThread {
+                            this@Admob.rewardedAd = null
+                            adCallback?.onRewardedAdFailedToShow(loadAdError.code.ordinal)
+                            Log.e(TAG, "RewardedAd onAdFailedToLoad: " + loadAdError.message)
+                        }
+                    }
+                }
+            )
+        })
+    }
+
     fun showRewardAds(context: Activity, adCallback: RewardCallback?) {
         if (AppPurchase.getInstance().isPurchased(context)) {
             adCallback?.onUserEarnedReward(null)

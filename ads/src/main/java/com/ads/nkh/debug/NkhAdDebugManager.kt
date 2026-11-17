@@ -8,6 +8,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.pm.ApplicationInfo
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
@@ -24,9 +25,9 @@ import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
 import android.widget.FrameLayout
-import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import com.ads.nkh.admob.Admob
@@ -68,6 +69,7 @@ object NkhAdDebugManager {
 
     private const val MAX_RECORDS = 80
     private const val FLOATING_TAG = "NKH_DEBUG_FLOATING_BADGE"
+    private const val TRASH_ZONE_TAG = "NKH_DEBUG_TRASH_ZONE"
     private val mainHandler = Handler(Looper.getMainLooper())
     private val timeFormat = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
 
@@ -78,6 +80,8 @@ object NkhAdDebugManager {
     private var lifecycleRegistered = false
     @Volatile
     private var traceCounter = 0L
+    @Volatile
+    private var userDismissedFloatingBadge = false
 
     @JvmStatic
     fun isDebugEnabled(context: Context?): Boolean {
@@ -236,10 +240,24 @@ object NkhAdDebugManager {
     @JvmStatic
     fun attachFloatingBadge(activity: Activity) {
         if (activity.isFinishing || activity.isDestroyed) return
+        if (userDismissedFloatingBadge) return
         val clsName = activity.javaClass.name
         if (clsName.contains("AdActivity") || clsName.startsWith("com.google.android.gms.ads")) return
         val decorView = activity.window?.decorView as? ViewGroup ?: return
         if (decorView.findViewWithTag<View>(FLOATING_TAG) != null) return
+
+        val normalBg = GradientDrawable(
+            GradientDrawable.Orientation.TL_BR,
+            intArrayOf(Color.parseColor("#059669"), Color.parseColor("#0284C7"))
+        ).apply {
+            cornerRadius = dp(activity, 20).toFloat()
+            setStroke(dp(activity, 1), Color.parseColor("#6EE7B7"))
+        }
+        val dismissBg = GradientDrawable().apply {
+            cornerRadius = dp(activity, 20).toFloat()
+            setColor(Color.parseColor("#DC2626"))
+            setStroke(dp(activity, 1), Color.WHITE)
+        }
 
         val badge = TextView(activity).apply {
             tag = FLOATING_TAG
@@ -249,13 +267,7 @@ object NkhAdDebugManager {
             textSize = 12f
             setPadding(dp(activity, 12), dp(activity, 7), dp(activity, 12), dp(activity, 7))
             elevation = dp(activity, 8).toFloat()
-            background = GradientDrawable(
-                GradientDrawable.Orientation.TL_BR,
-                intArrayOf(Color.parseColor("#059669"), Color.parseColor("#0284C7"))
-            ).apply {
-                cornerRadius = dp(activity, 20).toFloat()
-                setStroke(dp(activity, 1), Color.parseColor("#6EE7B7"))
-            }
+            background = normalBg
         }
 
         val params = FrameLayout.LayoutParams(
@@ -267,10 +279,35 @@ object NkhAdDebugManager {
             rightMargin = dp(activity, 12)
         }
 
+        val trashZone = TextView(activity).apply {
+            tag = TRASH_ZONE_TAG
+            text = "🗑  Thả để tắt"
+            setTextColor(Color.WHITE)
+            textSize = 13f
+            setTypeface(null, Typeface.BOLD)
+            setPadding(dp(activity, 16), dp(activity, 10), dp(activity, 16), dp(activity, 10))
+            elevation = dp(activity, 7).toFloat()
+            alpha = 0.55f
+            visibility = View.GONE
+            background = GradientDrawable().apply {
+                cornerRadius = dp(activity, 24).toFloat()
+                setColor(Color.parseColor("#DC2626"))
+            }
+        }
+        val trashParams = FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply {
+            gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+            bottomMargin = dp(activity, 28)
+        }
+
+        val dismissZoneHeight = dp(activity, 110)
         var downRawX = 0f
         var downRawY = 0f
         var startX = 0f
         var startY = 0f
+        var hoveringDismiss = false
         badge.setOnTouchListener { v, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
@@ -278,6 +315,8 @@ object NkhAdDebugManager {
                     downRawY = event.rawY
                     startX = v.x
                     startY = v.y
+                    hoveringDismiss = false
+                    trashZone.visibility = View.VISIBLE
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
@@ -285,12 +324,27 @@ object NkhAdDebugManager {
                     val dy = event.rawY - downRawY
                     v.x = (startX + dx).coerceIn(0f, (decorView.width - v.width).toFloat().coerceAtLeast(0f))
                     v.y = (startY + dy).coerceIn(dp(activity, 36).toFloat(), (decorView.height - v.height).toFloat().coerceAtLeast(0f))
+                    val hovering = v.y + v.height >= decorView.height - dismissZoneHeight
+                    if (hovering != hoveringDismiss) {
+                        hoveringDismiss = hovering
+                        badge.background = if (hovering) dismissBg else normalBg
+                        badge.text = if (hovering) "✕" else "🐞 Ads"
+                        trashZone.alpha = if (hovering) 1f else 0.55f
+                        trashZone.scaleX = if (hovering) 1.15f else 1f
+                        trashZone.scaleY = if (hovering) 1.15f else 1f
+                    }
                     true
                 }
                 MotionEvent.ACTION_UP -> {
-                    val moved = abs(event.rawX - downRawX) + abs(event.rawY - downRawY)
-                    if (moved < dp(activity, 10)) {
-                        showDebugInspectorDialog(activity)
+                    trashZone.visibility = View.GONE
+                    if (hoveringDismiss) {
+                        userDismissedFloatingBadge = true
+                        detachFloatingBadge(activity)
+                    } else {
+                        val moved = abs(event.rawX - downRawX) + abs(event.rawY - downRawY)
+                        if (moved < dp(activity, 10)) {
+                            showDebugInspectorDialog(activity)
+                        }
                     }
                     true
                 }
@@ -299,6 +353,7 @@ object NkhAdDebugManager {
         }
 
         try {
+            decorView.addView(trashZone, trashParams)
             decorView.addView(badge, params)
             attachedActivities[activity] = badge
         } catch (_: Throwable) {
@@ -312,6 +367,13 @@ object NkhAdDebugManager {
         if (existing != null) {
             try {
                 decorView.removeView(existing)
+            } catch (_: Throwable) {
+            }
+        }
+        val trashZone = decorView.findViewWithTag<View>(TRASH_ZONE_TAG)
+        if (trashZone != null) {
+            try {
+                decorView.removeView(trashZone)
             } catch (_: Throwable) {
             }
         }
@@ -346,16 +408,22 @@ object NkhAdDebugManager {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
         val titleTv = TextView(activity).apply {
-            text = "🐞 NKH-Studio Ads Debug Console"
+            text = "🐞 Ads Debug Console"
             setTextColor(Color.WHITE)
             textSize = 16f
             setTypeface(null, Typeface.BOLD)
         }
         val initLatency = Admob.getInstance().lastInitLatencyMs
+        val realSdkVersion = try {
+            MobileAds.getVersion().toString()
+        } catch (_: Throwable) {
+            "?"
+        }
         val subtitleTv = TextView(activity).apply {
-            text = "GMA Next-Gen 1.5.0 • SDK Init: ${if (initLatency > 0) "${initLatency}ms" else "Ready"}"
+            text = "Next-Gen SDK $realSdkVersion • Init: ${if (initLatency > 0) "${initLatency}ms" else "Ready"}"
             setTextColor(Color.parseColor("#38BDF8"))
             textSize = 12f
+            setPadding(0, dp(activity, 2), 0, 0)
         }
         titleCol.addView(titleTv)
         titleCol.addView(subtitleTv)
@@ -363,48 +431,39 @@ object NkhAdDebugManager {
         val closeBtn = TextView(activity).apply {
             text = "✕"
             setTextColor(Color.parseColor("#94A3B8"))
-            textSize = 16f
+            textSize = 15f
             setTypeface(null, Typeface.BOLD)
-            setPadding(dp(activity, 10), dp(activity, 4), dp(activity, 10), dp(activity, 4))
+            gravity = Gravity.CENTER
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.parseColor("#1E293B"))
+            }
+            layoutParams = LinearLayout.LayoutParams(dp(activity, 30), dp(activity, 30))
             setOnClickListener { dialog.dismiss() }
         }
         headerRow.addView(titleCol)
         headerRow.addView(closeBtn)
         root.addView(headerRow)
 
-        // 2. Quick Toggles & Actions Row
-        val actionScroll = HorizontalScrollView(activity).apply {
-            isHorizontalScrollBarEnabled = false
-            setPadding(0, dp(activity, 10), 0, dp(activity, 10))
-        }
-        val actionRow = LinearLayout(activity).apply {
-            orientation = LinearLayout.HORIZONTAL
-        }
-
-        fun makeActionChip(label: String, bgColor: String, onClick: (TextView) -> Unit): TextView {
-            return TextView(activity).apply {
-                text = label
-                setTextColor(Color.WHITE)
-                textSize = 11.5f
-                setTypeface(null, Typeface.BOLD)
-                setPadding(dp(activity, 11), dp(activity, 7), dp(activity, 11), dp(activity, 7))
-                background = GradientDrawable().apply {
-                    setColor(Color.parseColor(bgColor))
-                    cornerRadius = dp(activity, 10).toFloat()
-                }
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    rightMargin = dp(activity, 8)
-                }
-                setOnClickListener { onClick(this) }
+        // 2. Primary action: Google Ad Inspector (full-width, nổi bật)
+        val ctaInspectorBtn = TextView(activity).apply {
+            text = "🔍  Mở Google Ad Inspector"
+            setTextColor(Color.WHITE)
+            textSize = 13.5f
+            setTypeface(null, Typeface.BOLD)
+            gravity = Gravity.CENTER
+            setPadding(0, dp(activity, 13), 0, dp(activity, 13))
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#0284C7"))
+                cornerRadius = dp(activity, 12).toFloat()
             }
-        }
-
-        // Chip 1: Google Ad Inspector
-        actionRow.addView(
-            makeActionChip("🔍 Google Ad Inspector", "#0284C7") {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = dp(activity, 14)
+            }
+            setOnClickListener {
                 dialog.dismiss()
                 try {
                     MobileAds.openAdInspector { error ->
@@ -422,73 +481,143 @@ object NkhAdDebugManager {
                     Toast.makeText(activity, "Lỗi mở Ad Inspector: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
-        )
+        }
+        root.addView(ctaInspectorBtn)
 
-        // Chip 2: Simulate VIP (isPurchased)
-        val isVipNow = AppPurchase.getInstance().isPurchased(activity)
-        actionRow.addView(
-            makeActionChip(
-                if (isVipNow) "👑 VIP (No-Ads): BẬT" else "👑 VIP (No-Ads): TẮT",
-                if (isVipNow) "#059669" else "#475569"
-            ) { chip ->
-                val nextVip = !AppPurchase.getInstance().isPurchased(activity)
-                AppPurchase.getInstance().setPurchase(nextVip)
-                chip.text = if (nextVip) "👑 VIP (No-Ads): BẬT" else "👑 VIP (No-Ads): TẮT"
-                chip.background = GradientDrawable().apply {
-                    setColor(Color.parseColor(if (nextVip) "#059669" else "#475569"))
-                    cornerRadius = dp(activity, 10).toFloat()
-                }
+        // 3. Settings list: VIP / Organic / Native Validator (toggle switch, không cần chữ đổi hai chiều)
+        fun divider(): View = View(activity).apply {
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(activity, 1))
+            setBackgroundColor(Color.parseColor("#334155"))
+        }
+
+        fun makeToggleRow(icon: String, label: String, initialChecked: Boolean, onToggle: (Boolean) -> Unit): LinearLayout {
+            val row = LinearLayout(activity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(activity, 10), dp(activity, 4), dp(activity, 4), dp(activity, 4))
+            }
+            val labelTv = TextView(activity).apply {
+                text = "$icon  $label"
+                setTextColor(Color.WHITE)
+                textSize = 13f
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            val switchView = Switch(activity).apply {
+                isChecked = initialChecked
+                trackTintList = ColorStateList(
+                    arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf(-android.R.attr.state_checked)),
+                    intArrayOf(Color.parseColor("#059669"), Color.parseColor("#475569"))
+                )
+                thumbTintList = ColorStateList.valueOf(Color.WHITE)
+                setOnCheckedChangeListener { _, checked -> onToggle(checked) }
+            }
+            row.addView(labelTv)
+            row.addView(switchView)
+            return row
+        }
+
+        val settingsLabel = TextView(activity).apply {
+            text = "THIẾT LẬP GIẢ LẬP"
+            setTextColor(Color.parseColor("#64748B"))
+            textSize = 11f
+            setTypeface(null, Typeface.BOLD)
+            setPadding(dp(activity, 4), dp(activity, 16), 0, dp(activity, 6))
+        }
+        root.addView(settingsLabel)
+
+        val adConfig = NkhAd.getInstance().adConfig
+        val settingsCard = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(activity, 4), 0, dp(activity, 4), 0)
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#1E293B"))
+                cornerRadius = dp(activity, 12).toFloat()
+            }
+        }
+        settingsCard.addView(
+            makeToggleRow("👑", "Giả lập VIP (ẩn toàn bộ Ads)", AppPurchase.getInstance().isPurchased(activity)) { checked ->
+                AppPurchase.getInstance().setPurchase(checked)
                 Toast.makeText(
                     activity,
-                    if (nextVip) "Đã bật giả lập VIP (Tắt toàn bộ Ads)" else "Đã tắt giả lập VIP (Hiện lại Ads)",
+                    if (checked) "Đã bật giả lập VIP (Tắt toàn bộ Ads)" else "Đã tắt giả lập VIP (Hiện lại Ads)",
                     Toast.LENGTH_SHORT
                 ).show()
             }
         )
-
-        // Chip 3: Toggle Organic / Non-Organic (UA)
-        val isOrganicNow = SharePreferenceUtils.getIsOrganic(activity)
-        actionRow.addView(
-            makeActionChip(
-                if (isOrganicNow) "🌱 User: Organic" else "🚀 User: Non-Organic (UA)",
-                if (isOrganicNow) "#475569" else "#7C3AED"
-            ) { chip ->
-                val nextOrganic = !SharePreferenceUtils.getIsOrganic(activity)
-                SharePreferenceUtils.setIsOrganic(activity, nextOrganic)
-                chip.text = if (nextOrganic) "🌱 User: Organic" else "🚀 User: Non-Organic (UA)"
-                chip.background = GradientDrawable().apply {
-                    setColor(Color.parseColor(if (nextOrganic) "#475569" else "#7C3AED"))
-                    cornerRadius = dp(activity, 10).toFloat()
-                }
+        settingsCard.addView(divider())
+        settingsCard.addView(
+            makeToggleRow("🚀", "Giả lập user Non-Organic (UA)", !SharePreferenceUtils.getIsOrganic(activity)) { checked ->
+                SharePreferenceUtils.setIsOrganic(activity, !checked)
             }
         )
-
-        // Chip 4: Toggle Native Validator Popup
-        val adConfig = NkhAd.getInstance().adConfig
-        val validatorNow = adConfig?.isShowAdDebugDialog == true
-        actionRow.addView(
-            makeActionChip(
-                if (validatorNow) "📐 Native Validator: BẬT" else "📐 Native Validator: TẮT",
-                if (validatorNow) "#059669" else "#475569"
-            ) { chip ->
-                val nextVal = !(adConfig?.isShowAdDebugDialog ?: false)
-                adConfig?.isShowAdDebugDialog = nextVal
-                chip.text = if (nextVal) "📐 Native Validator: BẬT" else "📐 Native Validator: TẮT"
-                chip.background = GradientDrawable().apply {
-                    setColor(Color.parseColor(if (nextVal) "#059669" else "#475569"))
-                    cornerRadius = dp(activity, 10).toFloat()
-                }
+        settingsCard.addView(divider())
+        settingsCard.addView(
+            makeToggleRow("📐", "Hiện Native Ad Validator popup", adConfig?.isShowAdDebugDialog == true) { checked ->
+                adConfig?.isShowAdDebugDialog = checked
             }
         )
+        root.addView(settingsCard)
 
-        actionScroll.addView(actionRow)
-        root.addView(actionScroll)
+        // 4. Tabs: segmented control (Lịch sử | Bidding) + nút Xóa Log riêng
+        val tabTrack = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(dp(activity, 3), dp(activity, 3), dp(activity, 3), dp(activity, 3))
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#1E293B"))
+                cornerRadius = dp(activity, 12).toFloat()
+            }
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
 
-        // 3. Tabs Row (Tab 1: Live Ad Requests | Tab 2: 8 Bidding Networks)
+        fun makeTabBtn(label: String): TextView = TextView(activity).apply {
+            text = label
+            setTextColor(Color.WHITE)
+            textSize = 12.5f
+            setTypeface(null, Typeface.BOLD)
+            gravity = Gravity.CENTER
+            setPadding(0, dp(activity, 9), 0, dp(activity, 9))
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+
+        val tabHistoryBtn = makeTabBtn("📊 Lịch sử")
+        val tabBiddingBtn = makeTabBtn("🤝 Bidding")
+        tabTrack.addView(tabHistoryBtn)
+        tabTrack.addView(tabBiddingBtn)
+
+        fun selectTab(selected: TextView, other: TextView) {
+            selected.background = GradientDrawable().apply {
+                setColor(Color.parseColor("#059669"))
+                cornerRadius = dp(activity, 10).toFloat()
+            }
+            other.background = null
+        }
+        selectTab(tabHistoryBtn, tabBiddingBtn)
+
+        val clearIconBtn = TextView(activity).apply {
+            text = "🗑"
+            textSize = 15f
+            gravity = Gravity.CENTER
+            setPadding(dp(activity, 10), dp(activity, 8), dp(activity, 10), dp(activity, 8))
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.parseColor("#1E293B"))
+            }
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                leftMargin = dp(activity, 8)
+            }
+        }
+
         val tabRow = LinearLayout(activity).apply {
             orientation = LinearLayout.HORIZONTAL
-            setPadding(0, 0, 0, dp(activity, 8))
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(activity, 16), 0, dp(activity, 8))
         }
+        tabRow.addView(tabTrack)
+        tabRow.addView(clearIconBtn)
+
         val contentScroll = ScrollView(activity).apply {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -690,55 +819,19 @@ object NkhAdDebugManager {
             }
         }
 
-        val tabHistoryBtn = makeActionChip("📊 Lịch sử Request Ads", "#059669") {
-            renderHistoryTab()
-        }.apply {
-            gravity = Gravity.CENTER
-            setSingleLine(true)
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                rightMargin = dp(activity, 6)
-            }
-        }
-        val tabBiddingBtn = makeActionChip("🤝 8 Mạng Bidding & SDK", "#334155") {
-            renderBiddingTab()
-        }.apply {
-            gravity = Gravity.CENTER
-            setSingleLine(true)
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                leftMargin = dp(activity, 6)
-            }
-        }
-        val clearBtn = makeActionChip("🗑️ Xóa Log", "#475569") {
-            clearRecords()
-            renderHistoryTab()
-        }
-        actionRow.addView(clearBtn)
-
         tabHistoryBtn.setOnClickListener {
-            tabHistoryBtn.background = GradientDrawable().apply {
-                setColor(Color.parseColor("#059669"))
-                cornerRadius = dp(activity, 10).toFloat()
-            }
-            tabBiddingBtn.background = GradientDrawable().apply {
-                setColor(Color.parseColor("#334155"))
-                cornerRadius = dp(activity, 10).toFloat()
-            }
+            selectTab(tabHistoryBtn, tabBiddingBtn)
             renderHistoryTab()
         }
         tabBiddingBtn.setOnClickListener {
-            tabBiddingBtn.background = GradientDrawable().apply {
-                setColor(Color.parseColor("#059669"))
-                cornerRadius = dp(activity, 10).toFloat()
-            }
-            tabHistoryBtn.background = GradientDrawable().apply {
-                setColor(Color.parseColor("#334155"))
-                cornerRadius = dp(activity, 10).toFloat()
-            }
+            selectTab(tabBiddingBtn, tabHistoryBtn)
             renderBiddingTab()
         }
+        clearIconBtn.setOnClickListener {
+            clearRecords()
+            renderHistoryTab()
+        }
 
-        tabRow.addView(tabHistoryBtn)
-        tabRow.addView(tabBiddingBtn)
         root.addView(tabRow)
         root.addView(contentScroll)
 
