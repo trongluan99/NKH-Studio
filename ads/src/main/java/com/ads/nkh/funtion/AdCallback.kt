@@ -3,6 +3,7 @@ package com.ads.nkh.funtion
 import com.ads.nkh.ads.wrapper.ApInterstitialAd
 import com.ads.nkh.ads.wrapper.ApNativeAd
 import com.ads.nkh.ads.wrapper.ApPipAd
+import com.ads.nkh.ads.wrapper.ApSqueezebackAd
 import com.ads.nkh.ads.wrapper.ApSwipeableAd
 import com.google.android.libraries.ads.mobile.sdk.common.AdValue
 import com.google.android.libraries.ads.mobile.sdk.common.FullScreenContentError
@@ -12,6 +13,7 @@ import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
 import com.google.android.libraries.ads.mobile.sdk.pip.PictureInPictureAd
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd
 import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAd
+import com.google.android.libraries.ads.mobile.sdk.squeezeback.SqueezebackAd
 import com.google.android.libraries.ads.mobile.sdk.swipeableinterstitial.SwipeableInterstitialAd
 
 open class AdCallback {
@@ -67,6 +69,14 @@ open class AdCallback {
     open fun onPipAdShown() {}
 
     open fun onPipAdHidden() {}
+
+    open fun onSqueezebackAdLoaded(squeezebackAd: SqueezebackAd?) {}
+
+    open fun onApSqueezebackAdLoaded(apSqueezebackAd: ApSqueezebackAd?) {}
+
+    open fun onSqueezebackAdShown() {}
+
+    open fun onSqueezebackAdHidden() {}
 
     open fun onSwipeableAdLoaded(swipeableAd: SwipeableInterstitialAd?) {}
 

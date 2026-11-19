@@ -34,6 +34,7 @@ import com.ads.nkh.util.AppConstant
 import com.facebook.shimmer.ShimmerFrameLayout
 import com.google.android.libraries.ads.mobile.sdk.MobileAds
 import com.google.android.libraries.ads.mobile.sdk.common.AdValue
+import com.google.android.libraries.ads.mobile.sdk.common.ExperimentalApi
 import com.google.android.libraries.ads.mobile.sdk.common.FullScreenContentError
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
@@ -43,12 +44,15 @@ import com.google.android.libraries.ads.mobile.sdk.pip.PictureInPictureAdPresent
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardItem
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd
 import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAd
+import com.google.android.libraries.ads.mobile.sdk.squeezeback.SqueezebackAd
+import com.google.android.libraries.ads.mobile.sdk.squeezeback.SqueezebackAdOptions
 import com.google.android.libraries.ads.mobile.sdk.swipeableinterstitial.SwipeableInterstitialAd
 import com.google.android.material.button.MaterialButton
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+@OptIn(ExperimentalApi::class)
 class MainActivity : AppCompatActivity() {
     private lateinit var mInterstitialPriority2Ad: ApInterstitialPriority2Ad
     private lateinit var mInterstitialPriority4Ad: ApInterstitialPriorityAd
@@ -481,6 +485,17 @@ class MainActivity : AppCompatActivity() {
         }
         findViewById<Button>(R.id.btnSwipeableNative).setOnClickListener {
             runTestCase20SwipeableNative()
+        }
+        findViewById<Button>(R.id.btnSqueezebackAd).setOnClickListener {
+            runTestCase21SqueezebackAd()
+        }
+        findViewById<Button>(R.id.btnHideSqueezebackAd).setOnClickListener {
+            appendTestLog("TC21 [Squeezeback Ad]: Hiding SqueezebackAd...")
+            NkhAd.getInstance().hideSqueezebackAd()
+        }
+        findViewById<Button>(R.id.btnDestroySqueezebackAd).setOnClickListener {
+            appendTestLog("TC21 [Squeezeback Ad]: Destroying SqueezebackAd...")
+            NkhAd.getInstance().destroySqueezebackAd()
         }
     }
 
@@ -1144,6 +1159,51 @@ class MainActivity : AppCompatActivity() {
                 appendTestLog("TC16 ℹ️ [IAP Cancelled]")
             }
         })
+    }
+
+    // ==================== TC21: Squeezeback Ad (GMA Next-Gen 1.7.0+) ====================
+    fun runTestCase21SqueezebackAd() {
+        appendTestLog("TC21 [Squeezeback Ad]: Loading & Showing Squeezeback (${BuildConfig.ad_squeezeback})...")
+        val options = SqueezebackAdOptions.Builder()
+            .setFallbackBackgroundColor(Color.BLACK)
+            .build()
+        NkhAd.getInstance().loadAndShowSqueezebackAd(
+            this,
+            BuildConfig.ad_squeezeback,
+            options,
+            object : AdCallback() {
+                override fun onSqueezebackAdLoaded(squeezebackAd: SqueezebackAd?) {
+                    appendTestLog("TC21 ✅ PASS [Squeezeback Ad Loaded]: unit=${squeezebackAd?.adUnitId}")
+                    Toast.makeText(this@MainActivity, "Squeezeback Ad Loaded & Showing!", Toast.LENGTH_SHORT).show()
+                }
+
+                override fun onSqueezebackAdShown() {
+                    appendTestLog("TC21 👁 [Squeezeback Ad Shown]")
+                }
+
+                override fun onSqueezebackAdHidden() {
+                    appendTestLog("TC21 🙈 [Squeezeback Ad Hidden]")
+                }
+
+                override fun onAdImpression() {
+                    appendTestLog("TC21 👁 [Squeezeback Ad Impression]")
+                }
+
+                override fun onAdLogRev(
+                    adValue: AdValue?,
+                    adUnitId: String?,
+                    mediationAdapterClassName: String?,
+                    adType: AdType?
+                ) {
+                    appendTestLog("TC21 💰 [Squeezeback Paid]: ${adValue?.valueMicros} ($adType)")
+                }
+
+                override fun onAdFailedToLoad(i: LoadAdError?) {
+                    appendTestLog("TC21 ❌ FAIL [Squeezeback Load]: code=${i?.code} (${i?.message})")
+                    Toast.makeText(this@MainActivity, "Squeezeback Load Failed: ${i?.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        )
     }
 
     private fun setupEdgeToEdgeInsets() {

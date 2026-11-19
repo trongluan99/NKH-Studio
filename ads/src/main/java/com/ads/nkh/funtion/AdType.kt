@@ -8,5 +8,6 @@ enum class AdType {
     REWARDED,
     APP_OPEN,
     PIP,
-    SWIPEABLE
+    SWIPEABLE,
+    SQUEEZEBACK
 }

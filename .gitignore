@@ -1,6 +1,7 @@
 *.iml
 .gradle
 /local.properties
+*.pdf
 /.idea
 .idea
 .DS_Store
@@ -9,3 +10,4 @@
 .externalNativeBuild
 .cxx
 local.properties
+*.pdf

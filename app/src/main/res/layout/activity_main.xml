@@ -770,6 +770,76 @@
                             android:textStyle="bold"
                             app:cornerRadius="10dp" />
                     </LinearLayout>
+
+                    <!-- TC21: Squeezeback Ad (GMA Next-Gen 1.7.0+) -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSqueezebackAd"
+                        style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:backgroundTint="#EA580C"
+                        android:includeFontPadding="false"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:minHeight="44dp"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="8dp"
+                        android:text="TC21: Tải &amp; Hiện Squeezeback Ad (SDK 1.7.0)"
+                        android:textAllCaps="false"
+                        android:textColor="#FFFFFF"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="10dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnHideSqueezebackAd"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="4dp"
+                            android:layout_weight="1"
+                            android:includeFontPadding="false"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minHeight="42dp"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="8dp"
+                            android:text="👁 Ẩn Squeezeback"
+                            android:textAllCaps="false"
+                            android:textColor="#1E293B"
+                            android:textSize="11.5sp"
+                            android:textStyle="bold"
+                            app:cornerRadius="10dp"
+                            app:strokeColor="#CBD5E1" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnDestroySqueezebackAd"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:layout_weight="1"
+                            android:includeFontPadding="false"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minHeight="42dp"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="8dp"
+                            android:text="✕ Huỷ Squeezeback"
+                            android:textAllCaps="false"
+                            android:textColor="#DC2626"
+                            android:textSize="11.5sp"
+                            android:textStyle="bold"
+                            app:cornerRadius="10dp"
+                            app:strokeColor="#FECACA" />
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

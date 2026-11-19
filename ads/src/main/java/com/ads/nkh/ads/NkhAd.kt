@@ -25,6 +25,7 @@ import com.ads.nkh.ads.wrapper.ApInterstitialPriority2Ad
 import com.ads.nkh.ads.wrapper.ApInterstitialPriorityAd
 import com.ads.nkh.ads.wrapper.ApNativeAd
 import com.ads.nkh.ads.wrapper.ApPipAd
+import com.ads.nkh.ads.wrapper.ApSqueezebackAd
 import com.ads.nkh.ads.wrapper.ApSwipeableAd
 import com.ads.nkh.ads.wrapper.StatusAd
 import com.ads.nkh.config.NkhAdConfig
@@ -40,6 +41,7 @@ import com.ads.nkh.util.SharePreferenceUtils
 import com.facebook.FacebookSdk
 import com.facebook.shimmer.ShimmerFrameLayout
 import com.google.android.libraries.ads.mobile.sdk.common.AdValue
+import com.google.android.libraries.ads.mobile.sdk.common.ExperimentalApi
 import com.google.android.libraries.ads.mobile.sdk.common.FullScreenContentError
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd
@@ -50,11 +52,14 @@ import com.google.android.libraries.ads.mobile.sdk.pip.PictureInPictureAdPositio
 import com.google.android.libraries.ads.mobile.sdk.pip.PictureInPictureAdPresentationScope
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd
 import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAd
+import com.google.android.libraries.ads.mobile.sdk.squeezeback.SqueezebackAd
+import com.google.android.libraries.ads.mobile.sdk.squeezeback.SqueezebackAdOptions
 import com.google.android.libraries.ads.mobile.sdk.swipeableinterstitial.SwipeableInterstitialAd
 import org.json.JSONException
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
+@OptIn(ExperimentalApi::class)
 class NkhAd {
     var adConfig: NkhAdConfig? = null
         private set
@@ -2020,6 +2025,121 @@ class NkhAd {
             apPipAd.destroy()
         } else {
             Admob.getInstance().destroyPipAd()
+        }
+    }
+
+    // =========================================================================
+    // Squeezeback Ads (GMA Next-Gen SDK 1.7.0+)
+    // =========================================================================
+
+    @JvmOverloads
+    fun loadSqueezebackAd(
+        context: Context,
+        id: String,
+        adCallback: AdCallback? = null
+    ): ApSqueezebackAd {
+        val apSqueezebackAd = ApSqueezebackAd(StatusAd.AD_LOADING)
+        Admob.getInstance().loadSqueezebackAd(context, id, object : AdCallback() {
+            override fun onSqueezebackAdLoaded(squeezebackAd: SqueezebackAd?) {
+                apSqueezebackAd.squeezebackAd = squeezebackAd
+                if (squeezebackAd == null) {
+                    apSqueezebackAd.setStatus(StatusAd.AD_LOAD_FAIL)
+                }
+                adCallback?.onSqueezebackAdLoaded(squeezebackAd)
+                adCallback?.onApSqueezebackAdLoaded(apSqueezebackAd)
+                adCallback?.onAdLoaded()
+            }
+
+            override fun onAdFailedToLoad(i: LoadAdError?) {
+                apSqueezebackAd.setStatus(StatusAd.AD_LOAD_FAIL)
+                adCallback?.onAdFailedToLoad(i)
+            }
+
+            override fun onSqueezebackAdShown() {
+                apSqueezebackAd.setStatus(StatusAd.AD_RENDER_SUCCESS)
+                adCallback?.onSqueezebackAdShown()
+            }
+
+            override fun onSqueezebackAdHidden() {
+                adCallback?.onSqueezebackAdHidden()
+            }
+
+            override fun onAdImpression() {
+                apSqueezebackAd.setStatus(StatusAd.AD_RENDER_SUCCESS)
+                adCallback?.onAdImpression()
+            }
+
+            override fun onAdClicked() {
+                adCallback?.onAdClicked()
+            }
+
+            override fun onAdClicked(
+                adUnitId: String?,
+                mediationAdapterClassName: String?,
+                adType: AdType?
+            ) {
+                adCallback?.onAdClicked(adUnitId, mediationAdapterClassName, adType)
+            }
+
+            override fun onAdLogRev(
+                adValue: AdValue?,
+                adUnitId: String?,
+                mediationAdapterClassName: String?,
+                adType: AdType?
+            ) {
+                adCallback?.onAdLogRev(adValue, adUnitId, mediationAdapterClassName, adType)
+            }
+
+            override fun onAdClosed() {
+                adCallback?.onAdClosed()
+            }
+
+            override fun onNextAction() {
+                adCallback?.onNextAction()
+            }
+        })
+        return apSqueezebackAd
+    }
+
+    @JvmOverloads
+    fun showSqueezebackAd(
+        activity: Activity,
+        apSqueezebackAd: ApSqueezebackAd? = null,
+        options: SqueezebackAdOptions? = null,
+        adCallback: AdCallback? = null
+    ) {
+        val squeezebackAd = apSqueezebackAd?.squeezebackAd ?: Admob.getInstance().getCurrentSqueezebackAd()
+        if (squeezebackAd != null) {
+            apSqueezebackAd?.setStatus(StatusAd.AD_RENDER_SUCCESS)
+        }
+        Admob.getInstance().showSqueezebackAd(activity, squeezebackAd, options, adCallback)
+    }
+
+    @JvmOverloads
+    fun loadAndShowSqueezebackAd(
+        activity: Activity,
+        id: String,
+        options: SqueezebackAdOptions? = null,
+        adCallback: AdCallback? = null
+    ) {
+        Admob.getInstance().loadAndShowSqueezebackAd(activity, id, options, adCallback)
+    }
+
+    @JvmOverloads
+    fun hideSqueezebackAd(apSqueezebackAd: ApSqueezebackAd? = null) {
+        if (apSqueezebackAd?.squeezebackAd != null) {
+            apSqueezebackAd.hide()
+        } else {
+            Admob.getInstance().hideSqueezebackAd()
+        }
+    }
+
+    @JvmOverloads
+    fun destroySqueezebackAd(apSqueezebackAd: ApSqueezebackAd? = null) {
+        if (apSqueezebackAd?.squeezebackAd != null) {
+            apSqueezebackAd.destroy()
+        } else {
+            Admob.getInstance().destroySqueezebackAd()
         }
     }
 

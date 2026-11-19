@@ -52,7 +52,7 @@ dependencies {
 
     // Admob (GMA Next-Gen SDK)
     api 'androidx.multidex:multidex:2.0.1'
-    api 'com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:1.6.0'
+    api 'com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:1.7.0'
 
     implementation "com.android.billingclient:billing:9.0.0"
     implementation "com.google.guava:guava:33.6.0-android"

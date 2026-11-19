@@ -77,6 +77,8 @@ import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoader
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoaderCallback
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdRequest
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdView
+import com.ads.nkh.ads.wrapper.ApSqueezebackAd
+import com.google.android.libraries.ads.mobile.sdk.common.ExperimentalApi
 import com.google.android.libraries.ads.mobile.sdk.pip.PictureInPictureAd
 import com.google.android.libraries.ads.mobile.sdk.pip.PictureInPictureAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.pip.PictureInPictureAdOptions
@@ -88,6 +90,10 @@ import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAd
 import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAdEventCallback
+import com.google.android.libraries.ads.mobile.sdk.squeezeback.SqueezebackAd
+import com.google.android.libraries.ads.mobile.sdk.squeezeback.SqueezebackAdEventCallback
+import com.google.android.libraries.ads.mobile.sdk.squeezeback.SqueezebackAdOptions
+import com.google.android.libraries.ads.mobile.sdk.squeezeback.SqueezebackAdRequest
 import com.google.android.libraries.ads.mobile.sdk.swipeableinterstitial.SwipeableInterstitialAd
 import com.google.android.libraries.ads.mobile.sdk.swipeableinterstitial.SwipeableInterstitialAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.swipeableinterstitial.SwipeableInterstitialAdRequest
@@ -101,6 +107,7 @@ import java.util.Objects
 import java.util.WeakHashMap
 import java.util.concurrent.Executors
 
+@OptIn(ExperimentalApi::class)
 class Admob private constructor() {
 
     private var currentClicked = 0
@@ -279,6 +286,7 @@ class Admob private constructor() {
     private var rewardedAd: RewardedAd? = null
     private var currentPipAd: PictureInPictureAd? = null
     private var currentSwipeableAd: SwipeableInterstitialAd? = null
+    private var currentSqueezebackAd: SqueezebackAd? = null
 
     private val interstitialLoadCallbacks: MutableMap<InterstitialAd, AdCallback?> =
         Collections.synchronizedMap(WeakHashMap())
@@ -287,6 +295,8 @@ class Admob private constructor() {
     private val pipLoadCallbacks: MutableMap<PictureInPictureAd, AdCallback?> =
         Collections.synchronizedMap(WeakHashMap())
     private val swipeableLoadCallbacks: MutableMap<SwipeableInterstitialAd, AdCallback?> =
+        Collections.synchronizedMap(WeakHashMap())
+    private val squeezebackLoadCallbacks: MutableMap<SqueezebackAd, AdCallback?> =
         Collections.synchronizedMap(WeakHashMap())
 
     fun setMaxClickAdsPerDay(maxClickAds: Int) {
@@ -5261,6 +5271,218 @@ class Admob private constructor() {
         pipAd?.destroy()
         if (pipAd === currentPipAd) {
             currentPipAd = null
+        }
+    }
+
+    // =========================================================================
+    // Squeezeback Ads (GMA Next-Gen SDK 1.7.0+)
+    // =========================================================================
+
+    private fun handleSqueezebackPaid(
+        logCtx: Context?,
+        ad: SqueezebackAd,
+        adValue: AdValue,
+        showCallback: AdCallback?
+    ) {
+        val adapterName = ad.getResponseInfo().adapterClassName
+        if (logCtx != null) {
+            NkhLogEventManager.logPaidAdImpression(
+                logCtx,
+                adValue,
+                ad.adUnitId,
+                adapterName
+            )
+        }
+        NkhLogEventManager.logPaidAdjustWithToken(
+            adValue,
+            ad.adUnitId,
+            NkhAdConfig.ADJUST_TOKEN_TIKTOK
+        )
+        showCallback?.onAdLogRev(
+            adValue,
+            ad.adUnitId,
+            adapterName,
+            AdType.SQUEEZEBACK
+        )
+        val loadCb = squeezebackLoadCallbacks[ad]
+        loadCb?.onAdLogRev(adValue, ad.adUnitId, adapterName, AdType.SQUEEZEBACK)
+    }
+
+    fun getCurrentSqueezebackAd(): SqueezebackAd? = currentSqueezebackAd
+
+    @JvmOverloads
+    fun loadSqueezebackAd(
+        context: Context,
+        id: String,
+        adCallback: AdCallback? = null
+    ) {
+        if (Arrays.asList(*context.resources.getStringArray(R.array.list_id_test)).contains(id)) {
+            showTestIdAlert(context, INTERS_ADS, id)
+        }
+        if (AppPurchase.getInstance().isPurchased(context)) {
+            adCallback?.onNextAction()
+            return
+        }
+        runWhenSdkInitialized(Runnable {
+            val request = SqueezebackAdRequest.Builder(id).build()
+            SqueezebackAd.load(
+                request,
+                object : AdLoadCallback<SqueezebackAd> {
+                    override fun onAdLoaded(squeezebackAd: SqueezebackAd) {
+                        runOnUiThread {
+                            currentSqueezebackAd?.destroy()
+                            currentSqueezebackAd = squeezebackAd
+                            if (adCallback != null) {
+                                squeezebackLoadCallbacks[squeezebackAd] = adCallback
+                            }
+                            squeezebackAd.adEventCallback = createSqueezebackEventCallback(context, squeezebackAd, adCallback)
+                            Log.i(TAG, "SqueezebackAd onAdLoaded: ${squeezebackAd.adUnitId}")
+                            adCallback?.onSqueezebackAdLoaded(squeezebackAd)
+                            adCallback?.onApSqueezebackAdLoaded(ApSqueezebackAd(squeezebackAd))
+                            adCallback?.onAdLoaded()
+                        }
+                    }
+
+                    override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                        runOnUiThread {
+                            Log.e(TAG, "SqueezebackAd onAdFailedToLoad: ${loadAdError.message}")
+                            adCallback?.onAdFailedToLoad(loadAdError)
+                        }
+                    }
+                }
+            )
+        })
+    }
+
+    private fun createSqueezebackEventCallback(
+        logCtx: Context?,
+        squeezebackAd: SqueezebackAd,
+        adCallback: AdCallback?
+    ): SqueezebackAdEventCallback {
+        return object : SqueezebackAdEventCallback {
+            override fun onAdPaid(adValue: AdValue) {
+                runOnUiThread {
+                    handleSqueezebackPaid(logCtx ?: this@Admob.context, squeezebackAd, adValue, adCallback)
+                }
+            }
+
+            override fun onAdShown() {
+                runOnUiThread {
+                    Log.d(TAG, "SqueezebackAd onAdShown")
+                    adCallback?.onSqueezebackAdShown()
+                }
+            }
+
+            override fun onAdHidden() {
+                runOnUiThread {
+                    Log.d(TAG, "SqueezebackAd onAdHidden")
+                    adCallback?.onSqueezebackAdHidden()
+                }
+            }
+
+            override fun onAdImpression() {
+                runOnUiThread {
+                    Log.d(TAG, "SqueezebackAd onAdImpression")
+                    adCallback?.onAdImpression()
+                }
+            }
+
+            override fun onAdClicked() {
+                runOnUiThread {
+                    if (disableAdResumeWhenClickAds) {
+                        AppOpenManager.getInstance().disableAdResumeByClickAction()
+                    }
+                    if (logCtx != null) {
+                        NkhLogEventManager.logClickAdsEvent(logCtx, squeezebackAd.adUnitId)
+                    }
+                    adCallback?.onAdClicked()
+                    adCallback?.onAdClicked(
+                        squeezebackAd.adUnitId,
+                        squeezebackAd.getResponseInfo().adapterClassName,
+                        AdType.SQUEEZEBACK
+                    )
+                }
+            }
+
+            override fun onAdDismissedFullScreenContent() {
+                runOnUiThread {
+                    Log.d(TAG, "SqueezebackAd onAdDismissedFullScreenContent")
+                    if (currentSqueezebackAd === squeezebackAd) {
+                        currentSqueezebackAd = null
+                    }
+                    adCallback?.onAdClosed()
+                    adCallback?.onNextAction()
+                }
+            }
+
+            override fun onAdFailedToShow(adError: FullScreenContentError) {
+                runOnUiThread {
+                    Log.e(TAG, "SqueezebackAd onAdFailedToShow: ${adError.message}")
+                    adCallback?.onAdFailedToShow(adError)
+                }
+            }
+        }
+    }
+
+    @JvmOverloads
+    fun showSqueezebackAd(
+        activity: Activity,
+        squeezebackAd: SqueezebackAd? = currentSqueezebackAd,
+        options: SqueezebackAdOptions? = null,
+        adCallback: AdCallback? = null
+    ) {
+        if (AppPurchase.getInstance().isPurchased(activity)) {
+            adCallback?.onNextAction()
+            return
+        }
+        if (squeezebackAd == null) {
+            Log.e(TAG, "showSqueezebackAd: SqueezebackAd is null")
+            adCallback?.onAdFailedToShow(null)
+            adCallback?.onNextAction()
+            return
+        }
+        val effectiveCallback = adCallback ?: squeezebackLoadCallbacks[squeezebackAd]
+        squeezebackAd.adEventCallback = createSqueezebackEventCallback(activity, squeezebackAd, effectiveCallback)
+        if (options != null) {
+            squeezebackAd.show(activity, options)
+        } else {
+            squeezebackAd.show(activity)
+        }
+    }
+
+    @JvmOverloads
+    fun loadAndShowSqueezebackAd(
+        activity: Activity,
+        id: String,
+        options: SqueezebackAdOptions? = null,
+        adCallback: AdCallback? = null
+    ) {
+        loadSqueezebackAd(activity, id, object : AdCallback() {
+            override fun onSqueezebackAdLoaded(squeezebackAd: SqueezebackAd?) {
+                adCallback?.onSqueezebackAdLoaded(squeezebackAd)
+                adCallback?.onAdLoaded()
+                if (squeezebackAd != null && !activity.isFinishing && !activity.isDestroyed) {
+                    showSqueezebackAd(activity, squeezebackAd, options, adCallback)
+                }
+            }
+
+            override fun onAdFailedToLoad(i: LoadAdError?) {
+                adCallback?.onAdFailedToLoad(i)
+                adCallback?.onNextAction()
+            }
+        })
+    }
+
+    @JvmOverloads
+    fun hideSqueezebackAd(squeezebackAd: SqueezebackAd? = currentSqueezebackAd) {
+        squeezebackAd?.hide()
+    }
+
+    @JvmOverloads
+    fun destroySqueezebackAd(squeezebackAd: SqueezebackAd? = currentSqueezebackAd) {
+        squeezebackAd?.destroy()
+        if (squeezebackAd === currentSqueezebackAd) {
+            currentSqueezebackAd = null
         }
     }
 
