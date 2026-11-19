@@ -2,6 +2,7 @@
 .gradle
 /local.properties
 *.pdf
+*.png
 /.idea
 .idea
 .DS_Store
@@ -11,3 +12,4 @@
 .cxx
 local.properties
 *.pdf
+*.png

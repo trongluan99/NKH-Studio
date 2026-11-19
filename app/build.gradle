@@ -38,7 +38,7 @@ android {
             buildConfigField "String", "ads_open_app", "\"ca-app-pub-3940256099942544/9257395921\""
             buildConfigField "String", "ad_pip", "\"ca-app-pub-3940256099942544/9214589741\""
             buildConfigField "String", "ad_swipeable_inter", "\"ca-app-pub-3940256099942544/3763914985\""
-            buildConfigField "String", "ad_squeezeback", "\"ca-app-pub-3940256099942544/9214589741\""
+            buildConfigField "String", "ad_squeezeback", "\"ca-app-pub-3940256099942544/9983381271\""
 
             buildConfigField "String", "Test_Inter", "\"54234b223e3dfdfa\""
             buildConfigField "String", "Test_Native", "\"9985fc9e89cd4704\""
@@ -60,7 +60,7 @@ android {
             buildConfigField "String", "ads_open_app", "\"ca-app-pub-3940256099942544/9257395921\""
             buildConfigField "String", "ad_pip", "\"ca-app-pub-3940256099942544/9214589741\""
             buildConfigField "String", "ad_swipeable_inter", "\"ca-app-pub-3940256099942544/3763914985\""
-            buildConfigField "String", "ad_squeezeback", "\"ca-app-pub-3940256099942544/9214589741\""
+            buildConfigField "String", "ad_squeezeback", "\"ca-app-pub-3940256099942544/9983381271\""
             buildConfigField "Boolean", "env_dev", "false"
         }
     }
